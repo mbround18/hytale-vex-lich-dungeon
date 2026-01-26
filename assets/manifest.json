@@ -1,8 +1,8 @@
 {
   "Group": "com.example",
-  "Name": "HelloWorld",
+  "Name": "VexLichDungeon",
   "Version": "0.1.0",
-  "Description": "Example Hytale mod template with plugin and assets",
+  "Description": "Vex Lich Dungeon mod for Hytale with plugin and assets",
   "Authors": [
     {
       "Name": "Your Name",

@@ -1,19 +1,19 @@
-package com.example.hytale.helloworld;
+package com.example.hytale.vexlichdungeon;
 
-import com.example.hytale.helloworld.logging.PluginLog;
+import com.example.hytale.vexlichdungeon.logging.PluginLog;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import javax.annotation.Nonnull;
 
 /**
- * Minimal example plugin that logs during startup and shutdown using the built-in Hytale logger API.
+ * VexLichDungeon plugin that logs during startup and shutdown using the built-in Hytale logger API.
  */
-public class HelloWorldPlugin extends JavaPlugin {
+public class VexLichDungeonPlugin extends JavaPlugin {
   private final PluginLog log;
 
-  public HelloWorldPlugin(@Nonnull JavaPluginInit init) {
+  public VexLichDungeonPlugin(@Nonnull JavaPluginInit init) {
     super(init);
-    this.log = PluginLog.forPlugin(this, "HelloWorld");
+    this.log = PluginLog.forPlugin(this, "VexLichDungeon");
   }
 
   @Override

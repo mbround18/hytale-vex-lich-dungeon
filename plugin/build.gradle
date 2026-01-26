@@ -28,13 +28,13 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 jar {
-    archiveBaseName.set("HelloWorld")
+    archiveBaseName.set("VexLichDungeon")
     manifest {
         attributes(
-                'Plugin-Main': 'com.example.hytale.helloworld.HelloWorldPlugin',
-                'Plugin-Name': 'HelloWorld',
+                'Plugin-Main': 'com.example.hytale.vexlichdungeon.VexLichDungeonPlugin',
+                'Plugin-Name': 'VexLichDungeon',
                 'Plugin-Version': project.version,
-                'Implementation-Title': 'HelloWorld',
+                'Implementation-Title': 'VexLichDungeon',
                 'Implementation-Version': project.version
         )
     }
