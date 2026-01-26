@@ -6,7 +6,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import javax.annotation.Nonnull;
 
 /**
- * Minimal example plugin that logs during startup and shutdown using the built-in Hytale logger API.
+ * VexLichDungeon plugin that logs during startup and shutdown using the built-in Hytale logger API.
  */
 public class VexLichDungeonPlugin extends JavaPlugin {
   private final PluginLog log;
