@@ -1,9 +1,9 @@
 {
   "Group": "com.example",
-  "Name": "HelloWorld",
+  "Name": "VexLichDungeon",
   "Version": "${version}",
   "Authors": "GRADLE_INJECT_AUTHORS",
   "Website": "https://example.com",
-  "Main": "com.example.hytale.helloworld.HelloWorldPlugin",
+  "Main": "com.example.hytale.vexlichdungeon.VexLichDungeonPlugin",
   "ServerVersion": "*"
 }

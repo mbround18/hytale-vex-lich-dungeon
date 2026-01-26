@@ -36,7 +36,7 @@ What `setup` does:
 ## Build and distribution
 
 - Run `./gradlew build` to produce distributables and install them into the local server mods directory.
-- Outputs land in `dist/`: `HelloWorld-<version>.jar` and `assets.zip` (zip root contains `manifest.json`, `Server/`, `Common/` — no leading `assets/`).
+- Outputs land in `dist/`: `VexLichDungeon-<version>.jar` and `assets.zip` (zip root contains `manifest.json`, `Server/`, `Common/` — no leading `assets/`).
 - The same jar and zip are copied into `data/server/Server/mods/` to replace any existing copies for quick local testing.
 
 ## Local testing
@@ -45,9 +45,9 @@ What `setup` does:
 - In-game, use Direct Connect to `127.0.0.1` to hit the locally running server.
 - Stop with `Ctrl+C` once you're done testing; rerun `./gradlew start` after code or asset changes.
 
-## HelloWorld example
+## VexLichDungeon example
 
-- Starter plugin lives at `plugin/src/main/java/com/example/hytale/helloworld/HelloWorldPlugin.java` and logs a hello message on startup and shutdown.
+- Starter plugin lives at `plugin/src/main/java/com/example/hytale/vexlichdungeon/VexLichDungeonPlugin.java` and logs a hello message on startup and shutdown.
 - Plugin metadata is in `plugin/src/main/resources/plugin.properties` and jar manifest entries are filled via Gradle.
 - Use this as a minimal, well-documented base to wire in your own commands, listeners, and content.
 

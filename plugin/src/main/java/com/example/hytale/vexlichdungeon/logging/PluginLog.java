@@ -1,4 +1,4 @@
-package com.example.hytale.helloworld.logging;
+package com.example.hytale.vexlichdungeon.logging;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
