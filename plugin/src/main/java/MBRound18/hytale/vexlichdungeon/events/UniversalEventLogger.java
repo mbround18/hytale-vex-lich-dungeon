@@ -1,6 +1,6 @@
-package com.example.hytale.vexlichdungeon.events;
+package MBRound18.hytale.vexlichdungeon.events;
 
-import com.example.hytale.vexlichdungeon.logging.PluginLog;
+import MBRound18.hytale.vexlichdungeon.logging.PluginLog;
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.event.IBaseEvent;
 import java.lang.reflect.Method;
@@ -13,95 +13,92 @@ import com.hypixel.hytale.server.core.universe.world.events.AddWorldEvent;
 import javax.annotation.Nonnull;
 
 /**
- * Temporary universal event logger to debug which events fire during instance creation/player join.
+ * Temporary universal event logger to debug which events fire during instance
+ * creation/player join.
  */
 public class UniversalEventLogger {
-    
+
     private final PluginLog log;
-    
+
     public UniversalEventLogger(@Nonnull PluginLog log) {
         this.log = log;
     }
-    
-    @SuppressWarnings({"unchecked", "rawtypes"})
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void register(@Nonnull EventBus eventBus) {
         // Log PlayerConnectEvent
         eventBus.register(
-            (Class) PlayerConnectEvent.class,
-            (java.util.function.Consumer) (Object e) -> log.info("🔴 EVENT: %s", describeEvent(e))
-        );
-        
+                (Class) PlayerConnectEvent.class,
+                (java.util.function.Consumer) (Object e) -> log.info("🔴 EVENT: %s", describeEvent(e)));
+
         // Log PlayerDisconnectEvent
         eventBus.register(
-            (Class) PlayerDisconnectEvent.class,
-            (java.util.function.Consumer) (Object e) -> log.info("🔴 EVENT: %s", describeEvent(e))
-        );
-        
+                (Class) PlayerDisconnectEvent.class,
+                (java.util.function.Consumer) (Object e) -> log.info("🔴 EVENT: %s", describeEvent(e)));
+
         // Log AddPlayerToWorldEvent
         eventBus.register(
-            (Class) AddPlayerToWorldEvent.class,
-            (java.util.function.Consumer) (Object e) -> {
-                log.info("🔴 EVENT: %s", describeEvent(e));
-            }
-        );
-        
+                (Class) AddPlayerToWorldEvent.class,
+                (java.util.function.Consumer) (Object e) -> {
+                    log.info("🔴 EVENT: %s", describeEvent(e));
+                });
+
         // Log DrainPlayerFromWorldEvent (removal from world)
         eventBus.register(
-            (Class) DrainPlayerFromWorldEvent.class,
-            (java.util.function.Consumer) (Object e) -> {
-                log.info("🔴 EVENT: %s", describeEvent(e));
-            }
-        );
-        
+                (Class) DrainPlayerFromWorldEvent.class,
+                (java.util.function.Consumer) (Object e) -> {
+                    log.info("🔴 EVENT: %s", describeEvent(e));
+                });
+
         // Log StartWorldEvent
         eventBus.register(
-            (Class) StartWorldEvent.class,
-            (java.util.function.Consumer) (Object e) -> {
-                log.info("🔴 EVENT: %s", describeEvent(e));
-            }
-        );
-        
+                (Class) StartWorldEvent.class,
+                (java.util.function.Consumer) (Object e) -> {
+                    log.info("🔴 EVENT: %s", describeEvent(e));
+                });
+
         // Log AddWorldEvent
         eventBus.register(
-            (Class) AddWorldEvent.class,
-            (java.util.function.Consumer) (Object e) -> {
-                log.info("🔴 EVENT: %s", describeEvent(e));
-            }
-        );
-        
+                (Class) AddWorldEvent.class,
+                (java.util.function.Consumer) (Object e) -> {
+                    log.info("🔴 EVENT: %s", describeEvent(e));
+                });
+
         log.info("✅ Universal event logger registered - watching for all events");
     }
 
     /**
-     * Attempts to attach a logger to every event class currently known by the EventBus registry.
-     * This relies on EventBus#getRegisteredEventClasses(), so it only covers classes registered so far.
+     * Attempts to attach a logger to every event class currently known by the
+     * EventBus registry.
+     * This relies on EventBus#getRegisteredEventClasses(), so it only covers
+     * classes registered so far.
      */
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void registerAllKnown(@Nonnull EventBus eventBus) {
         try {
             for (Class<? extends IBaseEvent<?>> eventClass : eventBus.getRegisteredEventClasses()) {
                 // Skip a few we already registered explicitly to avoid duplicate log spam
                 if (eventClass == PlayerConnectEvent.class ||
-                    eventClass == PlayerDisconnectEvent.class ||
-                    eventClass == AddPlayerToWorldEvent.class ||
-                    eventClass == DrainPlayerFromWorldEvent.class ||
-                    eventClass == StartWorldEvent.class ||
-                    eventClass == AddWorldEvent.class) {
+                        eventClass == PlayerDisconnectEvent.class ||
+                        eventClass == AddPlayerToWorldEvent.class ||
+                        eventClass == DrainPlayerFromWorldEvent.class ||
+                        eventClass == StartWorldEvent.class ||
+                        eventClass == AddWorldEvent.class) {
                     continue;
                 }
 
                 eventBus.register(
-                    (Class) eventClass,
-                    (java.util.function.Consumer) (Object e) -> {
-                        try {
-                            log.info("🔴 EVENT: %s", describeEvent(e));
-                        } catch (Exception ex) {
-                            log.info("🔴 EVENT: %s (logging error: %s)", eventClass.getName(), ex.getMessage());
-                        }
-                    }
-                );
+                        (Class) eventClass,
+                        (java.util.function.Consumer) (Object e) -> {
+                            try {
+                                log.info("🔴 EVENT: %s", describeEvent(e));
+                            } catch (Exception ex) {
+                                log.info("🔴 EVENT: %s (logging error: %s)", eventClass.getName(), ex.getMessage());
+                            }
+                        });
             }
-            log.info("✅ Universal event logger registered to all known event classes (%d)", eventBus.getRegisteredEventClasses().size());
+            log.info("✅ Universal event logger registered to all known event classes (%d)",
+                    eventBus.getRegisteredEventClasses().size());
         } catch (Exception e) {
             log.error("Failed to register all known events: %s", e.getMessage());
         }
@@ -153,7 +150,8 @@ public class UniversalEventLogger {
     }
 
     /**
-     * Collects a limited set of simple getter values to give more context without dumping entire objects.
+     * Collects a limited set of simple getter values to give more context without
+     * dumping entire objects.
      */
     private void appendGetterSamples(StringBuilder sb, Object target, int max) {
         int added = 0;
@@ -169,7 +167,8 @@ public class UniversalEventLogger {
             if (method.getParameterCount() != 0 || method.getReturnType() == Void.TYPE) {
                 continue;
             }
-            if ("getClass".equals(name) || "getWorld".equals(name) || "getPlayer".equals(name) || "getTransform".equals(name)) {
+            if ("getClass".equals(name) || "getWorld".equals(name) || "getPlayer".equals(name)
+                    || "getTransform".equals(name)) {
                 continue;
             }
             try {

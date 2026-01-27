@@ -2,7 +2,7 @@
 
 🧙‍♂️ **Vex the Lich invites you to try the trials of their dungeon!** 🧙‍♂️
 
-*To the victor goes the spoils... but beware, dear adventurer, for only those who complete the dungeon's treacherous challenges will become the new Lich. Do you dare accept Vex's invitation?*
+_To the victor goes the spoils... but beware, dear adventurer, for only those who complete the dungeon's treacherous challenges will become the new Lich. Do you dare accept Vex's invitation?_
 
 ---
 

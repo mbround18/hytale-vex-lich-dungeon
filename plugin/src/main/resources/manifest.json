@@ -1,9 +1,9 @@
 {
-  "Group": "com.example",
+  "Group": "MBRound18",
   "Name": "VexLichDungeon",
   "Version": "${version}",
   "Authors": "GRADLE_INJECT_AUTHORS",
   "Website": "https://example.com",
-  "Main": "com.example.hytale.vexlichdungeon.VexLichDungeonPlugin",
+  "Main": "MBRound18.hytale.vexlichdungeon.VexLichDungeonPlugin",
   "ServerVersion": "*"
 }

@@ -1,4 +1,4 @@
-package com.example.hytale.vexlichdungeon.commands;
+package MBRound18.hytale.vexlichdungeon.commands;
 
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
 

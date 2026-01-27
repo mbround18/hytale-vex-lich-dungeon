@@ -1,6 +1,7 @@
-package com.example.hytale.vexlichdungeon.dungeon;
+package MBRound18.hytale.vexlichdungeon.dungeon;
 
-import com.example.hytale.vexlichdungeon.logging.PluginLog;
+import MBRound18.hytale.vexlichdungeon.logging.PluginLog;
+import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
@@ -15,19 +16,97 @@ public class DungeonGenerator {
   private final PluginLog log;
   private final GenerationConfig config;
   private final PrefabSelector selector;
+  private final PrefabDiscovery discovery;
   private final Map<TilePosition, DungeonTile> tileMap;
+
+  // Spawn center coordinates (world coords) where base tile will be centered
+  private int spawnCenterX;
+  private int spawnCenterY;
+  private int spawnCenterZ;
+  private boolean skipBaseTile = false;
 
   /**
    * Creates a new dungeon generator.
    * 
-   * @param config Generation configuration
-   * @param log    Logger for generation events
+   * @param config    Generation configuration
+   * @param log       Logger for generation events
+   * @param discovery Prefab discovery system
    */
-  public DungeonGenerator(@Nonnull GenerationConfig config, @Nonnull PluginLog log) {
+  public DungeonGenerator(@Nonnull GenerationConfig config, @Nonnull PluginLog log,
+      @Nonnull PrefabDiscovery discovery) {
     this.config = config;
     this.log = log;
-    this.selector = new PrefabSelector(config.getSeed());
+    this.discovery = discovery;
+    this.selector = new PrefabSelector(config.getSeed(), discovery);
     this.tileMap = new HashMap<>();
+    this.spawnCenterX = 0;
+    this.spawnCenterY = 64;
+    this.spawnCenterZ = 0;
+  }
+
+  /**
+   * Sets the spawn center coordinates for dungeon generation.
+   * The base tile will be centered at these coordinates, and all other
+   * tiles will be positioned relative to this center point.
+   * 
+   * @param worldX World X coordinate for spawn center
+   * @param worldY World Y coordinate for spawn center
+   * @param worldZ World Z coordinate for spawn center
+   */
+  public void setSpawnCenter(int worldX, int worldY, int worldZ) {
+    this.spawnCenterX = worldX;
+    this.spawnCenterY = worldY;
+    this.spawnCenterZ = worldZ;
+    log.info("Set spawn center to (%d, %d, %d)", worldX, worldY, worldZ);
+  }
+
+  /**
+   * Gets the spawn center X coordinate.
+   */
+  public int getSpawnCenterX() {
+    return spawnCenterX;
+  }
+
+  /**
+   * Gets the spawn center Y coordinate.
+   */
+  public int getSpawnCenterY() {
+    return spawnCenterY;
+  }
+
+  /**
+   * Gets the spawn center Z coordinate.
+   */
+  public int getSpawnCenterZ() {
+    return spawnCenterZ;
+  }
+
+  /**
+   * Sets whether to skip spawning the base tile (if it's already present).
+   * 
+   * @param skip Whether to skip the base tile
+   */
+  public void setSkipBaseTile(boolean skip) {
+    this.skipBaseTile = skip;
+    if (skip) {
+      log.info("Base tile spawning disabled - base prefab already exists");
+    }
+  }
+
+  /**
+   * Converts grid coordinates to world coordinates.
+   * Grid (0,0) is at the spawn center.
+   * Each tile is 20 units (19 blocks + 1 gate).
+   * 
+   * @param gridX Grid X coordinate
+   * @param gridZ Grid Z coordinate
+   * @return int[2] array with {worldX, worldZ}
+   */
+  public int[] gridToWorld(int gridX, int gridZ) {
+    int tileSize = 20; // 19 blocks for room + 1 for gate
+    int worldX = spawnCenterX + (gridX * tileSize);
+    int worldZ = spawnCenterZ + (gridZ * tileSize);
+    return new int[] { worldX, worldZ };
   }
 
   /**
@@ -88,6 +167,12 @@ public class DungeonGenerator {
    * Places the base courtyard tile at the origin (0, 0).
    */
   private void placeBaseTile() {
+    // Skip if base already exists (player standing on bedrock)
+    if (skipBaseTile) {
+      log.info("Skipping base tile placement - base prefab already present");
+      return;
+    }
+
     String basePrefab = selector.getBasePrefab();
     DungeonTile baseTile = new DungeonTile(
         0, 0,
@@ -100,40 +185,59 @@ public class DungeonGenerator {
 
   /**
    * Generates a chain of tiles in the specified direction.
+   * Actually generates a complete grid filling the dungeon area.
    * 
-   * @param direction Cardinal direction to generate
+   * @param direction This parameter is now unused but kept for compatibility
    */
   private void generateDirectionalChain(@Nonnull CardinalDirection direction) {
+    // Only generate once, on the first direction call
+    // The tile map already has the base tile, so we check if we need to fill
+    if (tileMap.size() > 1) {
+      return; // Already generated grid
+    }
+
     int radius = config.getGenerationRadius();
-    int offsetX = direction.getOffsetX();
-    int offsetZ = direction.getOffsetZ();
+    int tilesGenerated = 0;
 
-    for (int distance = 1; distance <= radius; distance++) {
-      int gridX = offsetX * distance;
-      int gridZ = offsetZ * distance;
+    // Generate tiles in a square grid from -radius to +radius
+    for (int gridX = -radius; gridX <= radius; gridX++) {
+      for (int gridZ = -radius; gridZ <= radius; gridZ++) {
+        // Skip the base tile (already placed at 0,0)
+        if (gridX == 0 && gridZ == 0) {
+          continue;
+        }
 
-      // Select room or hallway based on probability
-      String prefabPath = selector.selectRoomOrHallway(config.getRoomProbability());
-      int rotation = selector.selectRandomRotation();
+        // Select room or hallway based on probability
+        String prefabPath = selector.selectRoomOrHallway(config.getRoomProbability());
 
-      // Determine tile type based on prefab path
-      DungeonTile.TileType type = prefabPath.contains("Hallway")
-          ? DungeonTile.TileType.HALLWAY
-          : DungeonTile.TileType.ROOM;
+        // Skip if no prefabs available
+        if (prefabPath == null) {
+          log.warn("No rooms or hallways available for tile at (%d, %d)", gridX, gridZ);
+          continue;
+        }
 
-      DungeonTile tile = new DungeonTile(gridX, gridZ, prefabPath, rotation, type);
-      tileMap.put(new TilePosition(gridX, gridZ), tile);
+        int rotation = selector.selectRandomRotation();
 
-      if (distance % config.getBatchSize() == 0) {
-        log.info("Generated %d tiles in %s direction", distance, direction);
+        // Determine tile type based on prefab path
+        DungeonTile.TileType type = prefabPath.contains("Hallway")
+            ? DungeonTile.TileType.HALLWAY
+            : DungeonTile.TileType.ROOM;
+
+        DungeonTile tile = new DungeonTile(gridX, gridZ, prefabPath, rotation, type);
+        tileMap.put(new TilePosition(gridX, gridZ), tile);
+        tilesGenerated++;
       }
     }
+
+    log.info("Generated %d tiles in complete grid pattern (radius=%d)", tilesGenerated, radius);
   }
 
   /**
    * Assigns gates between adjacent tiles.
    */
   private void assignGates() {
+    int gatesAssigned = 0;
+    
     for (DungeonTile tile : tileMap.values()) {
       for (CardinalDirection direction : CardinalDirection.all()) {
         TilePosition neighborPos = new TilePosition(
@@ -144,12 +248,18 @@ public class DungeonGenerator {
         if (neighbor != null && !tile.hasGate(direction)) {
           // There's a neighbor in this direction, assign a random gate
           String gatePrefab = selector.selectRandomGate();
-          tile.setGate(direction, gatePrefab);
+          if (gatePrefab != null) {
+            tile.setGate(direction, gatePrefab);
+            gatesAssigned++;
+          } else {
+            log.warn("No gate prefabs available for tile at (%d, %d) direction %s", 
+                     tile.getGridX(), tile.getGridZ(), direction);
+          }
         }
       }
     }
 
-    log.info("Assigned gates to %d tiles", tileMap.size());
+    log.info("Assigned %d gates to tiles", gatesAssigned);
   }
 
   /**
@@ -157,6 +267,11 @@ public class DungeonGenerator {
    */
   private void blockOuterEdges() {
     String blockedGate = selector.getBlockedGate();
+    if (blockedGate == null) {
+      log.warn("No blocked gate prefab available, skipping outer edge blocking");
+      return;
+    }
+    
     int blockedCount = 0;
 
     for (DungeonTile tile : tileMap.values()) {

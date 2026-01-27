@@ -1,4 +1,4 @@
-package com.example.hytale.vexlichdungeon.logging;
+package MBRound18.hytale.vexlichdungeon.logging;
 
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
@@ -33,14 +33,26 @@ public final class PluginLog {
     }
 
     public void info(String message, Object... args) {
-        root.atInfo().log(message, args);
+        if (args == null || args.length == 0) {
+            root.atInfo().log(message);
+        } else {
+            root.atInfo().log(String.format(message, args));
+        }
     }
 
     public void warn(String message, Object... args) {
-        root.atWarning().log(message, args);
+        if (args == null || args.length == 0) {
+            root.atWarning().log(message);
+        } else {
+            root.atWarning().log(String.format(message, args));
+        }
     }
 
     public void error(String message, Object... args) {
-        root.atSevere().log(message, args);
+        if (args == null || args.length == 0) {
+            root.atSevere().log(message);
+        } else {
+            root.atSevere().log(String.format(message, args));
+        }
     }
 }

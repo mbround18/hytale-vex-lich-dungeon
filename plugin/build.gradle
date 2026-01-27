@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-group = 'com.example.hytale'
+group = 'MBRound18.hytale'
 version = '0.1.0'
 
 repositories {
@@ -31,7 +31,7 @@ jar {
     archiveBaseName.set("VexLichDungeon")
     manifest {
         attributes(
-                'Plugin-Main': 'com.example.hytale.vexlichdungeon.VexLichDungeonPlugin',
+                'Plugin-Main': 'MBRound18.hytale.vexlichdungeon.VexLichDungeonPlugin',
                 'Plugin-Name': 'VexLichDungeon',
                 'Plugin-Version': project.version,
                 'Implementation-Title': 'VexLichDungeon',

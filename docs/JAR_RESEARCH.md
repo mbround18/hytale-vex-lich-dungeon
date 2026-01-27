@@ -7,33 +7,36 @@
 ### Key Methods for Spawning Prefabs
 
 #### Place Methods (PERFECT!)
+
 ```java
 // Core placement methods:
 public BlockSelection place(CommandSender, World)
 public BlockSelection place(CommandSender, World, BlockMask)
 public BlockSelection place(CommandSender, World, Vector3i position, BlockMask)
-public BlockSelection place(CommandSender, World, Vector3i position, BlockMask, 
+public BlockSelection place(CommandSender, World, Vector3i position, BlockMask,
                            Consumer<Ref<EntityStore>> entityConsumer)
 
 // No-return variants (fire and forget):
-public void placeNoReturn(World, Vector3i position, 
+public void placeNoReturn(World, Vector3i position,
                          ComponentAccessor<EntityStore>)
-public void placeNoReturn(String prefabId, CommandSender, World, 
+public void placeNoReturn(String prefabId, CommandSender, World,
                          ComponentAccessor<EntityStore>)
-public void placeNoReturn(String prefabId, CommandSender, FeedbackConsumer, 
+public void placeNoReturn(String prefabId, CommandSender, FeedbackConsumer,
                          World, ComponentAccessor<EntityStore>)
-public void placeNoReturn(String prefabId, CommandSender, FeedbackConsumer, 
-                         World, Vector3i position, BlockMask, 
+public void placeNoReturn(String prefabId, CommandSender, FeedbackConsumer,
+                         World, Vector3i position, BlockMask,
                          ComponentAccessor<EntityStore>)
 ```
 
 **RECOMMENDED FOR DUNGEON GENERATION**:
+
 ```java
 BlockSelection prefab = /* loaded prefab */;
 prefab.place(commandSender, world, new Vector3i(worldX, worldY, worldZ), null, entityConsumer);
 ```
 
 #### Rotation Methods (FOUND!)
+
 ```java
 public BlockSelection rotate(Axis axis, int degrees)
 public BlockSelection rotate(Axis axis, int degrees, Vector3f origin)
@@ -42,6 +45,7 @@ public BlockSelection flip(Axis axis)
 ```
 
 **For our use case:**
+
 ```java
 // Rotate around Y axis (vertical) for cardinal directions
 BlockSelection rotated = prefab.rotate(Axis.Y, rotationDegrees);
@@ -49,6 +53,7 @@ BlockSelection rotated = prefab.rotate(Axis.Y, rotationDegrees);
 ```
 
 #### Other Useful Methods
+
 ```java
 public void setPosition(int x, int y, int z)
 public void setAnchor(int x, int y, int z)
@@ -102,9 +107,9 @@ public GameplayConfig getGameplayConfig()
 **Best Method: Listen to AddPlayerToWorldEvent**
 
 ```java
-public class com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent 
+public class com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent
     implements IEvent<String> {
-  
+
   public Holder<EntityStore> getHolder();
   public World getWorld();
   public boolean shouldBroadcastJoinMessage();
@@ -120,7 +125,7 @@ EventBus eventBus = HytaleServer.get().getEventBus();
 eventBus.register(AddPlayerToWorldEvent.class, event -> {
     World world = event.getWorld();
     EntityStore player = event.getHolder().getComponent(Player.getComponentType());
-    
+
     // Check if this is a Vex Lich Dungeon instance
     String worldName = world.getName();
     if (worldName.contains("VexLichDungeon")) {
@@ -131,6 +136,7 @@ eventBus.register(AddPlayerToWorldEvent.class, event -> {
 ```
 
 ### World Access Pattern
+
 ```java
 // From any event that provides World:
 World world = event.getWorld();
@@ -182,6 +188,7 @@ FeedbackConsumer feedback = new FeedbackConsumer() {
 **Location**: `com.hypixel.hytale.math.Axis`
 
 Values (likely):
+
 - `Axis.X` - Rotate around X axis
 - `Axis.Y` - Rotate around Y axis (cardinal directions)
 - `Axis.Z` - Rotate around Z axis
@@ -191,26 +198,28 @@ Values (likely):
 ## Implementation Plan
 
 ### Phase 1: Basic Spawning
+
 ```java
-public void spawnPrefab(BlockSelection prefab, World world, Vector3i position, 
+public void spawnPrefab(BlockSelection prefab, World world, Vector3i position,
                        int rotationDegrees, CommandSender sender) {
     // Clone to avoid modifying original
     BlockSelection clone = prefab.cloneSelection();
-    
+
     // Apply rotation (Y axis for cardinal directions)
     if (rotationDegrees != 0) {
         clone = clone.rotate(Axis.Y, rotationDegrees);
     }
-    
+
     // Set position
     clone.setPosition(position.x, position.y, position.z);
-    
+
     // Spawn into world
     clone.place(sender, world, position, null, null);
 }
 ```
 
 ### Phase 2: With Feedback
+
 ```java
 clone.placeNoReturn(
     "vex_dungeon_prefab",
@@ -224,6 +233,7 @@ clone.placeNoReturn(
 ```
 
 ### Phase 3: Full Gate + Entity Spawning
+
 ```java
 clone.place(
     sender,

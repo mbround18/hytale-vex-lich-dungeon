@@ -17,6 +17,7 @@ services:
       - SERVER_BIND=0.0.0.0
       - DISABLE_SENTRY=false
       - JAVA_OPTS=-Xmx4G -Xms2G
+      - UPDATE_ON_START=false
     volumes:
       - ./data/server:/data/server
     restart: unless-stopped

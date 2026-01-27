@@ -1,4 +1,4 @@
-package com.example.hytale.vexlichdungeon.dungeon;
+package MBRound18.hytale.vexlichdungeon.dungeon;
 
 import javax.annotation.Nonnull;
 

@@ -95,7 +95,7 @@ def waitForFile(File target, int timeoutSeconds, int intervalSeconds) {
 tasks.register("setup") {
     group = "setup"
     description = "Prepare local data, assets, and unpacked API"
-    dependsOn "ensureDirectories", "ensureServerJar", "unpackAssets", "fetchUnpacked"
+    dependsOn "ensureDirectories", "ensureServerJar", "unpackAssets", "unpackJar"
 }
 
 tasks.register("ensureDirectories") {
@@ -283,37 +283,92 @@ tasks.register("unpackAssets") {
     }
 }
 
-tasks.register("fetchUnpacked") {
-    group = "setup"
-    description = "Clone Ranork/Hytale-Server-Unpacked into data/unpacked (no submodule)"
-    dependsOn "ensureDirectories"
-    onlyIf {
-        !new File(unpackedDir, ".git").exists()
-    }
-    doLast {
-        if (unpackedDir.exists() && unpackedDir.listFiles()?.length > 0) {
-            throw new IllegalStateException("data/unpacked exists and is not empty; refusing to overwrite")
-        }
-        runCommand(["git", "clone", "git@github.com:Ranork/Hytale-Server-Unpacked.git", unpackedDir.absolutePath])
-        runCommand(["chown", "-R", "1000:1000", unpackedDir.absolutePath])
-    }
-}
+
 
 // ============================================================================
 // Build Tasks
 // Tasks for building and packaging mod artifacts
 // ============================================================================
 
+tasks.register("processAssetsManifest") {
+    group = "build"
+    description = "Process assets/manifest.json with version and authors"
+    
+    def inputManifest = file("assets/manifest.json")
+    def outputManifest = file("$buildDir/processed-assets/manifest.json")
+    
+    inputs.file(inputManifest)
+    outputs.file(outputManifest)
+    
+    doLast {
+        outputManifest.parentFile.mkdirs()
+        
+        def manifestContent = inputManifest.text
+        def pluginVersion = project(":plugin").version
+        
+        // Get authors from git (same logic as plugin)
+        def authorsJson = '[\n  {\n    "Name": "Example Dev",\n    "Email": "dev@example.com",\n    "Url": ""\n  }\n]'
+        
+        try {
+            def gitProcess = new ProcessBuilder(["git", "log", "--format=%an|%ae"]).redirectErrorStream(true).start()
+            def gitLog = new StringBuilder()
+            gitProcess.inputStream.newReader().eachLine { line ->
+                gitLog.append(line).append('\n')
+            }
+            int gitExit = gitProcess.waitFor()
+            def authors = gitLog.toString().readLines()
+                .collect { it.split("\\|") }
+                .findAll { it.size() == 2 }
+                .collect { [name: it[0].trim(), email: it[1].trim()] }
+                .unique { [it.name, it.email] }
+            
+            if (gitExit == 0 && !authors.isEmpty()) {
+                def entries = authors.collect { author ->
+                    """  {
+    "Name": "${author.name}",
+    "Email": "${author.email}",
+    "Url": ""
+  }"""
+                }.join(',\n')
+                authorsJson = "[\n${entries}\n]"
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to extract git authors for assets manifest: ${e.message}")
+        }
+        
+        // Replace version
+        manifestContent = manifestContent.replaceAll('"Version"\\s*:\\s*"[^"]*"', "\"Version\": \"${pluginVersion}\"")
+        
+        // Replace authors array
+        manifestContent = manifestContent.replaceAll(
+            '"Authors"\\s*:\\s*\\[[^\\]]*\\]',
+            "\"Authors\": ${authorsJson}"
+        )
+        
+        outputManifest.text = manifestContent
+        logger.lifecycle("Processed assets manifest.json with version ${pluginVersion}")
+    }
+}
+
 tasks.register("assetsZip", Zip) {
     group = "build"
     description = "Zip assets/ into dist/assets.zip with flattened root"
-    dependsOn "ensureDirectories"
+    dependsOn "ensureDirectories", "processAssetsManifest"
     archiveBaseName.set(project(":plugin").tasks.named("jar").get().archiveBaseName.get())
     archiveExtension.set("zip")
     destinationDirectory.set(distDir)
     zip64 = true
+    
+    // Include processed manifest
+    from("$buildDir/processed-assets") {
+        include "manifest.json"
+        into("")
+    }
+    
+    // Include all other assets except the original manifest
     from(userAssetsDir) {
         into("")
+        exclude "manifest.json"
         eachFile { FileCopyDetails details ->
             // Exclude .gitkeep files (and their parent directories if empty)
             if (details.name == ".gitkeep") {
@@ -361,19 +416,19 @@ tasks.register("installToServerMods") {
 // ============================================================================
 
 tasks.register("unpackJar") {
-    group = "utility"
-    description = "Unpack data/server/Server/HytaleServer.jar into data/jar_unpacked"
+    group = "setup"
+    description = "Unpack data/server/Server/HytaleServer.jar into data/unpacked"
     dependsOn "ensureDirectories", "ensureServerJar"
+    onlyIf { !unpackedDir.exists() || unpackedDir.listFiles()?.length == 0 }
     doLast {
-        File targetDir = file("data/jar_unpacked")
-        if (targetDir.exists()) {
-            targetDir.deleteDir()
+        if (unpackedDir.exists()) {
+            unpackedDir.deleteDir()
         }
         copy {
             from(zipTree(serverJar))
-            into(targetDir)
+            into(unpackedDir)
         }
-        logger.lifecycle("Unpacked ${serverJar} into ${targetDir}")
+        logger.lifecycle("Unpacked ${serverJar} into ${unpackedDir}")
     }
 }
 

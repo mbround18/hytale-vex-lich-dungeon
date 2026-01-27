@@ -1,4 +1,4 @@
-package com.example.hytale.vexlichdungeon.prefab;
+package MBRound18.hytale.vexlichdungeon.prefab;
 
 import javax.annotation.Nonnull;
 
@@ -18,7 +18,8 @@ import javax.annotation.Nonnull;
  */
 public final class PrefabPathHelper {
 
-  // No mod root prefix needed - paths are relative to Server/Prefabs/ in asset pack
+  // No mod root prefix needed - paths are relative to Server/Prefabs/ in asset
+  // pack
   private static final String MOD_ROOT = "";
   private static final String PREFAB_EXTENSION = ".prefab.json";
 

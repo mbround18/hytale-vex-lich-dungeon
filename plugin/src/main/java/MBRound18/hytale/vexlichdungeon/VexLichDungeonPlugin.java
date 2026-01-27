@@ -1,14 +1,15 @@
-package com.example.hytale.vexlichdungeon;
+package MBRound18.hytale.vexlichdungeon;
 
-import com.example.hytale.vexlichdungeon.commands.VexChallengeCommand;
-import com.example.hytale.vexlichdungeon.commands.VexCommand;
-import com.example.hytale.vexlichdungeon.data.DataStore;
-import com.example.hytale.vexlichdungeon.dungeon.DungeonGenerator;
-import com.example.hytale.vexlichdungeon.dungeon.GenerationConfig;
-import com.example.hytale.vexlichdungeon.events.DungeonGenerationEventHandler;
-import com.example.hytale.vexlichdungeon.events.UniversalEventLogger;
-import com.example.hytale.vexlichdungeon.logging.PluginLog;
-import com.example.hytale.vexlichdungeon.prefab.PrefabSpawner;
+import MBRound18.hytale.vexlichdungeon.commands.VexChallengeCommand;
+import MBRound18.hytale.vexlichdungeon.commands.VexCommand;
+import MBRound18.hytale.vexlichdungeon.data.DataStore;
+import MBRound18.hytale.vexlichdungeon.dungeon.DungeonGenerator;
+import MBRound18.hytale.vexlichdungeon.dungeon.GenerationConfig;
+import MBRound18.hytale.vexlichdungeon.events.DungeonGenerationEventHandler;
+import MBRound18.hytale.vexlichdungeon.events.UniversalEventLogger;
+import MBRound18.hytale.vexlichdungeon.logging.PluginLog;
+import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
+import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.command.system.CommandManager;
@@ -44,16 +45,28 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     // Initialize data store (creates directories and loads config)
     // Plugin jar is at: Server/mods/VexLichDungeon-0.1.0.jar
     // Data directory: Server/mods/VexLichDungeon/
-    Path modsDirectory = getFile().getParent();
+    Path pluginJarPath = getFile().toAbsolutePath();
+    Path modsDirectory = pluginJarPath.getParent();
+
+    if (modsDirectory == null) {
+      log.error("Could not determine mods directory from plugin jar path: %s", pluginJarPath);
+      throw new RuntimeException("Plugin jar has no parent directory - cannot initialize");
+    }
+
     Path dataDirectory = modsDirectory.resolve("VexLichDungeon");
     dataStore = new DataStore(log, dataDirectory);
     dataStore.initialize();
     log.lifecycle().atInfo().log("Initialized data store at: %s", dataDirectory);
 
+    // Initialize prefab discovery - loads from ZIP asset bundle
+    // The ZIP should be in the same directory as the JAR with the same base name
+    // E.g., VexLichDungeon-0.1.0.jar -> VexLichDungeon.zip
+    PrefabDiscovery prefabDiscovery = new PrefabDiscovery(log, pluginJarPath);
+
     // Initialize dungeon generation components using config
     GenerationConfig config = new GenerationConfig();
-    DungeonGenerator dungeonGenerator = new DungeonGenerator(config, log);
-    PrefabSpawner prefabSpawner = new PrefabSpawner(log);
+    DungeonGenerator dungeonGenerator = new DungeonGenerator(config, log, prefabDiscovery);
+    PrefabSpawner prefabSpawner = new PrefabSpawner(log, prefabDiscovery.getZipFile());
 
     // Create and register event handler with data store for concurrency control
     dungeonEventHandler = new DungeonGenerationEventHandler(log, dungeonGenerator, prefabSpawner, dataStore);

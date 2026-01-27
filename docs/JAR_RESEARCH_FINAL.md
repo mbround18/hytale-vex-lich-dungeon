@@ -7,17 +7,19 @@
 The **`BlockSelection`** class from `com.hypixel.hytale.server.core.prefab.selection.standard` has everything we need:
 
 #### Place Methods
+
 ```java
 BlockSelection place(CommandSender sender, World world)
 BlockSelection place(CommandSender sender, World world, BlockMask mask)
 BlockSelection place(CommandSender sender, World world, Vector3i position, BlockMask mask)
-BlockSelection place(CommandSender sender, World world, Vector3i position, 
+BlockSelection place(CommandSender sender, World world, Vector3i position,
                      BlockMask mask, Consumer<Ref<EntityStore>> entityConsumer)
 
 void placeNoReturn(World world, Vector3i position, ComponentAccessor<EntityStore> accessor)
 ```
 
 #### Rotation Methods
+
 ```java
 BlockSelection rotate(Axis axis, int degrees)
 BlockSelection rotate(Axis axis, int degrees, Vector3f origin)
@@ -47,7 +49,7 @@ EventBus eventBus = HytaleServer.get().getEventBus();
 eventBus.register(AddPlayerToWorldEvent.class, event -> {
     World world = event.getWorld();
     String worldName = world.getName();
-    
+
     if (worldName.contains("VexLichDungeon")) {
         // Generate dungeon for this instance
         startDungeonGeneration(world);
@@ -60,12 +62,14 @@ eventBus.register(AddPlayerToWorldEvent.class, event -> {
 ## ✅ Complete Spawning Solution
 
 ### Step 1: Load Prefab
+
 ```java
 BlockSelection prefab = PrefabStore.get()
     .getAssetPrefabFromAnyPack("Base/Vex_Courtyard_Base.prefab.json");
 ```
 
 ### Step 2: Clone and Rotate
+
 ```java
 BlockSelection clone = prefab.cloneSelection();
 if (rotationDegrees != 0) {
@@ -74,6 +78,7 @@ if (rotationDegrees != 0) {
 ```
 
 ### Step 3: Spawn into World
+
 ```java
 clone.place(
     commandSender,      // Can be ConsoleSender
@@ -90,14 +95,14 @@ clone.place(
 
 ## Key Classes Found
 
-| Class | Location | Purpose |
-|-------|----------|---------|
-| BlockSelection | com.hypixel.hytale.server.core.prefab.selection.standard | Load, rotate, place prefabs |
-| World | com.hypixel.hytale.server.core.universe.world | Target world for placement |
-| AddPlayerToWorldEvent | com.hypixel.hytale.server.core.event.events.player | Get World when player joins |
-| PrefabStore | com.hypixel.hytale.server.core.prefab | Load prefabs from assets |
-| Axis | com.hypixel.hytale.math | Y axis for cardinal rotations |
-| Vector3i | com.hypixel.hytale.math.vector | Block coordinates |
+| Class                 | Location                                                 | Purpose                       |
+| --------------------- | -------------------------------------------------------- | ----------------------------- |
+| BlockSelection        | com.hypixel.hytale.server.core.prefab.selection.standard | Load, rotate, place prefabs   |
+| World                 | com.hypixel.hytale.server.core.universe.world            | Target world for placement    |
+| AddPlayerToWorldEvent | com.hypixel.hytale.server.core.event.events.player       | Get World when player joins   |
+| PrefabStore           | com.hypixel.hytale.server.core.prefab                    | Load prefabs from assets      |
+| Axis                  | com.hypixel.hytale.math                                  | Y axis for cardinal rotations |
+| Vector3i              | com.hypixel.hytale.math.vector                           | Block coordinates             |
 
 ---
 
@@ -130,7 +135,7 @@ WorldConfig getWorldConfig()
 For dungeon generation with cardinal directions:
 
 - **Axis.Y** with 0° = NORTH
-- **Axis.Y** with 90° = EAST  
+- **Axis.Y** with 90° = EAST
 - **Axis.Y** with 180° = SOUTH
 - **Axis.Y** with 270° = WEST
 

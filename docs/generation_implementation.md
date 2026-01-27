@@ -1,11 +1,13 @@
 # Vex Lich Dungeon - Procedural Generation Implementation
 
 ## Overview
+
 Procedural dungeon generation system that builds a unique dungeon layout around the player when they first join a Vex Lich Dungeon instance.
 
 ## Dungeon Structure Specifications
 
 ### Tile Grid System
+
 - **Tile Size**: 19x19 blocks (any height, no depth variation)
 - **Doorway Marker**: Bedrock block signifies doorway locations
 - **Grid Layout**: Each tile can connect to 4 adjacent tiles (North, South, East, West)
@@ -13,11 +15,13 @@ Procedural dungeon generation system that builds a unique dungeon layout around 
 ### Prefab Categories
 
 #### Base (Starting Point)
+
 - **Path**: `Mods/VexLichDungeon/Base/`
 - **Start Prefab**: `Vex_Courtyard_Base.prefab.json`
 - **Behavior**: Always pre-placed at instance spawn
 
 #### Gates (Connectors)
+
 - **Path**: `Mods/VexLichDungeon/Gates/`
 - **Width**: 1 block wide
 - **Orientation**: Must rotate based on cardinal direction (N/S/E/W)
@@ -34,6 +38,7 @@ Procedural dungeon generation system that builds a unique dungeon layout around 
   - `Vex_Seperator_Gate_Water.prefab.json`
 
 #### Rooms (Combat/Puzzle Spaces)
+
 - **Path**: `Mods/VexLichDungeon/Rooms/`
 - **Rotation**: Random orientation per placement
 - **Must Align**: Doorways must align with gates
@@ -48,6 +53,7 @@ Procedural dungeon generation system that builds a unique dungeon layout around 
   - `Vex_Room_S_Mages.prefab.json`
 
 #### Hallways (Connecting Passages)
+
 - **Path**: `Mods/VexLichDungeon/Hallways/`
 - **Purpose**: Connect rooms with variety
 - **Count**: 22 variations (A-V)
@@ -56,8 +62,10 @@ Procedural dungeon generation system that builds a unique dungeon layout around 
 ## Generation Algorithm
 
 ### Phase 1: Initial Spawn Protection
+
 **Trigger**: First player joins instance
 **Actions**:
+
 1. Check if dungeon already generated (persistent flag)
 2. If not generated:
    - Freeze player movement/interaction
@@ -65,11 +73,14 @@ Procedural dungeon generation system that builds a unique dungeon layout around 
    - Display loading message to player
 
 ### Phase 2: Procedural Generation
+
 **Parameters**:
+
 - `generation_radius`: Number of tiles to generate in each direction (default: 5)
 - `seed`: Instance-specific seed for reproducibility
 
 **Algorithm**:
+
 ```
 1. Start at base tile (0, 0)
 2. For each cardinal direction (N, S, E, W):
@@ -85,7 +96,9 @@ Procedural dungeon generation system that builds a unique dungeon layout around 
 ```
 
 ### Phase 3: Finalization
+
 **Actions**:
+
 1. Replace blocked gates at base with random non-blocked gate types
 2. Release player controls
 3. Teleport player to precise spawn point if needed
@@ -96,35 +109,45 @@ Procedural dungeon generation system that builds a unique dungeon layout around 
 ### Classes to Create
 
 #### `PrefabPathHelper.java`
+
 **Purpose**: Convert asset paths to mod-relative paths
+
 ```java
 // Mods/VexLichDungeon/Base/Vex_Courtyard_Base.prefab.json
 String modPath = PrefabPathHelper.toModPath("Base/Vex_Courtyard_Base.prefab.json");
 ```
 
 #### `DungeonGenerator.java`
+
 **Purpose**: Core generation logic
+
 - Tile grid management
 - Prefab selection and placement
 - Rotation handling
 - Gate management
 
 #### `DungeonTile.java`
+
 **Purpose**: Represents single tile in grid
+
 - Position (x, z)
 - Prefab reference
 - Rotation
 - Gate states (N/S/E/W)
 
 #### `PrefabSpawner.java` (or service)
+
 **Purpose**: Interface with Hytale's prefab system
+
 - Load prefab from PrefabStore
 - Apply rotation (PrefabRotation)
 - Write to world at coordinates
 - Handle entity spawning within prefabs
 
 #### `GenerationConfig.java`
+
 **Purpose**: Configuration management
+
 - Generation radius
 - Prefab weights (room vs hallway)
 - Gate selection probabilities
@@ -133,6 +156,7 @@ String modPath = PrefabPathHelper.toModPath("Base/Vex_Courtyard_Base.prefab.json
 ### Event Handlers
 
 #### Player Join Event
+
 ```java
 @EventHandler
 public void onPlayerJoin(PlayerJoinInstanceEvent event) {
@@ -147,19 +171,23 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 ### Commands
 
 #### `/vex dungeon generate [radius]`
+
 **Permission**: `vexlich.admin.generate`
 **Purpose**: Manually trigger/reset generation
 **Args**: Optional radius override
 
 #### `/vex dungeon config`
+
 **Permission**: `vexlich.admin.config`
 **Purpose**: View/modify generation parameters
 
 ## Data Storage
 
 ### Instance Metadata
+
 **Location**: Instance-specific storage
 **Data**:
+
 ```json
 {
   "generated": true,
@@ -172,7 +200,9 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 ```
 
 ### Tile Registry
+
 **Purpose**: Track all generated tiles for future expansion
+
 ```json
 {
   "tiles": [
@@ -195,17 +225,20 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 ## Performance Considerations
 
 ### Async Generation
+
 - Generate in background thread
 - Chunk-load areas before placement
 - Batch prefab placements
 - Progress updates every N tiles
 
 ### Memory Management
+
 - Don't load all prefabs at once
 - Cache frequently used prefabs
 - Unload prefab data after placement
 
 ### Player Experience
+
 - Visual feedback during generation
 - Estimated time remaining
 - Prevent player damage during freeze
@@ -232,27 +265,32 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 ## Future Enhancements
 
 ### Dynamic Expansion
+
 - Generate additional radius when player approaches edge
 - Procedural "endless dungeon" mode
 
 ### Difficulty Scaling
+
 - Progressive room difficulty based on distance from spawn
 - Boss rooms at specific distances
 - Loot quality increases with distance
 
 ### Special Rooms
+
 - Treasure rooms (rare spawn chance)
 - Puzzle rooms (require mechanics to proceed)
 - Safe rooms (no enemies, healing)
 - Shop rooms (NPC vendors)
 
 ### Biome Variants
+
 - Ice dungeon theme
 - Fire dungeon theme
 - Poison/decay theme
 - Mix themes within single dungeon
 
 ### Multiplayer Features
+
 - Race mode (separate wings per player)
 - Cooperative mode (shared progression)
 - PvP arenas within dungeon
@@ -260,6 +298,7 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 ## Status Tracking
 
 ### Phase 1: Infrastructure (✅ Complete)
+
 - [x] PrefabPathHelper utility class
 - [x] CardinalDirection enum with rotation logic
 - [x] DungeonTile data model
@@ -269,6 +308,7 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 - [x] Rotation helper methods
 
 ### Phase 2: Core Generation (✅ Complete - Layout Only)
+
 - [x] DungeonGenerator class
 - [x] Tile placement algorithm
 - [x] Gate management system
@@ -276,17 +316,20 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 - [ ] PrefabSpawner implementation (needs Hytale API research)
 
 ### Phase 3: Integration (Not Started)
+
 - [ ] Player join event handler
 - [ ] Generation state persistence
 - [ ] Player freeze/unfreeze
 - [ ] Error handling and recovery
 
 ### Phase 4: Polish (Not Started)
+
 - [ ] Admin commands (`/vex dungeon generate`, `/vex dungeon config`)
 - [ ] Progress feedback
 - [ ] Performance optimization
 
 ### Phase 5: Testing (Not Started)
+
 - [ ] Unit tests for tile logic
 - [ ] Integration tests for generation
 - [ ] Load testing with multiple players
@@ -295,6 +338,7 @@ public void onPlayerJoin(PlayerJoinInstanceEvent event) {
 ## Current Blockers
 
 ### Hytale API Research Needed
+
 The following Hytale API details need investigation:
 
 1. **World Access**: How to get World instance from Instance
@@ -305,6 +349,7 @@ The following Hytale API details need investigation:
 6. **Chunk Loading**: Ensuring chunks are loaded before prefab placement
 
 **Action Items**:
+
 - [ ] Search decompiled code for world manipulation examples
 - [ ] Find BlockSelection write/paste methods
 - [ ] Research PrefabRotation application
@@ -314,4 +359,3 @@ The following Hytale API details need investigation:
 
 **Last Updated**: January 27, 2026
 **Status**: Phase 1-2 Complete - Awaiting API Research for World Integration
-
