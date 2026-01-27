@@ -4,7 +4,8 @@ services:
     user: "1000:1000"
     stdin_open: true
     tty: true
-    network_mode: host
+    ports:
+      - "5520:5520/udp"
     environment:
       # Optional modpack variables:
       # - MODPACK_URL=https://example.com/modpack.zip

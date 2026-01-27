@@ -1,2 +1,2 @@
-rootProject.name = "hytale-modding-template"
+rootProject.name = "vex-lich-dungeon"
 include("plugin")

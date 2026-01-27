@@ -1,6 +1,12 @@
-# Hytale Modding Template
+# VexLichDungeon
 
-This template splits mod work into two parts:
+🧙‍♂️ **Vex the Lich invites you to try the trials of their dungeon!** 🧙‍♂️
+
+*To the victor goes the spoils... but beware, dear adventurer, for only those who complete the dungeon's treacherous challenges will become the new Lich. Do you dare accept Vex's invitation?*
+
+---
+
+This mod splits work into two parts:
 
 - **plugin/**: Java plugin project (commands, gameplay tweaks, etc.).
 - **assets/**: Packaged data such as `manifest.json`, `Server/`, and `Common/` content that ships with the plugin.
@@ -45,11 +51,11 @@ What `setup` does:
 - In-game, use Direct Connect to `127.0.0.1` to hit the locally running server.
 - Stop with `Ctrl+C` once you're done testing; rerun `./gradlew start` after code or asset changes.
 
-## VexLichDungeon example
+## Plugin structure
 
-- Starter plugin lives at `plugin/src/main/java/com/example/hytale/vexlichdungeon/VexLichDungeonPlugin.java` and logs a hello message on startup and shutdown.
+- Main plugin lives at `plugin/src/main/java/com/example/hytale/vexlichdungeon/VexLichDungeonPlugin.java` and logs messages on startup and shutdown.
 - Plugin metadata is in `plugin/src/main/resources/plugin.properties` and jar manifest entries are filled via Gradle.
-- Use this as a minimal, well-documented base to wire in your own commands, listeners, and content.
+- Build upon this foundation to implement Vex's dungeon trials, rewards, and the path to lichdom.
 
 ## Common tasks
 

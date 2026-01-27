@@ -1,0 +1,549 @@
+{
+  "version": 8,
+  "blockIdVersion": 11,
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "blocks": [
+    {
+      "x": -1,
+      "y": 0,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 5
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 5
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 0,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 1,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 2,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 5
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 5
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 5
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 5
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 1,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": -1,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": -1,
+      "name": "Rock_Slate_Cobble"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 0,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 4
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 0,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 4
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 4
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 1,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 4
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 4
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam",
+      "rotation": 4
+    }
+  ],
+  "fluids": [
+    {
+      "x": -1,
+      "y": 0,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    }
+  ],
+  "entities": [
+    {
+      "Components": {
+        "EffectController": {},
+        "DisplayName": {
+          "DisplayName": {
+            "MessageId": "server.npcRoles.Skeleton_Burnt_Gunner.name",
+            "Bold": null,
+            "Italic": null,
+            "Monospace": null,
+            "Underline": null
+          }
+        },
+        "UIComponentList": {},
+        "Transform": {
+          "Position": {
+            "X": 0.8308372497558594,
+            "Y": 1.4423828125,
+            "Z": 1.0760045051574707
+          },
+          "Rotation": {
+            "Pitch": 0.0,
+            "Yaw": -0.7280377745628357,
+            "Roll": 0.0
+          }
+        },
+        "Velocity": {
+          "Velocity": {
+            "X": 0.0,
+            "Y": -11.968294607461019,
+            "Z": 0.0
+          }
+        },
+        "PrefabCopyable": {},
+        "Interactions": {
+          "Interactions": {
+            "Use": "*UseNPC"
+          }
+        },
+        "Frozen": {},
+        "Model": {
+          "Model": {
+            "Id": "Skeleton_Burnt_Gunner",
+            "Scale": 1.0,
+            "Static": false
+          }
+        },
+        "UUID": {
+          "UUID": {
+            "$binary": "CcqA7BTNPSqtmMUGIHCrDg==",
+            "$type": "04"
+          }
+        },
+        "EntityStats": {
+          "Version": 5,
+          "Stats": {
+            "Oxygen": {
+              "Id": "Oxygen",
+              "Value": 100.0
+            },
+            "Mana": {
+              "Id": "Mana",
+              "Value": 0.0
+            },
+            "Health": {
+              "Id": "Health",
+              "Value": 80.0
+            },
+            "GlidingActive": {
+              "Id": "GlidingActive",
+              "Value": 0.0
+            },
+            "Immunity": {
+              "Id": "Immunity",
+              "Value": 0.0
+            },
+            "SignatureCharges": {
+              "Id": "SignatureCharges",
+              "Value": 0.0
+            },
+            "Stamina": {
+              "Id": "Stamina",
+              "Value": 10.0
+            },
+            "Ammo": {
+              "Id": "Ammo",
+              "Value": 0.0
+            },
+            "Unknown": {
+              "Id": "Unknown",
+              "Value": 0.0
+            },
+            "SignatureEnergy": {
+              "Id": "SignatureEnergy",
+              "Value": 0.0
+            },
+            "DeployablePreview": {
+              "Id": "DeployablePreview",
+              "Value": 0.0
+            },
+            "StaminaRegenDelay": {
+              "Id": "StaminaRegenDelay",
+              "Value": 0.0
+            },
+            "MagicCharges": {
+              "Id": "MagicCharges",
+              "Value": 0.0
+            }
+          }
+        },
+        "NPC": {
+          "Version": 5,
+          "UUID": {
+            "$binary": "CcqA7BTNPSqtmMUGIHCrDg==",
+            "$type": "04"
+          },
+          "Inventory": {
+            "Version": 4,
+            "Storage": {
+              "Id": "Empty"
+            },
+            "Armor": {
+              "Id": "Simple",
+              "Capacity": 4,
+              "Items": {}
+            },
+            "HotBar": {
+              "Id": "Simple",
+              "Capacity": 3,
+              "Items": {
+                "0": {
+                  "Id": "Weapon_Gun_Blunderbuss_Rusty",
+                  "Quantity": 1,
+                  "Durability": 0.0,
+                  "MaxDurability": 0.0,
+                  "OverrideDroppedItemAnimation": false
+                }
+              }
+            },
+            "Utility": {
+              "Id": "Simple",
+              "Capacity": 2,
+              "Items": {
+                "0": {
+                  "Id": "Furniture_Crude_Torch",
+                  "Quantity": 1,
+                  "Durability": 0.0,
+                  "MaxDurability": 0.0,
+                  "OverrideDroppedItemAnimation": false
+                }
+              }
+            },
+            "Backpack": {
+              "Id": "Empty"
+            },
+            "ActiveHotbarSlot": 0,
+            "Tool": {
+              "Id": "Empty"
+            },
+            "ActiveToolsSlot": -1,
+            "ActiveUtilitySlot": -1,
+            "SortType": "Name"
+          },
+          "HvrPhs": 0.0,
+          "HvrHght": 0.0,
+          "MdlScl": 1.0,
+          "SpawnInstant": "0001-01-07T12:00:01.500000357Z",
+          "WorldgenId": 0,
+          "PathManager": {},
+          "LeashPos": {
+            "X": -26.590367755358557,
+            "Y": 82.0,
+            "Z": 7.43165520007108
+          },
+          "LeashHdg": -1.461118221282959,
+          "LeashPtch": 0.0,
+          "RoleName": "Skeleton_Burnt_Gunner"
+        },
+        "HeadRotation": {
+          "Rotation": {
+            "Pitch": 0.0,
+            "Yaw": -0.7280378341674805,
+            "Roll": 0.0
+          }
+        }
+      }
+    }
+  ]
+}
