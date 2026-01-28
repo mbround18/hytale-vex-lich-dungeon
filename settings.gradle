@@ -1,2 +1,5 @@
 rootProject.name = "vex-lich-dungeon"
-include("plugin")
+include("plugins:roguelike")
+include("plugins:engine")
+
+

@@ -1,0 +1,36 @@
+$V = "../Vex/VexCommon.ui";
+
+$V.@PageOverlay {
+    LayoutMode: Middle;
+
+    $V.@DecoratedContainer {
+        Anchor: (Width: 680);
+
+        #VexTitle {
+            $V.@Title {
+                @Text = %server.customUI.vexScoreboard.title;
+            }
+        }
+
+        #VexContent {
+            LayoutMode: Top;
+            Padding: (Full: 18);
+
+            Label #ScoreHeader {
+                Text: %server.customUI.vexScoreboard.header;
+                Anchor: (Bottom: 8);
+                Style: (...$V.@DefaultLabelStyle, FontSize: 18, RenderBold: true, TextColor: #efe3ff);
+            }
+
+            Group #ScoreRule {
+                Anchor: (Height: 2, Bottom: 14);
+                Background: #8a4bff(0.45);
+            }
+
+            Label #ScoreBody {
+                Text: "";
+                Style: (...$V.@DefaultLabelStyle, Wrap: true, TextColor: #cdb6ff);
+            }
+        }
+    }
+}

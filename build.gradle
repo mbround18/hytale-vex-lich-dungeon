@@ -304,7 +304,7 @@ tasks.register("processAssetsManifest") {
         outputManifest.parentFile.mkdirs()
         
         def manifestContent = inputManifest.text
-        def pluginVersion = project(":plugin").version
+        def pluginVersion = project(":plugins:roguelike").version
         
         // Get authors from git (same logic as plugin)
         def authorsJson = '[\n  {\n    "Name": "Example Dev",\n    "Email": "dev@example.com",\n    "Url": ""\n  }\n]'
@@ -332,6 +332,7 @@ tasks.register("processAssetsManifest") {
                 }.join(',\n')
                 authorsJson = "[\n${entries}\n]"
             }
+
         } catch (Exception e) {
             logger.warn("Failed to extract git authors for assets manifest: ${e.message}")
         }
@@ -354,7 +355,8 @@ tasks.register("assetsZip", Zip) {
     group = "build"
     description = "Zip assets/ into dist/assets.zip with flattened root"
     dependsOn "ensureDirectories", "processAssetsManifest"
-    archiveBaseName.set(project(":plugin").tasks.named("jar").get().archiveBaseName.get())
+    archiveBaseName.set(project(":plugins:roguelike").tasks.named("jar").get().archiveBaseName.get())
+    archiveVersion.set(project(":plugins:roguelike").version)
     archiveExtension.set("zip")
     destinationDirectory.set(distDir)
     zip64 = true
@@ -369,12 +371,26 @@ tasks.register("assetsZip", Zip) {
     from(userAssetsDir) {
         into("")
         exclude "manifest.json"
+        exclude "Common/UI/Custom/Common.ui"
+        exclude "Common/UI/Custom/Common/**"
+        exclude "Common/UI/Custom/Pages/**"
+        exclude "**/*~"
         eachFile { FileCopyDetails details ->
             // Exclude .gitkeep files (and their parent directories if empty)
             if (details.name == ".gitkeep") {
                 details.exclude()
             }
         }
+    }
+
+    // Duplicate Vex Custom UI under Custom/ root for client lookup fallback
+    from(userAssetsDir) {
+        include "Common/UI/Custom/Vex/**"
+        include "Common/UI/Custom/Hud/**"
+        eachFile { FileCopyDetails details ->
+            details.path = details.path.replaceFirst('^Common/UI/Custom/', 'Custom/')
+        }
+        includeEmptyDirs = false
     }
     doFirst {
         distDir.mkdirs()
@@ -384,8 +400,19 @@ tasks.register("assetsZip", Zip) {
 tasks.register("copyPluginJarToDist", Copy) {
     group = "build"
     description = "Copy plugin jar into dist"
-    dependsOn ":plugin:jar"
-    from { project(":plugin").tasks.named("jar").flatMap { it.archiveFile } }
+    dependsOn ":plugins:roguelike:jar"
+    from { project(":plugins:roguelike").tasks.named("jar").flatMap { it.archiveFile } }
+    into(distDir)
+    doFirst {
+        distDir.mkdirs()
+    }
+}
+
+tasks.register("copyEngineJarToDist", Copy) {
+    group = "build"
+    description = "Copy engine jar into dist"
+    dependsOn ":plugins:engine:jar"
+    from { project(":plugins:engine").tasks.named("jar").flatMap { it.archiveFile } }
     into(distDir)
     doFirst {
         distDir.mkdirs()
@@ -400,10 +427,11 @@ tasks.register("copyPluginJarToDist", Copy) {
 tasks.register("installToServerMods") {
     group = "distribution"
     description = "Copy jar and assets.zip into data/server/Server/mods"
-    dependsOn "ensureModsDir", "assetsZip", "copyPluginJarToDist"
+    dependsOn "ensureModsDir", "assetsZip", "copyPluginJarToDist", "copyEngineJarToDist"
     doLast {
         copy {
-            from(project(":plugin").tasks.named("jar").flatMap { it.archiveFile })
+            from(project(":plugins:roguelike").tasks.named("jar").flatMap { it.archiveFile })
+            from(project(":plugins:engine").tasks.named("jar").flatMap { it.archiveFile })
             from(tasks.named("assetsZip").flatMap { it.archiveFile })
             into(modsDir)
             duplicatesStrategy = DuplicatesStrategy.INCLUDE

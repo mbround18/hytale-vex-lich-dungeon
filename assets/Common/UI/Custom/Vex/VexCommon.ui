@@ -1,0 +1,55 @@
+@AccentColor = #8a4bff;
+@TitleColor = #e7d7ff;
+@BodyColor = #cdb6ff;
+
+@DefaultLabelStyle = (FontSize: 16, TextColor: @BodyColor);
+
+@TitleStyle = LabelStyle(
+  FontSize: 20,
+  VerticalAlignment: Center,
+  RenderUppercase: true,
+  TextColor: @TitleColor,
+  FontName: "Secondary",
+  RenderBold: true,
+  LetterSpacing: 1
+);
+
+@Title = Label {
+  @Alignment = Center;
+  @Text = "";
+
+  Style: (
+    ...@TitleStyle,
+    HorizontalAlignment: @Alignment
+  );
+  Padding: (Horizontal: 16);
+  Text: @Text;
+};
+
+@TitleHeight = 44;
+
+@DecoratedContainer = Group {
+  @ContentPadding = Padding(Full: 18);
+
+  Group #VexTitle {
+    Anchor: (Height: @TitleHeight, Top: 0);
+    Background: (TexturePath: "Vex/ContainerHeader.png", HorizontalBorder: 50, VerticalBorder: 0, Color: #3b1a58);
+    Padding: (Top: 7);
+  }
+
+  Group #VexContent {
+    LayoutMode: Top;
+    Anchor: (Top: @TitleHeight);
+    Padding: @ContentPadding;
+    Background: (TexturePath: "Vex/ContainerPatch.png", Border: 23, Color: #160c24(0.98));
+  }
+
+  Group #VexDecorationBottom {
+    Anchor: (Width: 236, Height: 11, Bottom: -6);
+    Background: (TexturePath: "Vex/ContainerDecorationBottom.png", Color: #5f2b84);
+  }
+};
+
+@PageOverlay = Group {
+  Background: #09050f(0.75);
+};

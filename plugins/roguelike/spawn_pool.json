@@ -1,0 +1,12 @@
+{
+  "0..500": [
+    {
+      "enemy": "Skeleton",
+      "points": 1
+    },
+    {
+      "enemy": "Skeleton_Archer",
+      "points": 5
+    }
+  ]
+}

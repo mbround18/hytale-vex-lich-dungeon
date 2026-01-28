@@ -1,0 +1,15 @@
+{
+  "Group": "MBRound18",
+  "Name": "PortalEngine",
+  "Version": "${version}",
+  "Authors": [
+    {
+      "Name": "MBRound18",
+      "Email": "",
+      "Url": ""
+    }
+  ],
+  "Website": "",
+  "Main": "MBRound18.PortalEngine.PortalEnginePlugin",
+  "ServerVersion": "*"
+}

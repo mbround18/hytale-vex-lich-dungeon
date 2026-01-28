@@ -1,0 +1,36 @@
+{
+  "ui": [
+    {
+      "id": "summary",
+      "path": "UI/Custom/Vex/Pages/VexDungeonSummary.ui",
+      "vars": ["SummaryStats", "SummaryBody"]
+    },
+    {
+      "id": "scoreboard",
+      "path": "Custom/Vex/Pages/VexScoreboard.ui",
+      "vars": ["ScoreBody"]
+    }
+  ],
+  "hud": [
+    {
+      "id": "hud",
+      "path": "Custom/Vex/Hud/VexScoreHud.ui",
+      "vars": ["VexHudInstanceScore", "VexHudPlayerScore", "VexHudDelta"]
+    },
+    {
+      "id": "welcome",
+      "path": "Custom/Vex/Hud/VexWelcomeHud.ui",
+      "vars": []
+    },
+    {
+      "id": "summaryHud",
+      "path": "Custom/Vex/Hud/VexSummaryHud.ui",
+      "vars": ["VexSummaryStats", "VexSummaryBody"]
+    },
+    {
+      "id": "leaderboardHud",
+      "path": "Custom/Vex/Hud/VexLeaderboardHud.ui",
+      "vars": ["VexLeaderboardBody"]
+    }
+  ]
+}

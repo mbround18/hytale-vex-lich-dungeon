@@ -1,0 +1,53 @@
+$V = "../Vex/VexCommon.ui";
+
+$V.@PageOverlay {
+    LayoutMode: Middle;
+
+    $V.@DecoratedContainer {
+        Anchor: (Width: 680);
+
+        #VexTitle {
+            $V.@Title {
+                @Text = %server.customUI.vexDungeonSummary.title;
+            }
+        }
+
+        #VexContent {
+            LayoutMode: Top;
+            Padding: (Full: 18);
+
+            Label #SummaryHeader {
+                Text: %server.customUI.vexDungeonSummary.header;
+                Anchor: (Bottom: 8);
+                Style: (...$V.@DefaultLabelStyle, FontSize: 18, RenderBold: true, TextColor: #efe3ff);
+            }
+
+            Group #HeaderRule {
+                Anchor: (Height: 2, Bottom: 14);
+                Background: #8a4bff(0.45);
+            }
+
+            Label #SummaryStats {
+                Text: "";
+                Anchor: (Bottom: 14);
+                Style: (...$V.@DefaultLabelStyle, Wrap: true, TextColor: #d4c2ff);
+            }
+
+            Label #SummaryPlayers {
+                Text: %server.customUI.vexDungeonSummary.players;
+                Anchor: (Bottom: 8);
+                Style: (...$V.@DefaultLabelStyle, FontSize: 17, RenderBold: true, TextColor: #efe3ff);
+            }
+
+            Group #PlayersRule {
+                Anchor: (Height: 2, Bottom: 10);
+                Background: #8a4bff(0.35);
+            }
+
+            Label #SummaryBody {
+                Text: "";
+                Style: (...$V.@DefaultLabelStyle, Wrap: true, TextColor: #cdb6ff);
+            }
+        }
+    }
+}
