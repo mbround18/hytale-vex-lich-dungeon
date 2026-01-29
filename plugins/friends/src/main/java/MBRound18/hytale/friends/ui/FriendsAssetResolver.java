@@ -27,6 +27,9 @@ public final class FriendsAssetResolver {
     if (doc == null) {
       return null;
     }
+    if (doc.contains(".ui") || doc.contains("$") || doc.contains("@Import")) {
+      return null;
+    }
     return doc;
   }
 
@@ -54,7 +57,7 @@ public final class FriendsAssetResolver {
   }
 
   @Nullable
-  private static String readDocument(@Nullable String uiPath) {
+  public static String readDocument(@Nullable String uiPath) {
     String normalized = normalizePath(uiPath);
     if (normalized == null || assetsZipPath == null) {
       return null;
@@ -80,24 +83,25 @@ public final class FriendsAssetResolver {
     List<String> candidates = new ArrayList<>();
     candidates.add(uiPath);
     String trimmed = uiPath;
-    if (uiPath.startsWith("/")) {
-      trimmed = uiPath.substring(1);
-      candidates.add(trimmed);
-    }
-    if (trimmed.startsWith("Common/")) {
-      candidates.add(trimmed.substring("Common/".length()));
-    }
-    if (trimmed.startsWith("UI/")) {
-      candidates.add("Common/" + trimmed);
-    }
-    if (trimmed.startsWith("Custom/")) {
-      candidates.add("UI/" + trimmed);
-      candidates.add("Common/UI/" + trimmed);
-      candidates.add("Common/" + trimmed);
-    }
-    if (trimmed.startsWith("Common/UI/")) {
-      candidates.add(trimmed.substring("Common/".length()));
-    }
+    // if (uiPath.startsWith("/")) {
+    // trimmed = uiPath.substring(1);
+    // candidates.add(trimmed);
+    // }
+    // if (trimmed.startsWith("Common/")) {
+    // candidates.add(trimmed.substring("Common/".length()));
+    // }
+    // if (trimmed.startsWith("UI/")) {
+    // candidates.add(trimmed.substring("UI/".length()));
+    // candidates.add("Common/" + trimmed);
+    // }
+    // if (trimmed.startsWith("Custom/")) {
+    // candidates.add("UI/" + trimmed);
+    // candidates.add("Common/UI/" + trimmed);
+    // candidates.add("Common/" + trimmed);
+    // }
+    // if (trimmed.startsWith("Common/UI/")) {
+    // candidates.add(trimmed.substring("Common/".length()));
+    // }
     return candidates;
   }
 

@@ -45,6 +45,14 @@ $C.@Title {
 }
 ```
 
+## Runtime Commands
+- **Set label text via property:** `#FriendsListBody.Text`.
+- **Run UI commands on the world thread** (not scheduler/ForkJoin).
+- **Normalize client paths** by stripping everything through `Custom/`:
+  - `Common/UI/Custom/Friends/Pages/FriendsList.ui` -> `Friends/Pages/FriendsList.ui`
+  - `UI/Custom/Friends/Pages/FriendsList.ui` -> `Friends/Pages/FriendsList.ui`
+  - `Custom/Friends/Pages/FriendsList.ui` -> `Friends/Pages/FriendsList.ui`
+
 ## Do / Avoid
 - **Do** merge styles inside tuples: `Style: (...@DefaultLabelStyle, FontSize: 18);`
 - **Avoid** standalone spread statements: `...@Template;`

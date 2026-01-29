@@ -2,96 +2,115 @@
     {
         "plugin": "Friends",
         "permission": "party.use",
-        "description": "Permission required"
+        "description": "Use /party to view party status.",
+        "command": "/party"
     },
     {
         "plugin": "Friends",
         "permission": "party.create",
-        "description": "Permission required"
+        "description": "Create a new party via /party new.",
+        "command": "/party new"
     },
     {
         "plugin": "Friends",
         "permission": "party.invite",
-        "description": "Permission required"
+        "description": "Invite a player to your party via /party invite <name>.",
+        "command": "/party invite <name>"
     },
     {
         "plugin": "Friends",
         "permission": "party.join",
-        "description": "Permission required"
+        "description": "Accept a party invite via /party join.",
+        "command": "/party join"
     },
     {
         "plugin": "Friends",
         "permission": "party.decline",
-        "description": "Permission required"
+        "description": "Decline a party invite via /party decline.",
+        "command": "/party decline"
     },
     {
         "plugin": "Friends",
         "permission": "party.leave",
-        "description": "Permission required"
+        "description": "Leave your current party via /party leave.",
+        "command": "/party leave"
     },
     {
         "plugin": "Friends",
         "permission": "party.disband",
-        "description": "Permission required"
+        "description": "Disband your current party via /party disband.",
+        "command": "/party disband"
     },
     {
         "plugin": "Friends",
         "permission": "friends.accept",
-        "description": "Permission required"
+        "description": "Accept a friend invite via /friend accept.",
+        "command": "/friend accept"
     },
     {
         "plugin": "Friends",
         "permission": "friends.add",
-        "description": "Permission required"
+        "description": "Send a friend invite via /friend add <name>.",
+        "command": "/friend add <name>"
     },
     {
         "plugin": "Friends",
         "permission": "friends.decline",
-        "description": "Permission required"
+        "description": "Decline a friend invite via /friend decline.",
+        "command": "/friend decline"
     },
     {
         "plugin": "Friends",
         "permission": "friends.use",
-        "description": "Permission required"
+        "description": "Open the friends list UI via /friends.",
+        "command": "/friends"
     },
     {
         "plugin": "Friends",
         "permission": "friends.remove",
-        "description": "Permission required"
+        "description": "Remove a friend via /friend remove <name>.",
+        "command": "/friend remove <name>"
     },
     {
         "plugin": "VexLichDungeon",
         "permission": "vex.purge",
-        "description": "Permission required"
+        "description": "Purge Vex instance data and delete dungeons.json via /vex purge.",
+        "command": "/vex purge"
     },
     {
         "plugin": "VexLichDungeon",
         "permission": "vex.ui.list",
-        "description": "Permission required"
+        "description": "List Vex UI templates via /vex ui list.",
+        "command": "/vex ui list"
     },
     {
         "plugin": "VexLichDungeon",
         "permission": "vex.ui.show",
-        "description": "Permission required"
+        "description": "Show a Vex UI template via /vex ui show <id>.",
+        "command": "/vex ui show <id>"
     },
     {
         "plugin": "VexLichDungeon",
         "permission": "vex.ui.reload",
-        "description": "Permission required"
+        "description": "Reload Vex UI templates via /vex ui reload.",
+        "command": "/vex ui reload"
     },
     {
         "plugin": "VexLichDungeon",
         "permission": "vex.score.view",
-        "description": "Permission required"
+        "description": "View the Vex leaderboard via /vex score.",
+        "command": "/vex score"
     },
     {
         "plugin": "VexLichDungeon",
         "permission": "vex.score.edit",
-        "description": "Permission required"
+        "description": "Edit Vex score metrics via /vex score edit <player> <metric> <value>.",
+        "command": "/vex score edit <player> <metric> <value>"
     },
     {
         "plugin": "VexLichDungeon",
         "permission": "vex.removeinstances",
-        "description": "Permission required"
+        "description": "Remove all Vex dungeon instance data via /vex removeinstances.",
+        "command": "/vex removeinstances"
     }
 ]

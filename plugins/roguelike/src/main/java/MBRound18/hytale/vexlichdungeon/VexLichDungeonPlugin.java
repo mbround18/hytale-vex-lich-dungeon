@@ -24,6 +24,7 @@ import MBRound18.ImmortalEngine.api.ui.UiTemplateLoader;
 import MBRound18.ImmortalEngine.api.prefab.StitchIndex;
 import MBRound18.ImmortalEngine.api.prefab.StitchIndexBuilder;
 import MBRound18.ImmortalEngine.api.prefab.StitchIndexStore;
+import MBRound18.ImmortalEngine.api.ui.EngineHud;
 import MBRound18.hytale.vexlichdungeon.ui.HudController;
 import MBRound18.hytale.vexlichdungeon.ui.UIController;
 import MBRound18.hytale.vexlichdungeon.ui.UiAssetResolver;
@@ -88,6 +89,21 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     Path assetsZipPath = resolveAssetsZipPath(pluginJarPath, modsDirectory);
     UiAssetResolver.setAssetsZipPath(assetsZipPath);
     MBRound18.ImmortalEngine.api.i18n.EngineLang.setAssetsZipPath(assetsZipPath);
+    EngineHud.setCustomUiAdapter(new EngineHud.CustomUiAdapter() {
+      @Override
+      public void show(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
+          @Nonnull String uiPath, @Nonnull java.util.Map<String, String> vars) {
+        HudController.openHud(playerRef, uiPath, vars);
+      }
+
+      @Override
+      public void clear(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef) {
+        HudController.clearHud(playerRef);
+      }
+    });
+    // Temporary: force Custom UI HUDs for testing (known to crash on current client
+    // build).
+    // EngineHud.setMode(EngineHud.Mode.CUSTOM_UI);
     Path stitchIndexPath = dataDirectory.resolve("index.db");
     StitchIndex stitchIndex = StitchIndexBuilder.build(assetsZipPath, log);
     if (stitchIndex != null) {

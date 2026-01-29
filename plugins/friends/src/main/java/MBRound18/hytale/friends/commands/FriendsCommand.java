@@ -7,8 +7,8 @@ import MBRound18.hytale.friends.ui.FriendsUiController;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,10 +51,17 @@ public class FriendsCommand extends AbstractCommand {
 
     String partyStatus = buildPartyStatus(playerId);
     String friendList = buildFriendList(playerId);
-    boolean opened = FriendsUiController.openFriendsList(playerRef, partyStatus, friendList);
-    if (!opened) {
+    World world = Universe.get().getWorld(playerRef.getWorldUuid());
+    if (world == null) {
       context.sendMessage(Message.raw("Failed to open friends UI."));
+      return CompletableFuture.completedFuture(null);
     }
+    world.execute(() -> {
+      boolean opened = FriendsUiController.openFriendsList(playerRef, partyStatus, friendList);
+      if (!opened) {
+        context.sendMessage(Message.raw("Failed to open friends UI."));
+      }
+    });
     return CompletableFuture.completedFuture(null);
   }
 
@@ -84,13 +91,7 @@ public class FriendsCommand extends AbstractCommand {
   }
 
   private boolean isOnline(@Nonnull UUID uuid) {
-    for (World world : Universe.get().getWorlds().values()) {
-      for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-        if (uuid.equals(player.getUuid())) {
-          return true;
-        }
-      }
-    }
-    return false;
+    PlayerRef playerRef = Universe.get().getPlayer(uuid);
+    return playerRef != null && playerRef.isValid();
   }
 }

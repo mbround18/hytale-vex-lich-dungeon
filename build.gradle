@@ -14,6 +14,7 @@ ext {
     serverDir = file("data/server")
     unpackedDir = file("data/unpacked")
     distDir = file("dist")
+    staticDir = file("static")
     
     // Assets
     userAssetsDir = file("plugins/roguelike/assets") // User-authored assets for packing
@@ -576,6 +577,48 @@ tasks.register("exportPermissions") {
         outputFile.parentFile.mkdirs()
 
         def permissions = []
+        def permissionDescriptions = [
+            "party.use": "Use /party to view party status.",
+            "party.create": "Create a new party via /party new.",
+            "party.invite": "Invite a player to your party via /party invite <name>.",
+            "party.join": "Accept a party invite via /party join.",
+            "party.decline": "Decline a party invite via /party decline.",
+            "party.leave": "Leave your current party via /party leave.",
+            "party.disband": "Disband your current party via /party disband.",
+            "friends.use": "Open the friends list UI via /friends.",
+            "friends.add": "Send a friend invite via /friend add <name>.",
+            "friends.accept": "Accept a friend invite via /friend accept.",
+            "friends.decline": "Decline a friend invite via /friend decline.",
+            "friends.remove": "Remove a friend via /friend remove <name>.",
+            "vex.score.view": "View the Vex leaderboard via /vex score.",
+            "vex.score.edit": "Edit Vex score metrics via /vex score edit <player> <metric> <value>.",
+            "vex.ui.list": "List Vex UI templates via /vex ui list.",
+            "vex.ui.show": "Show a Vex UI template via /vex ui show <id>.",
+            "vex.ui.reload": "Reload Vex UI templates via /vex ui reload.",
+            "vex.removeinstances": "Remove all Vex dungeon instance data via /vex removeinstances.",
+            "vex.purge": "Purge Vex instance data and delete dungeons.json via /vex purge."
+        ]
+        def permissionCommands = [
+            "party.use": "/party",
+            "party.create": "/party new",
+            "party.invite": "/party invite <name>",
+            "party.join": "/party join",
+            "party.decline": "/party decline",
+            "party.leave": "/party leave",
+            "party.disband": "/party disband",
+            "friends.use": "/friends",
+            "friends.add": "/friend add <name>",
+            "friends.accept": "/friend accept",
+            "friends.decline": "/friend decline",
+            "friends.remove": "/friend remove <name>",
+            "vex.score.view": "/vex score",
+            "vex.score.edit": "/vex score edit <player> <metric> <value>",
+            "vex.ui.list": "/vex ui list",
+            "vex.ui.show": "/vex ui show <id>",
+            "vex.ui.reload": "/vex ui reload",
+            "vex.removeinstances": "/vex removeinstances",
+            "vex.purge": "/vex purge"
+        ]
         def pluginProjects = subprojects.findAll { it.path.startsWith(":plugins:") }
         pluginProjects.each { projectRef ->
             def pluginProps = projectRef.file("src/main/resources/plugin.properties")
@@ -609,15 +652,17 @@ tasks.register("exportPermissions") {
                 }
 
                 permList.each { perm ->
-                    def desc = baseDesc ?: "Permission required"
-                    if (permList.size() > 1 && baseDesc != null) {
+                    def explicitDesc = permissionDescriptions.get(perm.value)
+                    def desc = explicitDesc ?: baseDesc ?: "Permission required"
+                    if (!explicitDesc && permList.size() > 1 && baseDesc != null) {
                         def suffix = perm.name.toLowerCase().replaceAll("_", " ")
                         desc = "${baseDesc} (${suffix})"
                     }
                     permissions << [
                         plugin      : pluginName,
                         permission  : perm.value,
-                        description : desc
+                        description : desc,
+                        command     : permissionCommands.get(perm.value)
                     ]
                 }
             }
@@ -630,7 +675,7 @@ tasks.register("exportPermissions") {
 }
 
 tasks.named("build") {
-    dependsOn "exportPermissions"
+    dependsOn "exportPermissions", "copyStaticToDist"
 }
 
 tasks.register("copyPluginJarToDist", Copy) {
@@ -644,20 +689,35 @@ tasks.register("copyPluginJarToDist", Copy) {
     }
 }
 
-def pluginProjects = subprojects.findAll { it.path.startsWith(":plugins:") }
+def pluginProjects = subprojects.findAll { 
+    it.path.startsWith(":plugins:") && it.path != ":plugins:forwarder"
+}
 
 tasks.register("copyAllPluginJarsToDist", Copy) {
     group = "build"
-    description = "Copy all plugin jars into dist"
+    description = "Copy all plugin jars into dist (excluding forwarder)"
     dependsOn(pluginProjects.collect { it.tasks.named("jar") })
     pluginProjects.each { projectRef ->
         from(projectRef.tasks.named("jar").flatMap { it.archiveFile })
     }
+
     into(distDir)
     doFirst {
         distDir.mkdirs()
     }
 }
+
+tasks.register("copyStaticToDist", Copy) {
+    group = "build"
+    description = "Copy static site into dist/static"
+    from(staticDir)
+    into(new File(distDir, "static"))
+    exclude "**/.DS_Store"
+    doFirst {
+        distDir.mkdirs()
+    }
+}
+
 
 tasks.register("copyEngineJarToDist") {
     group = "build"

@@ -1,0 +1,17 @@
+Group {
+
+  Anchor: (Top: 40, Left: 20, Width: 260, Height: 96);
+  Background: (Color: #000000(0.35));
+  Padding: (Full: 12);
+  LayoutMode: Top;
+
+  Label #DemoScore {
+    Anchor: (Top: 0, Height: 22);
+    Text: "Score: 0";
+  }
+
+  Label #DemoTimer {
+    Anchor: (Top: 8, Height: 22);
+    Text: "Time: 0:30";
+  }
+}

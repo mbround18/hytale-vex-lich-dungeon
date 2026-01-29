@@ -75,7 +75,7 @@ public final class PortalPlacementRegistry {
       }
 
       World instanceWorld = Universe.get().getWorld(instanceId);
-      int playerCount = instanceWorld != null ? instanceWorld.getPlayers().size() : 0;
+      int playerCount = instanceWorld != null ? instanceWorld.getPlayerCount() : 0;
 
       boolean closeForMaxPlayers = false;
       for (PortalPlacement placement : placements) {

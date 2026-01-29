@@ -7,7 +7,7 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -144,28 +144,27 @@ public class VexChallengeCommand extends AbstractAsyncCommand {
   }
 
   @Nullable
-  @SuppressWarnings("removal")
   private PlayerContext findPlayerContext(@Nonnull UUID uuid) {
-    for (World world : Universe.get().getWorlds().values()) {
-      for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-        if (!uuid.equals(player.getUuid())) {
-          continue;
-        }
-        TransformComponent transform = player.getTransformComponent();
-        if (transform == null) {
-          return null;
-        }
-        return new PlayerContext(world, transform);
-      }
+    PlayerRef playerRef = Universe.get().getPlayer(uuid);
+    if (playerRef == null || !playerRef.isValid()) {
+      return null;
     }
-    return null;
+    World world = Universe.get().getWorld(playerRef.getWorldUuid());
+    if (world == null) {
+      return null;
+    }
+    com.hypixel.hytale.math.vector.Transform transform = playerRef.getTransform();
+    if (transform == null) {
+      return null;
+    }
+    return new PlayerContext(world, transform);
   }
 
   private static final class PlayerContext {
     private final World world;
-    private final TransformComponent transform;
+    private final com.hypixel.hytale.math.vector.Transform transform;
 
-    private PlayerContext(World world, TransformComponent transform) {
+    private PlayerContext(World world, com.hypixel.hytale.math.vector.Transform transform) {
       this.world = world;
       this.transform = transform;
     }
@@ -404,8 +403,8 @@ public class VexChallengeCommand extends AbstractAsyncCommand {
   }
 
   private void stopPortalCountdowns(@Nonnull World world) {
-    for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-      stopPortalCountdown(player.getUuid());
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      stopPortalCountdown(playerRef.getUuid());
     }
   }
 
@@ -456,10 +455,10 @@ public class VexChallengeCommand extends AbstractAsyncCommand {
   }
 
   @Nullable
-  private com.hypixel.hytale.server.core.universe.PlayerRef findPlayerRef(@Nonnull World world, @Nonnull UUID uuid) {
-    for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-      if (uuid.equals(player.getUuid())) {
-        return player.getPlayerRef();
+  private PlayerRef findPlayerRef(@Nonnull World world, @Nonnull UUID uuid) {
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      if (uuid.equals(playerRef.getUuid())) {
+        return playerRef;
       }
     }
     return null;

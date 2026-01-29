@@ -12,12 +12,14 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -25,7 +27,7 @@ public class VexUiCommand extends AbstractCommand {
   private static final String PERMISSION_LIST = "vex.ui.list";
   private static final String PERMISSION_SHOW = "vex.ui.show";
   private static final String PERMISSION_RELOAD = "vex.ui.reload";
-
+  private static final Logger LOGGER = Logger.getLogger(VexUiCommand.class.getName());
   private final DataStore dataStore;
 
   public VexUiCommand(@Nonnull DataStore dataStore) {
@@ -106,6 +108,36 @@ public class VexUiCommand extends AbstractCommand {
       return CompletableFuture.completedFuture(null);
     }
 
+    if ("demo".equals(action)) {
+      if (!context.sender().hasPermission(PERMISSION_SHOW)) {
+        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.permission")));
+        return CompletableFuture.completedFuture(null);
+      }
+      if (!context.isPlayer()) {
+        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.onlyPlayers")));
+        return CompletableFuture.completedFuture(null);
+      }
+      int seconds = 30;
+      int score = 0;
+      PlayerRef playerRef = Universe.get().getPlayer(context.sender().getUuid());
+      LOGGER.info(String.format("[VexUiDemo] start sender=%s ref=%s thread=%s",
+          context.sender().getUuid(),
+          describe(playerRef),
+          Thread.currentThread().getName()));
+      if (playerRef == null || !playerRef.isValid()) {
+        context.sendMessage(Message.raw("Failed to open demo HUD (invalid player)."));
+        return CompletableFuture.completedFuture(null);
+      }
+      boolean opened = MBRound18.hytale.vexlichdungeon.ui.VexDemoHudController.openDemo(playerRef, score, seconds);
+      LOGGER.info(String.format("[VexUiDemo] openDemo controller=%s ref=%s",
+          opened,
+          describe(playerRef)));
+      if (!opened) {
+        context.sendMessage(Message.raw("Failed to open demo HUD (controller)."));
+      }
+      return CompletableFuture.completedFuture(null);
+    }
+
     sendUsage(context);
     return CompletableFuture.completedFuture(null);
   }
@@ -114,6 +146,7 @@ public class VexUiCommand extends AbstractCommand {
     context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.usage.list")));
     context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.usage.reload")));
     context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.usage.show")));
+    context.sendMessage(Message.raw("/vex ui demo"));
   }
 
   private boolean reloadTemplates(@Nonnull CommandContext context) {
@@ -183,4 +216,12 @@ public class VexUiCommand extends AbstractCommand {
     }
     return vars;
   }
+
+  private static String describe(@Nullable PlayerRef ref) {
+    if (ref == null) {
+      return "null";
+    }
+    return "PlayerRef{uuid=" + ref.getUuid() + ",world=" + ref.getWorldUuid() + ",valid=" + ref.isValid() + "}";
+  }
+
 }

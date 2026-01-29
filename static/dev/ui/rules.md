@@ -54,6 +54,11 @@ Observed patterns include:
 - **`Image` is not a node type**; use `BackgroundImage` or a `Group` with `Background`.
 - **`Border` is not a `Group` property**; use `Background` / `PatchStyle` tuples instead.
 
+## UI Command Rules (Runtime)
+- **Set label text with a property:** `#FriendsListBody.Text`, not `#FriendsListBody`.
+- **Always run UI commands on the world thread.**
+- **Client UI paths must not include `Common/UI/Custom/` or `UI/Custom/`.** Strip to after `Custom/` (use `UiPath.normalizeForClient(...)`).
+
 ## Most Common Elements
 - `Group`, `Label`, `Button`, `TextButton`, `ProgressBar`, `TextField`, `CheckBox`, `DropdownBox`
 

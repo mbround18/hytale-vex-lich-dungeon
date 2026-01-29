@@ -15,6 +15,10 @@
       {
         "Texture": "Blocks/Portals/VexLichDungeonBase.png",
         "Weight": 1
+      },
+      {
+        "Texture": "Blocks/Portals/VexLichDungeonBase_emissive.png",
+        "Weight": 2
       }
     ],
     "HitboxType": "Pad_Portal",

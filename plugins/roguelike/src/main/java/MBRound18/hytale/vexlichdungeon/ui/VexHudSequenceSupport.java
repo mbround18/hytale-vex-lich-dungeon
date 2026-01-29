@@ -1,6 +1,7 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
 import MBRound18.ImmortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.ui.EngineHud;
 import MBRound18.ImmortalEngine.api.ui.HudSequenceController;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Map;
@@ -20,17 +21,7 @@ public final class VexHudSequenceSupport {
   private static final String LEADERBOARD_UI = "Custom/Vex/Hud/VexLeaderboardHud.ui";
   private static final String SCORE_UI = "Custom/Vex/Hud/VexScoreHud.ui";
 
-  private static final HudSequenceController.HudPresenter PRESENTER = new HudSequenceController.HudPresenter() {
-    @Override
-    public void show(@Nonnull PlayerRef playerRef, @Nonnull String uiPath, @Nonnull Map<String, String> vars) {
-      HudController.openHud(playerRef, uiPath, vars);
-    }
-
-    @Override
-    public void clear(@Nonnull PlayerRef playerRef) {
-      HudController.clearHud(playerRef);
-    }
-  };
+  private static final HudSequenceController.HudPresenter PRESENTER = EngineHud.presenter();
 
   private static final HudSequenceController.DismissFactory DISMISS_FACTORY = playerRef -> {
     VexDismissPage page = new VexDismissPage(playerRef, () -> HudSequenceController.dismiss(playerRef, PRESENTER));

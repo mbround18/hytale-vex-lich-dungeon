@@ -8,6 +8,7 @@ import MBRound18.ImmortalEngine.api.social.PartyService;
 import MBRound18.ImmortalEngine.api.social.PartySnapshot;
 import MBRound18.hytale.friends.ui.FriendsHudController;
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import java.util.HashMap;
@@ -46,33 +47,37 @@ public class PartyHudUpdater implements Runnable {
   @Override
   public void run() {
     try {
-      Map<UUID, PlayerContext> online = new HashMap<>();
       for (World world : Universe.get().getWorlds().values()) {
-        ParticipantTracker.get().updateFromWorld(world);
-        for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-          online.put(player.getUuid(), new PlayerContext(player, world));
-        }
-      }
-
-      Set<UUID> partyMembers = new HashSet<>();
-      for (PartySnapshot party : partyService.getParties()) {
-        String listText = buildPartyList(party, online);
-        for (PartyMemberSnapshot member : party.getMembers()) {
-          partyMembers.add(member.getUuid());
-          PlayerContext context = online.get(member.getUuid());
-          if (context != null) {
-            FriendsHudController.openPartyHud(context.player.getPlayerRef(), listText);
-          }
-        }
-      }
-
-      for (PlayerContext context : online.values()) {
-        if (!partyMembers.contains(context.player.getUuid())) {
-          FriendsHudController.clearHud(context.player.getPlayerRef());
-        }
+        world.execute(() -> updateWorld(world));
       }
     } catch (Exception e) {
       log.warn("[FRIENDS] Party HUD updater failed: %s", e.getMessage());
+    }
+  }
+
+  private void updateWorld(World world) {
+    Map<UUID, PlayerContext> online = new HashMap<>();
+    ParticipantTracker.get().updateFromWorld(world);
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      online.put(playerRef.getUuid(), new PlayerContext(playerRef, world));
+    }
+
+    Set<UUID> partyMembers = new HashSet<>();
+    for (PartySnapshot party : partyService.getParties()) {
+      String listText = buildPartyList(party, online);
+      for (PartyMemberSnapshot member : party.getMembers()) {
+        partyMembers.add(member.getUuid());
+        PlayerContext context = online.get(member.getUuid());
+        if (context != null) {
+          FriendsHudController.openPartyHud(context.playerRef, listText);
+        }
+      }
+    }
+
+    for (PlayerContext context : online.values()) {
+      if (!partyMembers.contains(context.playerRef.getUuid())) {
+        FriendsHudController.clearHud(context.playerRef);
+      }
     }
   }
 
@@ -120,11 +125,11 @@ public class PartyHudUpdater implements Runnable {
   }
 
   private static final class PlayerContext {
-    private final com.hypixel.hytale.server.core.entity.entities.Player player;
+    private final PlayerRef playerRef;
     private final World world;
 
-    private PlayerContext(com.hypixel.hytale.server.core.entity.entities.Player player, World world) {
-      this.player = player;
+    private PlayerContext(PlayerRef playerRef, World world) {
+      this.playerRef = playerRef;
       this.world = world;
     }
   }

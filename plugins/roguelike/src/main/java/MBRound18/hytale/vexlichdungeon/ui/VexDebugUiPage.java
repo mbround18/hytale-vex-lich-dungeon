@@ -1,5 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
+import MBRound18.ImmortalEngine.api.ui.UiPath;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
@@ -30,12 +31,16 @@ public class VexDebugUiPage extends CustomUIPage {
     if (inline != null) {
       commands.appendInline(null, inline);
     } else {
-      commands.append(resolvedPath != null ? resolvedPath : uiPath);
+      String clientPath = UiPath.normalizeForClient(resolvedPath != null ? resolvedPath : uiPath);
+      commands.append(clientPath != null ? clientPath : uiPath);
     }
     for (Map.Entry<String, String> entry : vars.entrySet()) {
       String id = entry.getKey();
       if (!id.startsWith("#")) {
         id = "#" + id;
+      }
+      if (!id.contains(".")) {
+        id = id + ".Text";
       }
       commands.set(id, entry.getValue());
     }

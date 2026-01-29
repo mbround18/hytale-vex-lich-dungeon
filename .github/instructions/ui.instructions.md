@@ -25,6 +25,11 @@ applyTo: "**/assets/Common/UI/Custom/**,**/assets/Server/Languages/en-US/server.
 - TexturePath is relative to Custom root:
   - Correct: "Vex/ContainerHeader.png"
   - Wrong: "Common/UI/Custom/Vex/ContainerHeader.png"
+- When sending UI paths to the client, strip everything through Custom/:
+  - Common/UI/Custom/Friends/Pages/FriendsList.ui -> Friends/Pages/FriendsList.ui
+  - UI/Custom/Friends/Pages/FriendsList.ui -> Friends/Pages/FriendsList.ui
+  - Custom/Friends/Pages/FriendsList.ui -> Friends/Pages/FriendsList.ui
+  - Use UiPath.normalizeForClient(...) from ImmortalEngine.
 
 1. Namespacing
 
@@ -52,3 +57,12 @@ applyTo: "**/assets/Common/UI/Custom/**,**/assets/Server/Languages/en-US/server.
 
 - /vex ui list
 - /vex ui show summary --var-SummaryStats=Test --var-SummaryBody=Hello
+
+1. UI command safety
+
+- Custom UI commands must run on the world thread (not scheduler/ForkJoin).
+  - Use UiThread.runOnPlayerWorld(playerRef, () -> ...) from ImmortalEngine.
+- When setting label text, target the property:
+  - Correct: #FriendsListBody.Text
+  - Wrong: #FriendsListBody
+  - Use UiVars.textId("FriendsListBody") from ImmortalEngine.

@@ -6,12 +6,16 @@ import MBRound18.ImmortalEngine.api.social.PartyService;
 import MBRound18.ImmortalEngine.api.social.PartySnapshot;
 import MBRound18.hytale.friends.data.FriendsDataStore;
 import MBRound18.hytale.friends.sound.FriendsSoundService;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -181,13 +185,38 @@ public class PartyCommand extends AbstractCommand {
   @Nullable
   private PlayerLookup findOnlinePlayerByName(@Nonnull String name) {
     for (World world : Universe.get().getWorlds().values()) {
-      for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-        if (player.getDisplayName().equalsIgnoreCase(name)) {
-          return new PlayerLookup(player.getUuid(), player.getDisplayName());
+      for (PlayerRef playerRef : world.getPlayerRefs()) {
+        String displayName = resolveDisplayName(playerRef);
+        String username = playerRef.getUsername();
+        if ((displayName != null && displayName.equalsIgnoreCase(name))
+            || (username != null && username.equalsIgnoreCase(name))) {
+          String resolved = (displayName == null || displayName.isBlank())
+              ? (username == null ? "" : username)
+              : displayName;
+          return new PlayerLookup(playerRef.getUuid(), resolved);
         }
       }
     }
     return null;
+  }
+
+  @Nonnull
+  private String resolveDisplayName(@Nonnull PlayerRef playerRef) {
+    String username = playerRef.getUsername();
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return username == null ? "" : username;
+    }
+    Store<EntityStore> store = ref.getStore();
+    Player player = store.getComponent(ref, Player.getComponentType());
+    if (player == null) {
+      return username == null ? "" : username;
+    }
+    String displayName = player.getDisplayName();
+    if (displayName == null || displayName.isBlank()) {
+      return username == null ? "" : username;
+    }
+    return displayName;
   }
 
   private static final class PlayerLookup {

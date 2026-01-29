@@ -1,5 +1,6 @@
 package MBRound18.hytale.friends.ui;
 
+import MBRound18.ImmortalEngine.api.ui.UiVars;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Map;
@@ -17,8 +18,8 @@ public final class FriendsUiController {
     }
     CustomUIPage page = new FriendsUiPage(playerRef, "Custom/Friends/Pages/FriendsList.ui",
         Map.of(
-            "FriendsPartyStatus", partyStatus == null ? "" : partyStatus,
-            "FriendsListBody", listBody == null ? "" : listBody));
+            UiVars.textId("FriendsPartyStatus"), partyStatus == null ? "" : partyStatus,
+            UiVars.textId("FriendsListBody"), listBody == null ? "" : listBody));
     return FriendsUiOpener.open(playerRef, page);
   }
 }

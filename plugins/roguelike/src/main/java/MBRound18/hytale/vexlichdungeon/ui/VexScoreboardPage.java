@@ -1,5 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
+import MBRound18.ImmortalEngine.api.ui.UiPath;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
@@ -28,13 +29,14 @@ public class VexScoreboardPage extends CustomUIPage {
     if (inline != null) {
       commands.appendInline(null, inline);
     } else {
-      commands.append(resolvedPath != null ? resolvedPath : uiPath);
+      String clientPath = UiPath.normalizeForClient(resolvedPath != null ? resolvedPath : uiPath);
+      commands.append(clientPath != null ? clientPath : uiPath);
     }
     if (headerText != null) {
-      commands.set("#ScoreHeader", headerText);
+      commands.set("#ScoreHeader.Text", headerText);
     }
     if (bodyText != null) {
-      commands.set("#ScoreBody", bodyText);
+      commands.set("#ScoreBody.Text", bodyText);
     }
   }
 }

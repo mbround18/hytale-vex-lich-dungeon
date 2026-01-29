@@ -1,0 +1,15 @@
+Group {
+    Anchor: (Top: 20, Left: 20, Width: 360, Height: 120);
+    Background: (Color: #000000(0.6));
+    Padding: (Full: 12);
+
+    Label #VexPortalCountdown {
+        Anchor: (Top: 0, Height: 24);
+        Text: "00:30";
+    }
+
+    Label #VexPortalLocation {
+        Anchor: (Top: 8, Height: 20);
+        Text: "X: 0  Y: 0  Z: 0";
+    }
+}

@@ -3,11 +3,16 @@ package MBRound18.hytale.friends.commands;
 import MBRound18.hytale.friends.data.FriendRecord;
 import MBRound18.hytale.friends.data.FriendsDataStore;
 import MBRound18.hytale.friends.services.FriendsServiceImpl;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -64,13 +69,35 @@ public class FriendRemoveCommand extends AbstractCommand {
   @Nullable
   private UUID findOnlinePlayerUuidByName(@Nonnull String name) {
     for (World world : Universe.get().getWorlds().values()) {
-      for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-        if (player.getDisplayName().equalsIgnoreCase(name)) {
-          return player.getUuid();
+      for (PlayerRef playerRef : world.getPlayerRefs()) {
+        String displayName = resolveDisplayName(playerRef);
+        String username = playerRef.getUsername();
+        if ((displayName != null && displayName.equalsIgnoreCase(name))
+            || (username != null && username.equalsIgnoreCase(name))) {
+          return playerRef.getUuid();
         }
       }
     }
     return null;
+  }
+
+  @Nonnull
+  private String resolveDisplayName(@Nonnull PlayerRef playerRef) {
+    String username = playerRef.getUsername();
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return username == null ? "" : username;
+    }
+    Store<EntityStore> store = ref.getStore();
+    Player player = store.getComponent(ref, Player.getComponentType());
+    if (player == null) {
+      return username == null ? "" : username;
+    }
+    String displayName = player.getDisplayName();
+    if (displayName == null || displayName.isBlank()) {
+      return username == null ? "" : username;
+    }
+    return displayName;
   }
 
   @Nullable

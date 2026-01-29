@@ -3,6 +3,8 @@ package MBRound18.ImmortalEngine.api.participants;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatsModule;
@@ -52,10 +54,10 @@ public final class ParticipantTracker {
     Store<EntityStore> store = world.getEntityStore().getStore();
     long now = System.currentTimeMillis();
 
-    for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-      UUID uuid = player.getUuid();
-      String name = player.getDisplayName();
-      Ref<EntityStore> ref = player.getReference();
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      UUID uuid = playerRef.getUuid();
+      String name = resolveDisplayName(playerRef);
+      Ref<EntityStore> ref = playerRef.getReference();
       EntityStatMap statMap = ref != null ? store.getComponent(ref, componentType) : null;
       StatSnapshot health = readStat(statMap, "Health");
       StatSnapshot stamina = readStat(statMap, "Stamina");
@@ -97,6 +99,24 @@ public final class ParticipantTracker {
       return StatSnapshot.EMPTY;
     }
     return new StatSnapshot(stat.get(), stat.getMax());
+  }
+
+  @Nonnull
+  private String resolveDisplayName(@Nonnull PlayerRef playerRef) {
+    String name = playerRef.getUsername();
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return name == null ? "" : name;
+    }
+    Store<EntityStore> store = ref.getStore();
+    Player player = store.getComponent(ref, Player.getComponentType());
+    if (player == null) {
+      return name == null ? "" : name;
+    }
+    String displayName = player.getDisplayName();
+    return displayName == null || displayName.isBlank()
+        ? (name == null ? "" : name)
+        : displayName;
   }
 
   private static final class StatSnapshot {

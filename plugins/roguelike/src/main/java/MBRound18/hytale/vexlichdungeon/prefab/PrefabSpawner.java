@@ -187,12 +187,7 @@ public class PrefabSpawner {
         }
 
         int level = fluid.has("level") ? fluid.get("level").getAsInt() : 0;
-        String normalizedName = Fluid.convertLegacyName(name, (byte) level);
-        if (normalizedName == null || normalizedName.isBlank()) {
-          normalizedName = name;
-        }
-
-        int fluidId = Fluid.getFluidIdOrUnknown(normalizedName, "Prefab fluid %s", normalizedName);
+        int fluidId = Fluid.getFluidIdOrUnknown(name, "Prefab fluid %s", name);
         if (fluidId == Fluid.EMPTY_ID) {
           continue;
         }

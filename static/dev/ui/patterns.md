@@ -45,3 +45,5 @@ Label {
 - **Template instantiation** should use `$Alias.@Template { ... }` for element bodies.
 - **Image is not a node type**. Use `BackgroundImage { Image: "..." }` or a `Group` with `Background`.
 - **Block comments** use `/* ... */`. Line comments use `// ...`.
+- **When setting label text, use `#Id.Text`** (not `#Id`).
+- **Client UI paths should not include `Common/UI/Custom/` or `UI/Custom/`.** Strip to after `Custom/`.

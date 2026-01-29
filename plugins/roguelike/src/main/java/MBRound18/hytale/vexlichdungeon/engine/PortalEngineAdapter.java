@@ -4,8 +4,12 @@ import MBRound18.ImmortalEngine.runtime.DefaultScoringStrategy;
 import MBRound18.ImmortalEngine.runtime.PortalEngineRuntime;
 import MBRound18.ImmortalEngine.runtime.ScoringStrategy;
 import MBRound18.ImmortalEngine.api.RunSummary;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Objects;
 
 /**
@@ -28,14 +32,32 @@ public class PortalEngineAdapter {
     return runtime;
   }
 
-  public void onPlayerEnter(World world, Player player) {
-    if (world == null || player == null) {
+  public void onPlayerEnter(World world, PlayerRef playerRef) {
+    if (world == null || playerRef == null || !playerRef.isValid()) {
       return;
     }
     String instanceId = world.getName();
-    String playerId = player.getUuid().toString();
-    String displayName = player.getDisplayName();
+    String playerId = playerRef.getUuid().toString();
+    String displayName = resolveDisplayName(playerRef);
     runtime.onPortalEnter(instanceId, playerId, displayName);
+  }
+
+  private String resolveDisplayName(PlayerRef playerRef) {
+    String username = playerRef.getUsername();
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return username == null ? "" : username;
+    }
+    Store<EntityStore> store = ref.getStore();
+    Player player = store.getComponent(ref, Player.getComponentType());
+    if (player == null) {
+      return username == null ? "" : username;
+    }
+    String displayName = player.getDisplayName();
+    if (displayName == null || displayName.isBlank()) {
+      return username == null ? "" : username;
+    }
+    return displayName;
   }
 
   public void onKill(String instanceId, String playerId, String enemyType, int points) {

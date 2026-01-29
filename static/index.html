@@ -4,7 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vex's Dungeon Challenge | Hytale Mod</title>
+    <meta
+      name="description"
+      content="Vex's Dungeon Challenge is a dark-fantasy Hytale roguelike mod powered by ImmortalEngine. Enter the Lich King's dungeon, survive procedural traps, and claim the Ultimate Reward."
+    />
+    <meta property="og:title" content="Vex's Dungeon Challenge | Hytale Mod" />
+    <meta
+      property="og:description"
+      content="A dark-fantasy Hytale roguelike mod powered by ImmortalEngine. Enter the Lich King's dungeon, survive procedural traps, and claim the Ultimate Reward."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/img/socials.png" />
+    <meta property="og:image:alt" content="Vex's Dungeon Challenge" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vex's Dungeon Challenge | Hytale Mod" />
+    <meta
+      name="twitter:description"
+      content="A dark-fantasy Hytale roguelike mod powered by ImmortalEngine. Enter the Lich King's dungeon, survive procedural traps, and claim the Ultimate Reward."
+    />
+    <meta name="twitter:image" content="/img/socials.png" />
+    <script src="/js/tailwind.config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="/js/header.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- add a wepage icon -->
     <link
       rel="icon"
@@ -42,66 +64,8 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=MedievalSharp&family=Inter:wght@400;600&display=swap"
       rel="stylesheet"
     />
-
-    <style>
-      body {
-        font-family: "MedievalSharp", cursive;
-        background-color: #1a1821;
-        color: #e5e7eb;
-      }
-
-      h1,
-      h2,
-      h3,
-      .font-fantasy {
-        font-family: "Cinzel", serif;
-      }
-
-      .text-glow {
-        text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
-      }
-
-      .green-glow {
-        box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
-      }
-
-      .gold-border {
-        border: 2px solid #fbbf24;
-        box-shadow:
-          0 0 10px rgba(251, 191, 36, 0.2),
-          inset 0 0 10px rgba(251, 191, 36, 0.1);
-      }
-
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 10px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: #1a1821;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #4c1d95;
-        border-radius: 5px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #8b5cf6;
-      }
-
-      /* Floating Animation for Vex */
-      @keyframes float {
-        0% {
-          transform: translateY(0px);
-        }
-        50% {
-          transform: translateY(-15px);
-        }
-        100% {
-          transform: translateY(0px);
-        }
-      }
-      .float-animation {
-        animation: float 4s ease-in-out infinite;
-      }
-    </style>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/home.css" />
   </head>
   <body
     class="bg-vex-dark text-slate-200 antialiased custom-scrollbar selection:bg-necro-green selection:text-vex-dark relative"
@@ -139,28 +103,21 @@
           </div>
 
           <!-- Desktop Menu -->
-          <div class="hidden md:flex space-x-8 items-center">
-            <a
-              href="#lore"
-              class="text-lg text-slate-300 hover:text-necro-green transition hover:scale-105 transform"
-              >Lore</a
-            >
-            <a
-              href="#dungeon"
-              class="text-lg text-slate-300 hover:text-necro-green transition hover:scale-105 transform"
-              >The Dungeon</a
-            >
-            <a
-              href="#rewards"
-              class="text-lg text-slate-300 hover:text-necro-green transition hover:scale-105 transform"
-              >Rewards</a
-            >
-            <a
-              href="#download"
-              class="px-6 py-2 rounded border-2 border-vex-purple bg-vex-deep/50 text-white text-lg font-bold hover:bg-vex-purple hover:border-necro-green hover:shadow-[0_0_15px_rgba(74,222,128,0.4)] transition duration-300"
-            >
-              Enter the Depths
-            </a>
+          <div class="hidden md:flex space-x-8 items-center" x-data="vexHeader({ variant: 'home' })">
+            <template x-for="link in links" :key="link.id">
+              <div class="relative" @mouseenter="hover = link.id" @mouseleave="hover = null">
+                <a :href="link.href" :class="linkClass(link)" x-text="link.label"></a>
+                <template x-if="link.tooltip">
+                  <div x-show="hover === link.id" x-transition.opacity.duration.200ms :class="tooltipClass()">
+                    <div class="font-fantasy text-ancient-gold mb-1" x-text="link.tooltip.title"></div>
+                    <div class="text-slate-400 text-xs" x-text="link.tooltip.body"></div>
+                    <span
+                      class="absolute left-1/2 -translate-x-1/2 -top-2 w-3 h-3 bg-vex-dark/95 border-l border-t border-vex-purple/40 rotate-45"
+                    ></span>
+                  </div>
+                </template>
+              </div>
+            </template>
           </div>
 
           <!-- Mobile Menu Button -->

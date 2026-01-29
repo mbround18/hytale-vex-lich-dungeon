@@ -10,8 +10,12 @@ import MBRound18.ImmortalEngine.api.social.ReturnLocation;
 import MBRound18.hytale.friends.data.FriendsDataStore;
 import MBRound18.hytale.friends.data.PartyMemberRecord;
 import MBRound18.hytale.friends.data.PartyRecord;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
-import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -208,14 +212,21 @@ public class PartyServiceImpl implements PartyService {
   }
 
   private String findOnlinePlayerName(UUID uuid) {
-    Map<String, World> worlds = Universe.get().getWorlds();
-    for (World world : worlds.values()) {
-      for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-        if (uuid.equals(player.getUuid())) {
-          return player.getDisplayName();
-        }
-      }
+    PlayerRef playerRef = Universe.get().getPlayer(uuid);
+    if (playerRef == null || !playerRef.isValid()) {
+      return null;
     }
-    return null;
+    String username = playerRef.getUsername();
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return username;
+    }
+    Store<EntityStore> store = ref.getStore();
+    Player player = store.getComponent(ref, Player.getComponentType());
+    if (player == null) {
+      return username;
+    }
+    String displayName = player.getDisplayName();
+    return displayName == null || displayName.isBlank() ? username : displayName;
   }
 }

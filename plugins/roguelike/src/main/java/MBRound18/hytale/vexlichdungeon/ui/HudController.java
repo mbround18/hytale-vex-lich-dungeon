@@ -1,20 +1,38 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
 import MBRound18.ImmortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.ui.EngineHud;
 import MBRound18.ImmortalEngine.api.ui.HudRegistry;
 import MBRound18.ImmortalEngine.api.ui.UiTemplate;
+import MBRound18.ImmortalEngine.api.ui.UiThread;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUICommand;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
-import com.hypixel.hytale.server.core.universe.Universe;
-import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.component.Ref;
-import java.util.UUID;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class HudController {
+  private static final Logger LOGGER = Logger.getLogger(HudController.class.getName());
+  private static final boolean DEBUG_HUD_COMMANDS = true;
+  private static final long HUD_INITIAL_UPDATE_DELAY_MS = 1000L;
+  private static final String PORTAL_COUNTDOWN_HUD_PATH = "Custom/Vex/Hud/VexPortalCountdownHud.ui";
+  private static final boolean DISABLE_CUSTOM_HUD = false;
+  private static final boolean DISABLE_HUD_UPDATES = false;
+  private static final ScheduledExecutorService HUD_SCHEDULER = Executors.newSingleThreadScheduledExecutor(r -> {
+    Thread thread = new Thread(r, "VexHudUpdate");
+    thread.setDaemon(true);
+    return thread;
+  });
 
   private HudController() {
   }
@@ -38,7 +56,7 @@ public final class HudController {
       java.util.List.of("VexLeaderboardBody")));
     HudRegistry.register(new UiTemplate(
       "portalCountdown",
-      "Custom/Vex/Hud/VexPortalCountdownHud.ui",
+      PORTAL_COUNTDOWN_HUD_PATH,
       java.util.List.of("VexPortalCountdown", "VexPortalLocation")));
   }
 
@@ -52,6 +70,10 @@ public final class HudController {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
+    if (!EngineHud.isCustomUiMode()) {
+      EngineHud.show(playerRef, template.getPath(), vars);
+      return true;
+    }
     CustomUIHud hud = new VexDebugHudPage(playerRef, template.getPath(), vars);
     return applyHud(playerRef, hud);
   }
@@ -60,6 +82,10 @@ public final class HudController {
       @Nonnull Map<String, String> vars) {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
+    }
+    if (!EngineHud.isCustomUiMode()) {
+      EngineHud.show(playerRef, uiPath, vars);
+      return true;
     }
     CustomUIHud hud = new VexDebugHudPage(playerRef, uiPath, vars);
     return applyHud(playerRef, hud);
@@ -88,7 +114,7 @@ public final class HudController {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
-    return openHud(playerRef, "Custom/Vex/Hud/VexPortalCountdownHud.ui",
+    return openHud(playerRef, PORTAL_COUNTDOWN_HUD_PATH,
         Map.of(
             "VexPortalCountdown", timerText == null ? "" : timerText,
             "VexPortalLocation", locationText == null ? "" : locationText));
@@ -98,26 +124,84 @@ public final class HudController {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
+    if (!EngineHud.isCustomUiMode()) {
+      EngineHud.clear(playerRef);
+      return true;
+    }
     return resetHud(playerRef);
   }
 
-  @SuppressWarnings("removal")
   private static boolean applyHud(@Nonnull PlayerRef playerRef, @Nonnull CustomUIHud hud) {
-    com.hypixel.hytale.server.core.entity.entities.Player player = findPlayer(playerRef);
-    if (player == null) {
+    Ref<EntityStore> entityRef = playerRef.getReference();
+    if (entityRef == null || !entityRef.isValid()) {
       return false;
     }
-    Ref<EntityStore> entityRef = player.getReference();
-    if (entityRef == null) {
-      return false;
+    Store<EntityStore> store = entityRef.getStore();
+    if (store.isInThread()) {
+      return applyHudOnThread(playerRef, entityRef, store, hud);
     }
-    player.getHudManager().setCustomHud(playerRef, hud);
-    hud.show();
-    return true;
+    return UiThread.runOnPlayerWorld(playerRef, () -> applyHudOnThread(playerRef, entityRef, store, hud));
   }
 
   private static boolean resetHud(@Nonnull PlayerRef playerRef) {
-    com.hypixel.hytale.server.core.entity.entities.Player player = findPlayer(playerRef);
+    Ref<EntityStore> entityRef = playerRef.getReference();
+    if (entityRef == null || !entityRef.isValid()) {
+      return false;
+    }
+    Store<EntityStore> store = entityRef.getStore();
+    if (store.isInThread()) {
+      return resetHudOnThread(playerRef, entityRef, store);
+    }
+    return UiThread.runOnPlayerWorld(playerRef, () -> resetHudOnThread(playerRef, entityRef, store));
+  }
+
+  private static boolean applyHudOnThread(PlayerRef playerRef, Ref<EntityStore> entityRef,
+      Store<EntityStore> store, CustomUIHud hud) {
+    Player player = store.getComponent(entityRef, Player.getComponentType());
+    if (player == null) {
+      return false;
+    }
+    if (hud instanceof VexDebugHudPage vexHud) {
+      if (tryUpdateExistingHud(playerRef, player, vexHud)) {
+        return true;
+      }
+    }
+    if (DISABLE_CUSTOM_HUD) {
+      return true;
+    }
+    player.getHudManager().setCustomHud(playerRef, hud);
+    if (!DISABLE_HUD_UPDATES && hud instanceof VexDebugHudPage vexHud) {
+      scheduleInitialUpdate(playerRef, vexHud);
+    }
+    return true;
+  }
+
+  private static boolean tryUpdateExistingHud(@Nonnull PlayerRef playerRef, @Nonnull Player player,
+      @Nonnull VexDebugHudPage nextHud) {
+    CustomUIHud current = player.getHudManager().getCustomHud();
+    if (!(current instanceof VexDebugHudPage currentHud)) {
+      return false;
+    }
+    if (!currentHud.matchesPath(nextHud.getUiPath())) {
+      return false;
+    }
+    if (DISABLE_HUD_UPDATES) {
+      return true;
+    }
+    UICommandBuilder builder = new UICommandBuilder();
+    nextHud.appendVarCommands(builder, nextHud.getVars());
+    logHudCommands("Update", nextHud.getUiPath(), builder.getCommands());
+    CustomUICommand[] commands = builder.getCommands();
+    if (commands == null || commands.length == 0) {
+      return true;
+    }
+    current.update(false, builder);
+    return true;
+  }
+
+  private static boolean resetHudOnThread(PlayerRef playerRef, Ref<EntityStore> entityRef,
+      Store<EntityStore> store) {
+    Player player = store.getComponent(entityRef, Player.getComponentType());
     if (player == null) {
       return false;
     }
@@ -125,17 +209,33 @@ public final class HudController {
     return true;
   }
 
-  @SuppressWarnings("removal")
-  private static com.hypixel.hytale.server.core.entity.entities.Player findPlayer(
-      @Nonnull PlayerRef playerRef) {
-    UUID uuid = playerRef.getUuid();
-    for (World world : Universe.get().getWorlds().values()) {
-      for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-        if (uuid.equals(player.getUuid())) {
-          return player;
-        }
+  private static void scheduleInitialUpdate(@Nonnull PlayerRef playerRef, @Nonnull VexDebugHudPage hud) {
+    HUD_SCHEDULER.schedule(() -> UiThread.runOnPlayerWorld(playerRef, () -> {
+      UICommandBuilder builder = new UICommandBuilder();
+      hud.appendVarCommands(builder, hud.getVars());
+      logHudCommands("InitialUpdate", hud.getUiPath(), builder.getCommands());
+      CustomUICommand[] commands = builder.getCommands();
+      if (commands == null || commands.length == 0) {
+        return;
       }
+      hud.update(false, builder);
+    }), HUD_INITIAL_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
+  }
+
+  private static void logHudCommands(String phase, String uiPath, CustomUICommand[] commands) {
+    if (!DEBUG_HUD_COMMANDS || commands == null) {
+      return;
     }
-    return null;
+    for (CustomUICommand command : commands) {
+      if (command == null) {
+        continue;
+      }
+      LOGGER.info(String.format("[HUD] %s %s selector=%s data=%s text=%s",
+          phase,
+          uiPath,
+          command.selector,
+          command.data,
+          command.text));
+    }
   }
 }

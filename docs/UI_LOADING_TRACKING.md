@@ -19,6 +19,15 @@ We are debugging client crashes when opening Custom UI pages. The client reports
 - **Template source priority:** data `ui-templates.json` overrides bundled defaults (now synced on startup).
 - **Latest test path:** `UI/Custom/Vex/Pages/VexDungeonSummary.ui` (no leading `/`).
 
+## Findings (New)
+
+- **Client paths must strip everything through `Custom/`.**
+  - `Common/UI/Custom/Friends/Pages/FriendsList.ui` -> `Friends/Pages/FriendsList.ui`
+  - `UI/Custom/Friends/Pages/FriendsList.ui` -> `Friends/Pages/FriendsList.ui`
+  - `Custom/Friends/Pages/FriendsList.ui` -> `Friends/Pages/FriendsList.ui`
+- **Label updates must target properties** (ex: `#FriendsListBody.Text`, not `#FriendsListBody`).
+- **UI commands must run on the world thread** (scheduler/ForkJoin will assert).
+
 ## Timeline / Changes
 
 - Added UI template registries in engine and JSON config (`ui-templates.json`).

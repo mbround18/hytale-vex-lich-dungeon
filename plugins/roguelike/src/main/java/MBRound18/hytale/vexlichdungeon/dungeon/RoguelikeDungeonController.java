@@ -21,9 +21,13 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import MBRound18.ImmortalEngine.api.participants.ParticipantSnapshot;
 import MBRound18.ImmortalEngine.api.participants.ParticipantTracker;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
@@ -123,21 +127,21 @@ public class RoguelikeDungeonController {
   }
 
   public void initializePlayer(@Nonnull World world,
-      @Nonnull com.hypixel.hytale.server.core.entity.entities.Player player,
+      @Nonnull PlayerRef playerRef,
       boolean showWelcome) {
     RoguelikeWorldState state = worldStates.get(world.getName());
     if (state == null) {
       return;
     }
-    UUID uuid = player.getUuid();
+    UUID uuid = playerRef.getUuid();
     state.playerScores.putIfAbsent(uuid, 0);
-    state.playerNames.put(uuid, player.getDisplayName());
+    state.playerNames.put(uuid, resolveDisplayName(playerRef));
     String partyList = buildPartyList(world);
     if (showWelcome) {
-      VexHudSequenceSupport.showWelcomeThenScore(player.getPlayerRef(), state.totalScore,
+      VexHudSequenceSupport.showWelcomeThenScore(playerRef, state.totalScore,
           state.playerScores.getOrDefault(uuid, 0), 0, partyList);
     } else {
-      HudController.openScoreHud(player.getPlayerRef(), state.totalScore,
+      HudController.openScoreHud(playerRef, state.totalScore,
           state.playerScores.getOrDefault(uuid, 0), 0, partyList);
     }
   }
@@ -151,9 +155,9 @@ public class RoguelikeDungeonController {
 
     ParticipantTracker.get().updateFromWorld(world);
     Map<String, String> currentPlayers = new HashMap<>();
-    for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-      String uuid = player.getUuid().toString();
-      String name = player.getDisplayName();
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      String uuid = playerRef.getUuid().toString();
+      String name = resolveDisplayName(playerRef);
       currentPlayers.put(uuid, name);
     }
     dataStore.updateCurrentPlayers(worldName, currentPlayers);
@@ -163,7 +167,11 @@ public class RoguelikeDungeonController {
       PortalPlacementRegistry.closePortals("Vex_The_Lich_Dungeon");
     }
 
-    for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      Player player = resolvePlayer(playerRef);
+      if (player == null) {
+        continue;
+      }
       com.hypixel.hytale.server.core.modules.entity.component.TransformComponent transform = player
           .getTransformComponent();
       if (transform == null) {
@@ -520,7 +528,11 @@ public class RoguelikeDungeonController {
     Vector3d pos = transform.getPosition();
     double bestDistance = Double.MAX_VALUE;
     UUID bestUuid = null;
-    for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      Player player = resolvePlayer(playerRef);
+      if (player == null) {
+        continue;
+      }
       RoomKey playerRoom = state.playerRooms.get(player);
       if (playerRoom == null || !playerRoom.equals(key)) {
         continue;
@@ -537,7 +549,7 @@ public class RoguelikeDungeonController {
       double dist = dx * dx + dy * dy + dz * dz;
       if (dist < bestDistance) {
         bestDistance = dist;
-        bestUuid = player.getUuid();
+        bestUuid = playerRef.getUuid();
       }
     }
     return bestUuid;
@@ -557,12 +569,12 @@ public class RoguelikeDungeonController {
   private void updateScoreHud(@Nonnull World world, @Nonnull RoguelikeWorldState state, UUID killerUuid, int delta) {
     int instanceScore = state.totalScore;
     String partyList = buildPartyList(world);
-    for (com.hypixel.hytale.server.core.entity.entities.Player player : world.getPlayers()) {
-      UUID uuid = player.getUuid();
-      state.playerNames.put(uuid, player.getDisplayName());
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      UUID uuid = playerRef.getUuid();
+      state.playerNames.put(uuid, resolveDisplayName(playerRef));
       int playerScore = state.playerScores.getOrDefault(uuid, 0);
       int playerDelta = (killerUuid != null && killerUuid.equals(uuid)) ? delta : 0;
-      HudController.openScoreHud(player.getPlayerRef(), instanceScore, playerScore, playerDelta, partyList);
+      HudController.openScoreHud(playerRef, instanceScore, playerScore, playerDelta, partyList);
     }
   }
 
@@ -627,6 +639,29 @@ public class RoguelikeDungeonController {
     state.returnPortalRoom = null;
     state.returnPortalPos = null;
     log.info("[ROGUELIKE] Return portal removed");
+  }
+
+  @Nullable
+  private Player resolvePlayer(@Nonnull PlayerRef playerRef) {
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return null;
+    }
+    Store<EntityStore> store = ref.getStore();
+    return store.getComponent(ref, Player.getComponentType());
+  }
+
+  @Nonnull
+  private String resolveDisplayName(@Nonnull PlayerRef playerRef) {
+    String username = playerRef.getUsername();
+    Player player = resolvePlayer(playerRef);
+    if (player == null) {
+      return username == null ? "" : username;
+    }
+    String displayName = player.getDisplayName();
+    return displayName == null || displayName.isBlank()
+        ? (username == null ? "" : username)
+        : displayName;
   }
 
   private String buildPartyList(@Nonnull World world) {

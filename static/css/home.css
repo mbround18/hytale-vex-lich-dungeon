@@ -1,0 +1,53 @@
+body {
+  font-family: "MedievalSharp", cursive;
+  background-color: #1a1821;
+  color: #e5e7eb;
+}
+
+h1,
+h2,
+h3,
+.font-fantasy {
+  font-family: "Cinzel", serif;
+}
+
+.green-glow {
+  box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
+}
+
+.gold-border {
+  border: 2px solid #fbbf24;
+  box-shadow:
+    0 0 10px rgba(251, 191, 36, 0.2),
+    inset 0 0 10px rgba(251, 191, 36, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1a1821;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4c1d95;
+  border-radius: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+
+/* Floating Animation for Vex */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}

@@ -11,6 +11,8 @@ import MBRound18.ImmortalEngine.api.logging.InternalLogger;
 import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.ui.VexHudSequenceSupport;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -24,8 +26,11 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.events.StartWorldEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -129,7 +134,7 @@ public class DungeonGenerationEventHandler {
       Map<String, World> worlds = Universe.get().getWorlds();
       for (World world : worlds.values()) {
         handleWorld(world);
-        if (!world.getPlayers().isEmpty()) {
+        if (world.getPlayerCount() > 0) {
           lastPlayerSeen.put(world.getName(), System.currentTimeMillis());
         }
         world.execute(() -> roguelikeController.pollWorld(world));
@@ -217,12 +222,16 @@ public class DungeonGenerationEventHandler {
       // Check if we already have a spawn location for this world
       if (!spawnTracker.hasSpawn(worldName)) {
         // Get all players currently in the world
-        java.util.List<com.hypixel.hytale.server.core.entity.entities.Player> players = world.getPlayers();
+        Collection<PlayerRef> playerRefs = world.getPlayerRefs();
 
-        if (!players.isEmpty()) {
-          // Get the first player (the one who just joined)
-          com.hypixel.hytale.server.core.entity.entities.Player player = players.get(0);
-          engineAdapter.onPlayerEnter(world, player);
+        if (!playerRefs.isEmpty()) {
+          PlayerRef playerRef = playerRefs.iterator().next();
+          com.hypixel.hytale.server.core.entity.entities.Player player = resolvePlayer(playerRef);
+          if (player == null) {
+            log.info("[SPAWN] Unable to resolve player entity for spawn capture.");
+            return;
+          }
+          engineAdapter.onPlayerEnter(world, playerRef);
           com.hypixel.hytale.server.core.modules.entity.component.TransformComponent transform = player
               .getTransformComponent();
 
@@ -286,14 +295,14 @@ public class DungeonGenerationEventHandler {
           log.info("[SPAWN] No players found in world yet, will capture on next event");
         }
 
-        Player eventPlayer = event.getHolder().getComponent(Player.getComponentType());
-        if (eventPlayer != null) {
-          UUID uuid = eventPlayer.getUuid();
+        PlayerRef eventPlayerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
+        if (eventPlayerRef != null) {
+          UUID uuid = eventPlayerRef.getUuid();
           if (world.getName().contains("Vex_The_Lich_Dungeon")) {
             VexChallengeCommand.stopPortalCountdown(uuid);
           }
           boolean showWelcome = welcomedPlayers.add(uuid);
-          roguelikeController.initializePlayer(world, eventPlayer, showWelcome);
+          roguelikeController.initializePlayer(world, eventPlayerRef, showWelcome);
         }
       }
 
@@ -335,12 +344,9 @@ public class DungeonGenerationEventHandler {
         return;
       }
       if (world.getName().contains("Vex_The_Lich_Dungeon")) {
-        Player player = event.getHolder().getComponent(Player.getComponentType());
-        if (player != null) {
-          PlayerRef ref = player.getPlayerRef();
-          if (ref != null) {
-            roguelikeController.showExitSummary(ref, world);
-          }
+        PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
+        if (ref != null) {
+          roguelikeController.showExitSummary(ref, world);
         }
       }
       scheduleEmptyInstanceCheck(world);
@@ -357,6 +363,16 @@ public class DungeonGenerationEventHandler {
       return;
     }
     world.execute(() -> tryShutdownEmptyInstance(world));
+  }
+
+  @Nullable
+  private Player resolvePlayer(@Nonnull PlayerRef playerRef) {
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return null;
+    }
+    Store<EntityStore> store = ref.getStore();
+    return store.getComponent(ref, Player.getComponentType());
   }
 
   private void tryShutdownEmptyInstance(@Nonnull World world) {
@@ -376,7 +392,7 @@ public class DungeonGenerationEventHandler {
     if (!spawnTracker.hasSpawn(worldName)) {
       return;
     }
-    if (!world.getPlayers().isEmpty()) {
+    if (world.getPlayerCount() > 0) {
       return;
     }
     Long lastSeen = lastPlayerSeen.get(worldName);
