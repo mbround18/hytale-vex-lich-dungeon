@@ -3,9 +3,11 @@
 ## What You Need to Know
 
 ### The Problem (One Sentence)
+
 You're adding `"Mods/VexLichDungeon/"` prefix to your prefab paths, but the asset pack system doesn't expect it.
 
 ### The Fix (One Line)
+
 Change `"Mods/VexLichDungeon/" + modRelativePath` to just `modRelativePath`
 
 ---
@@ -38,6 +40,7 @@ If no packs have it → Return null (causes your error)
 ## Current Wrong Code vs. Fixed Code
 
 ### WRONG ❌
+
 ```java
 String namespacedPath = "Mods/VexLichDungeon/" + modRelativePath;
 // Constructs: /assets/Server/Prefabs/Mods/VexLichDungeon/Rooms/Vex_Room_S_Lava_B
@@ -45,6 +48,7 @@ String namespacedPath = "Mods/VexLichDungeon/" + modRelativePath;
 ```
 
 ### CORRECT ✓
+
 ```java
 String prefabPath = modRelativePath;
 // Constructs: /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B
@@ -58,6 +62,7 @@ String prefabPath = modRelativePath;
 Edit [plugin/src/main/java/com/example/hytale/vexlichdungeon/prefab/PrefabSpawner.java](plugin/src/main/java/com/example/hytale/vexlichdungeon/prefab/PrefabSpawner.java#L51-L65)
 
 Replace this:
+
 ```java
 @Nonnull
 public CompletableFuture<BlockSelection> loadPrefab(@Nonnull String modRelativePath) {
@@ -87,6 +92,7 @@ public CompletableFuture<BlockSelection> loadPrefab(@Nonnull String modRelativeP
 ```
 
 With this:
+
 ```java
 @Nonnull
 public CompletableFuture<BlockSelection> loadPrefab(@Nonnull String modRelativePath) {
@@ -117,13 +123,13 @@ public CompletableFuture<BlockSelection> loadPrefab(@Nonnull String modRelativeP
 
 ## Why This Works
 
-| Aspect | How It Works |
-|--------|-------------|
-| **Asset Pack Registration** | Your manifest.json has `"IncludesAssetPack": true` → Server registers `/assets/` as an AssetPack |
-| **Prefab Discovery** | PrefabStore.getAssetPrefabFromAnyPack() iterates registered packs and looks in `{pack}/Server/Prefabs/` |
-| **Path Resolution** | Your input path + base directory = full file path |
-| **Your Files** | Located at `/assets/Server/Prefabs/Rooms/` → matches expected structure |
-| **Caching** | Once loaded, cached in memory for performance |
+| Aspect                      | How It Works                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Asset Pack Registration** | Your manifest.json has `"IncludesAssetPack": true` → Server registers `/assets/` as an AssetPack        |
+| **Prefab Discovery**        | PrefabStore.getAssetPrefabFromAnyPack() iterates registered packs and looks in `{pack}/Server/Prefabs/` |
+| **Path Resolution**         | Your input path + base directory = full file path                                                       |
+| **Your Files**              | Located at `/assets/Server/Prefabs/Rooms/` → matches expected structure                                 |
+| **Caching**                 | Once loaded, cached in memory for performance                                                           |
 
 ---
 
@@ -199,13 +205,13 @@ head -c 100 /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json
 
 ## Common Mistakes to Avoid
 
-| Mistake | Why It Fails | Fix |
-|---------|-------------|-----|
-| Using `"Mods/VexLichDungeon/Rooms/..."` | Extra nesting not in file system | Remove prefix |
-| Using absolute paths | System expects relative paths | Use relative to `Server/Prefabs/` |
-| Forgetting `.prefab.json` | System adds extension | Don't include `.prefab.json` in path |
-| Including `Server/Prefabs/` | Base path already includes this | Just put `Rooms/Name` |
-| Different asset pack not registered | File exists but pack not loaded | Ensure manifest.json in pack root |
+| Mistake                                 | Why It Fails                     | Fix                                  |
+| --------------------------------------- | -------------------------------- | ------------------------------------ |
+| Using `"Mods/VexLichDungeon/Rooms/..."` | Extra nesting not in file system | Remove prefix                        |
+| Using absolute paths                    | System expects relative paths    | Use relative to `Server/Prefabs/`    |
+| Forgetting `.prefab.json`               | System adds extension            | Don't include `.prefab.json` in path |
+| Including `Server/Prefabs/`             | Base path already includes this  | Just put `Rooms/Name`                |
+| Different asset pack not registered     | File exists but pack not loaded  | Ensure manifest.json in pack root    |
 
 ---
 
@@ -258,12 +264,12 @@ public Path findAssetPrefabPath(String inputPath)
 
 ## Summary
 
-| Item | Status | Notes |
-|------|--------|-------|
-| Your prefab file exists | ✓ YES | `/assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json` |
-| Asset pack registered | ✓ YES | manifest.json with `IncludesAssetPack: true` |
-| Path construction | ❌ WRONG | You're adding unnecessary `Mods/VexLichDungeon/` prefix |
-| API being used correctly | ❌ NO | Decompilation shows it expects just relative path |
-| Cache system | ✓ YES | Works transparently once path is correct |
+| Item                     | Status   | Notes                                                        |
+| ------------------------ | -------- | ------------------------------------------------------------ |
+| Your prefab file exists  | ✓ YES    | `/assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json` |
+| Asset pack registered    | ✓ YES    | manifest.json with `IncludesAssetPack: true`                 |
+| Path construction        | ❌ WRONG | You're adding unnecessary `Mods/VexLichDungeon/` prefix      |
+| API being used correctly | ❌ NO    | Decompilation shows it expects just relative path            |
+| Cache system             | ✓ YES    | Works transparently once path is correct                     |
 
 **The fix is simple: remove the `"Mods/VexLichDungeon/"` prefix from your path strings.**

@@ -18,6 +18,7 @@ public class DungeonTile {
   private final int rotation; // 0, 90, 180, 270 degrees
   private final Map<CardinalDirection, String> gates;
   private final TileType type;
+  private boolean eventRoom;
 
   /**
    * Creates a new dungeon tile.
@@ -85,6 +86,14 @@ public class DungeonTile {
     return type;
   }
 
+  public boolean isEventRoom() {
+    return eventRoom;
+  }
+
+  public void setEventRoom(boolean eventRoom) {
+    this.eventRoom = eventRoom;
+  }
+
   /**
    * Sets the gate prefab for a specific direction.
    * 
@@ -148,8 +157,8 @@ public class DungeonTile {
 
   @Override
   public String toString() {
-    return String.format("DungeonTile[grid=(%d,%d), prefab=%s, rotation=%d°, type=%s, gates=%d]",
-        gridX, gridZ, prefabPath, rotation, type, gates.size());
+    return String.format("DungeonTile[grid=(%d,%d), prefab=%s, rotation=%d°, type=%s, event=%s, gates=%d]",
+        gridX, gridZ, prefabPath, rotation, type, eventRoom, gates.size());
   }
 
   @Override

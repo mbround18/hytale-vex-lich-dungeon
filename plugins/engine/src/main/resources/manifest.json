@@ -1,6 +1,6 @@
 {
   "Group": "MBRound18",
-  "Name": "PortalEngine",
+  "Name": "ImmortalEngine",
   "Version": "${version}",
   "Authors": [
     {
@@ -10,6 +10,6 @@
     }
   ],
   "Website": "",
-  "Main": "MBRound18.PortalEngine.PortalEnginePlugin",
+  "Main": "MBRound18.ImmortalEngine.ImmortalEnginePlugin",
   "ServerVersion": "*"
 }

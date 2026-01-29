@@ -42,7 +42,13 @@ jar {
 }
 
 def authorsJsonProvider = project.objects.property(String)
-authorsJsonProvider.convention('[\n  {\n    "Name": "Example Dev",\n    "Email": "dev@example.com",\n    "Url": ""\n  }\n]')
+authorsJsonProvider.convention("""[
+  {
+    "Name": "Example Dev",
+    "Email": "dev@example.com",
+    "Url": ""
+  }
+]""")
 
 tasks.register("generateAuthors") {
     group = "build"
@@ -81,7 +87,13 @@ tasks.register("generateAuthors") {
             authorsJson = "[\n${entries}\n]"
         } catch (Exception e) {
             logger.warn("Failed to extract git authors: ${e.message}")
-            authorsJson = '[\n  {\n    "Name": "Example Dev",\n    "Email": "dev@example.com",\n    "Url": ""\n  }\n]'
+            authorsJson = """[
+  {
+    "Name": "Example Dev",
+    "Email": "dev@example.com",
+    "Url": ""
+  }
+]"""
         }
         authorsOutput.set(authorsJson)
     }

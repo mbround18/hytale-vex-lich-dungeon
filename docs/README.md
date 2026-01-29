@@ -8,8 +8,8 @@ _To the victor goes the spoils... but beware, dear adventurer, for only those wh
 
 This mod splits work into two parts:
 
-- **plugin/**: Java plugin project (commands, gameplay tweaks, etc.).
-- **assets/**: Packaged data such as `manifest.json`, `Server/`, and `Common/` content that ships with the plugin.
+- **plugins/**: Java plugins (commands, gameplay tweaks, etc.).
+- **plugins/roguelike/assets/**: Packaged data such as `manifest.json`, `Server/`, and `Common/` content that ships with the Vex roguelike plugin.
 
 ## Prerequisites
 
@@ -35,8 +35,8 @@ What `setup` does:
 
 ## Working in the template
 
-- Place your Java plugin sources under `plugin/`. Configure your Gradle build there to produce the plugin jar.
-- Place Hytale data that should be bundled (e.g., `manifest.json`, `Server/`, `Common/`) under `assets/`.
+- Place your Java plugin sources under `plugins/roguelike/`. Configure your Gradle build there to produce the plugin jar.
+- Place Hytale data that should be bundled (e.g., `manifest.json`, `Server/`, `Common/`) under `plugins/roguelike/assets/`.
 - The `data/` directory is for local provisioning only and is ignored from version control; it is recreated by `setup`.
 
 ## Build and distribution
@@ -53,8 +53,8 @@ What `setup` does:
 
 ## Plugin structure
 
-- Main plugin lives at `plugin/src/main/java/com/example/hytale/vexlichdungeon/VexLichDungeonPlugin.java` and logs messages on startup and shutdown.
-- Plugin metadata is in `plugin/src/main/resources/plugin.properties` and jar manifest entries are filled via Gradle.
+- Main plugin lives at `plugins/roguelike/src/main/java/MBRound18/hytale/vexlichdungeon/VexLichDungeonPlugin.java` and logs messages on startup and shutdown.
+- Plugin metadata is in `plugins/roguelike/src/main/resources/plugin.properties` and jar manifest entries are filled via Gradle.
 - Build upon this foundation to implement Vex's dungeon trials, rewards, and the path to lichdom.
 
 ## Common tasks

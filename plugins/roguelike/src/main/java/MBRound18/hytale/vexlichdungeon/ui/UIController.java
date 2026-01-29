@@ -1,7 +1,7 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
-import MBRound18.PortalEngine.api.ui.UiRegistry;
-import MBRound18.PortalEngine.api.ui.UiTemplate;
+import MBRound18.ImmortalEngine.api.ui.UiRegistry;
+import MBRound18.ImmortalEngine.api.ui.UiTemplate;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Map;

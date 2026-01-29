@@ -2,7 +2,7 @@ package MBRound18.hytale.vexlichdungeon.prefab;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.FileReader;

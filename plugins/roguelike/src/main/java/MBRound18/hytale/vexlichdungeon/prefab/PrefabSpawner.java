@@ -3,7 +3,7 @@ package MBRound18.hytale.vexlichdungeon.prefab;
 import MBRound18.hytale.vexlichdungeon.dungeon.CardinalDirection;
 import MBRound18.hytale.vexlichdungeon.dungeon.DungeonTile;
 import MBRound18.hytale.vexlichdungeon.dungeon.GenerationConfig;
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -15,7 +15,7 @@ import com.hypixel.hytale.server.core.console.ConsoleSender;
 import com.hypixel.hytale.server.core.prefab.PrefabStore;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import com.hypixel.hytale.server.core.universe.world.World;
-import MBRound18.PortalEngine.api.prefab.PrefabEntityUtils;
+import MBRound18.ImmortalEngine.api.prefab.PrefabEntityUtils;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.Ref;
 import javax.annotation.Nonnull;
@@ -386,6 +386,11 @@ public class PrefabSpawner {
   public void clearCaches() {
     prefabCache.clear();
     inspector.clearCache();
+  }
+
+  @Nonnull
+  public PrefabInspector.PrefabDimensions getPrefabDimensions(@Nonnull String prefabPath) {
+    return inspector.getPrefabDimensions(prefabPath);
   }
 
   private void unfreezeSpawnedEntity(@Nonnull Ref<EntityStore> entityRef) {

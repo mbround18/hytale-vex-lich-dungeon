@@ -1,7 +1,7 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
-import MBRound18.PortalEngine.api.i18n.EngineLang;
-import MBRound18.PortalEngine.api.ui.HudSequenceController;
+import MBRound18.ImmortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.ui.HudSequenceController;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -42,7 +42,7 @@ public final class VexHudSequenceSupport {
   }
 
   public static void showWelcomeThenScore(@Nullable PlayerRef playerRef, int instanceScore,
-      int playerScore, int delta) {
+      int playerScore, int delta, @Nonnull String partyList) {
     HudSequenceController.showWelcomeThenHud(
         playerRef,
         WELCOME_UI,
@@ -53,7 +53,8 @@ public final class VexHudSequenceSupport {
             "VexHudInstanceScore", EngineLang.t("customUI.vexHud.instanceScore", instanceScore),
             "VexHudPlayerScore", EngineLang.t("customUI.vexHud.playerScore", playerScore),
             "VexHudDelta", EngineLang.t("customUI.vexHud.delta",
-                delta >= 0 ? "+" + delta : String.valueOf(delta))),
+                delta >= 0 ? "+" + delta : String.valueOf(delta)),
+            "VexHudPartyList", partyList == null ? "" : partyList),
         PRESENTER,
         DISMISS_FACTORY,
         true);

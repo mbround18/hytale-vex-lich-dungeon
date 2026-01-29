@@ -1,0 +1,114 @@
+{
+  "categories": [
+    {
+      "id": "Ingredient",
+      "path": "Ingredient",
+      "minCount": 1,
+      "maxCount": 3
+    },
+    {
+      "id": "Ore",
+      "path": "Ore",
+      "minCount": 1,
+      "maxCount": 2,
+      "rarityRules": [
+        { "match": "Adamantite", "weight": 0.08 }
+      ]
+    },
+    {
+      "id": "Tool",
+      "path": "Tool",
+      "minCount": 1,
+      "maxCount": 1
+    },
+    {
+      "id": "Potion",
+      "path": "Potion",
+      "minCount": 1,
+      "maxCount": 2
+    },
+    {
+      "id": "Armor",
+      "path": "Armor",
+      "minCount": 1,
+      "maxCount": 1
+    },
+    {
+      "id": "Weapon",
+      "path": "Weapon",
+      "minCount": 1,
+      "maxCount": 1
+    },
+    {
+      "id": "Furniture",
+      "path": "Furniture",
+      "minCount": 1,
+      "maxCount": 1
+    },
+    {
+      "id": "Recipe",
+      "path": "Recipe",
+      "minCount": 1,
+      "maxCount": 1
+    }
+  ],
+  "tiers": [
+    {
+      "name": "tier1",
+      "minScore": 0,
+      "maxScore": 999,
+      "baseRolls": 1,
+      "rollsPerScore": 0.001,
+      "rollsPerEnemyPoint": 0.02,
+      "maxRolls": 3,
+      "categoryWeights": {
+        "Ingredient": 45,
+        "Ore": 25,
+        "Tool": 8,
+        "Potion": 8,
+        "Armor": 4,
+        "Weapon": 4,
+        "Furniture": 4,
+        "Recipe": 2
+      }
+    },
+    {
+      "name": "tier2",
+      "minScore": 1000,
+      "maxScore": 4999,
+      "baseRolls": 2,
+      "rollsPerScore": 0.001,
+      "rollsPerEnemyPoint": 0.03,
+      "maxRolls": 4,
+      "categoryWeights": {
+        "Ingredient": 35,
+        "Ore": 25,
+        "Tool": 10,
+        "Potion": 10,
+        "Armor": 6,
+        "Weapon": 6,
+        "Furniture": 6,
+        "Recipe": 2
+      }
+    },
+    {
+      "name": "tier3",
+      "minScore": 5000,
+      "maxScore": 999999,
+      "baseRolls": 2,
+      "rollsPerScore": 0.001,
+      "rollsPerEnemyPoint": 0.04,
+      "maxRolls": 5,
+      "categoryWeights": {
+        "Ingredient": 25,
+        "Ore": 25,
+        "Tool": 12,
+        "Potion": 12,
+        "Armor": 8,
+        "Weapon": 8,
+        "Furniture": 8,
+        "Recipe": 2
+      }
+    }
+  ]
+}

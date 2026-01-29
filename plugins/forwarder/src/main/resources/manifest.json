@@ -1,0 +1,9 @@
+{
+  "Group": "MBRound18",
+  "Name": "UpnpForwarder",
+  "Version": "${version}",
+  "Authors": "GRADLE_INJECT_AUTHORS",
+  "Website": "https://example.com",
+  "Main": "MBRound18.hytale.forwarder.UpnpForwarderPlugin",
+  "ServerVersion": "*"
+}

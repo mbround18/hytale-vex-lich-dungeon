@@ -1,0 +1,97 @@
+[
+    {
+        "plugin": "Friends",
+        "permission": "party.use",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "party.create",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "party.invite",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "party.join",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "party.decline",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "party.leave",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "party.disband",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "friends.accept",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "friends.add",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "friends.decline",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "friends.use",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "Friends",
+        "permission": "friends.remove",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "VexLichDungeon",
+        "permission": "vex.purge",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "VexLichDungeon",
+        "permission": "vex.ui.list",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "VexLichDungeon",
+        "permission": "vex.ui.show",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "VexLichDungeon",
+        "permission": "vex.ui.reload",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "VexLichDungeon",
+        "permission": "vex.score.view",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "VexLichDungeon",
+        "permission": "vex.score.edit",
+        "description": "Permission required"
+    },
+    {
+        "plugin": "VexLichDungeon",
+        "permission": "vex.removeinstances",
+        "description": "Permission required"
+    }
+]

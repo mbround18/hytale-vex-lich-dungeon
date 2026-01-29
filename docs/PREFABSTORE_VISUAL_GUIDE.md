@@ -17,8 +17,8 @@ Inside API: basePath.resolve(input)
 Result:     /assets/Server/Prefabs/Mods/VexLichDungeon/Rooms/Vex_Room_S_Lava_B
                         ↓
             ❌ FILE DOESN'T EXIST
-            
-            
+
+
 vs.
 
 Input:          "Rooms/Vex_Room_S_Lava_B"
@@ -112,7 +112,7 @@ ACTUAL FILE SYSTEM                    API EXPECTATION
 ==================                    ================
 
 /assets/                              AssetPack.root = /assets/
-├── manifest.json                     
+├── manifest.json
 ├── Common/                           Input to getAssetPrefabFromAnyPack:
 ├── Cosmetics/                        "Rooms/Vex_Room_S_Lava_B"
 └── Server/
@@ -135,7 +135,7 @@ NOT EXPECTED:                         WRONG INPUT (Your Current Code):
             └── VexLichDungeon/
                 └── Rooms/
                     └── Vex_Room_S_Lava_B.prefab.json
-                    
+
 This structure doesn't exist!         Input: "Mods/VexLichDungeon/Rooms/..."
                                      Resolves to: /assets/Server/Prefabs/Mods/...
                                      ❌ FILE NOT FOUND

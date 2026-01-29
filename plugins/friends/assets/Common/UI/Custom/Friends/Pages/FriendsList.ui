@@ -1,0 +1,40 @@
+$F = "../FriendsCommon.ui";
+
+Group {
+  Anchor: (Top: 40, Left: 80, Width: 520, Height: 360);
+
+  $F.@Panel {
+    Group #FriendsTitle {
+      $F.@Title {
+        @Alignment = Center;
+        @Text = "Friends";
+      }
+    }
+
+    Group #FriendsContent {
+      Label #FriendsSubtitle {
+        Anchor: (Left: 0, Top: 0, Height: 16);
+        Text: "Online friends and party controls";
+        Style: (FontSize: 12, TextColor: $F.@MutedColor);
+      }
+
+      Label #FriendsPartyStatus {
+        Anchor: (Left: 0, Top: 22, Width: 480, Height: 20);
+        Text: "Party: none";
+        Style: (FontSize: 14, RenderBold: true, TextColor: $F.@AccentColor);
+      }
+
+      Label #FriendsListBody {
+        Anchor: (Left: 0, Top: 50, Width: 480, Height: 240);
+        Text: "No friends yet.";
+        Style: (FontSize: 14, TextColor: $F.@BodyColor);
+      }
+
+      Label #FriendsHint {
+        Anchor: (Left: 0, Top: 300, Width: 480, Height: 20);
+        Text: "Use /friend add NAME, /friend accept, /friend decline, /party invite NAME";
+        Style: (FontSize: 12, TextColor: $F.@MutedColor);
+      }
+    }
+  }
+}

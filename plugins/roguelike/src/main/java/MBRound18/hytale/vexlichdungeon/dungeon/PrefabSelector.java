@@ -27,6 +27,10 @@ public class PrefabSelector {
     this.discovery = discovery;
   }
 
+  public PrefabDiscovery getDiscovery() {
+    return discovery;
+  }
+
   /**
    * Selects a random room prefab from discovered assets.
    * 
@@ -45,6 +49,20 @@ public class PrefabSelector {
   @Nullable
   public String selectRandomHallway() {
     return discovery.getRandomHallway();
+  }
+
+  /**
+   * Selects a random event prefab from discovered assets.
+   *
+   * @return Full mod path to a random event prefab, or null if none available
+   */
+  @Nullable
+  public String selectRandomEvent() {
+    List<String> events = discovery.getAllEventPrefabs();
+    if (events.isEmpty()) {
+      return null;
+    }
+    return events.get(random.nextInt(events.size()));
   }
 
   /**

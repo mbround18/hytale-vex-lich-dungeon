@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.commands;
 
-import MBRound18.PortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.i18n.EngineLang;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.data.DungeonInstanceData;
 import MBRound18.hytale.vexlichdungeon.ui.UIController;

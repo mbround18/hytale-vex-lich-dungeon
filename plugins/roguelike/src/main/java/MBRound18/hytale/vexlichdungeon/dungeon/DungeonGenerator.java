@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.dungeon;
 
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabInspector;
 import javax.annotation.Nonnull;

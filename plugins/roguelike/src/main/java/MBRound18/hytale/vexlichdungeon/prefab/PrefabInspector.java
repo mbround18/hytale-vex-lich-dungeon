@@ -1,7 +1,7 @@
 package MBRound18.hytale.vexlichdungeon.prefab;
 
 import MBRound18.hytale.vexlichdungeon.dungeon.CardinalDirection;
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

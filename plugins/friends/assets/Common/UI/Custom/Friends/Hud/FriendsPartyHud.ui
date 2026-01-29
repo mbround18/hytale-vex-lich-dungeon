@@ -1,0 +1,24 @@
+$F = "../FriendsCommon.ui";
+
+Group {
+  Anchor: (Top: 20, Right: 20, Width: 260, Height: 180);
+  Background: (Color: $F.@PanelBackground);
+  Padding: (Left: 10, Top: 8, Right: 10, Bottom: 8);
+
+  Group #FriendsPartyIcon {
+    Anchor: (Left: 6, Top: 6, Width: 24, Height: 24);
+    Background: (TexturePath: "Friends/FriendsIcon@2x.png", Color: $F.@AccentColor);
+  }
+
+  Label #FriendsPartyTitle {
+    Anchor: (Left: 38, Top: 6, Height: 18);
+    Text: "Party";
+    Style: (FontSize: 14, RenderBold: true, TextColor: $F.@HighlightColor);
+  }
+
+  Label #FriendsPartyList {
+    Anchor: (Left: 6, Top: 32, Width: 240, Height: 140);
+    Text: "You - HP ? | ST ?";
+    Style: (FontSize: 12, TextColor: $F.@BodyColor);
+  }
+}

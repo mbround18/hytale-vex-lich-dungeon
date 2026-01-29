@@ -1,8 +1,8 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
-import MBRound18.PortalEngine.api.i18n.EngineLang;
-import MBRound18.PortalEngine.api.ui.HudRegistry;
-import MBRound18.PortalEngine.api.ui.UiTemplate;
+import MBRound18.ImmortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.ui.HudRegistry;
+import MBRound18.ImmortalEngine.api.ui.UiTemplate;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -23,7 +23,7 @@ public final class HudController {
     HudRegistry.register(new UiTemplate(
         "hud",
       "Custom/Vex/Hud/VexScoreHud.ui",
-      java.util.List.of("VexHudInstanceScore", "VexHudPlayerScore", "VexHudDelta")));
+      java.util.List.of("VexHudInstanceScore", "VexHudPlayerScore", "VexHudDelta", "VexHudPartyList")));
     HudRegistry.register(new UiTemplate(
       "welcome",
       "Custom/Vex/Hud/VexWelcomeHud.ui",
@@ -36,6 +36,10 @@ public final class HudController {
       "leaderboardHud",
       "Custom/Vex/Hud/VexLeaderboardHud.ui",
       java.util.List.of("VexLeaderboardBody")));
+    HudRegistry.register(new UiTemplate(
+      "portalCountdown",
+      "Custom/Vex/Hud/VexPortalCountdownHud.ui",
+      java.util.List.of("VexPortalCountdown", "VexPortalLocation")));
   }
 
   @Nullable
@@ -62,6 +66,11 @@ public final class HudController {
   }
 
   public static boolean openScoreHud(@Nullable PlayerRef playerRef, int instanceScore, int playerScore, int delta) {
+    return openScoreHud(playerRef, instanceScore, playerScore, delta, "");
+  }
+
+  public static boolean openScoreHud(@Nullable PlayerRef playerRef, int instanceScore, int playerScore, int delta,
+      @Nonnull String partyList) {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
@@ -70,7 +79,19 @@ public final class HudController {
         Map.of(
             "VexHudInstanceScore", EngineLang.t("customUI.vexHud.instanceScore", instanceScore),
             "VexHudPlayerScore", EngineLang.t("customUI.vexHud.playerScore", playerScore),
-            "VexHudDelta", EngineLang.t("customUI.vexHud.delta", deltaText)));
+            "VexHudDelta", EngineLang.t("customUI.vexHud.delta", deltaText),
+            "VexHudPartyList", partyList == null ? "" : partyList));
+  }
+
+  public static boolean openPortalCountdown(@Nullable PlayerRef playerRef, @Nonnull String timerText,
+      @Nonnull String locationText) {
+    if (playerRef == null || !playerRef.isValid()) {
+      return false;
+    }
+    return openHud(playerRef, "Custom/Vex/Hud/VexPortalCountdownHud.ui",
+        Map.of(
+            "VexPortalCountdown", timerText == null ? "" : timerText,
+            "VexPortalLocation", locationText == null ? "" : locationText));
   }
 
   public static boolean clearHud(@Nullable PlayerRef playerRef) {

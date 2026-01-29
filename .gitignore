@@ -3,6 +3,7 @@
 build/
 gradle.properties
 !gradle/wrapper/gradle-wrapper.jar
+*:Zone.Identifier
 
 # Distribution output
 dist/

@@ -7,14 +7,14 @@ import javax.annotation.Nonnull;
  * Simple internal logger that writes to the plugin data directory.
  */
 public class InternalLogger {
-  private final MBRound18.PortalEngine.api.logging.EngineInternalLogger delegate;
+  private final MBRound18.ImmortalEngine.api.logging.EngineInternalLogger delegate;
 
   public InternalLogger(@Nonnull Path dataDirectory) {
-    this.delegate = new MBRound18.PortalEngine.api.logging.EngineInternalLogger(dataDirectory);
+    this.delegate = new MBRound18.ImmortalEngine.api.logging.EngineInternalLogger(dataDirectory);
   }
 
   public InternalLogger(@Nonnull Path dataDirectory, @Nonnull String baseName) {
-    this.delegate = new MBRound18.PortalEngine.api.logging.EngineInternalLogger(dataDirectory, baseName);
+    this.delegate = new MBRound18.ImmortalEngine.api.logging.EngineInternalLogger(dataDirectory, baseName);
   }
 
   public synchronized void start() {

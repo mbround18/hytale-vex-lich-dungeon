@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-group = 'MBRound18.PortalEngine'
+group = 'MBRound18.ImmortalEngine'
 version = '0.1.0'
 
 repositories {
@@ -35,13 +35,13 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 jar {
-    archiveBaseName.set("PortalEngine")
+    archiveBaseName.set("ImmortalEngine")
     manifest {
         attributes(
-                'Plugin-Main': 'MBRound18.PortalEngine.PortalEnginePlugin',
-                'Plugin-Name': 'PortalEngine',
+                'Plugin-Main': 'MBRound18.ImmortalEngine.ImmortalEnginePlugin',
+                'Plugin-Name': 'ImmortalEngine',
                 'Plugin-Version': project.version,
-                'Implementation-Title': 'PortalEngine',
+                'Implementation-Title': 'ImmortalEngine',
                 'Implementation-Version': project.version
         )
     }

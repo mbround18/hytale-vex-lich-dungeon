@@ -1,0 +1,19 @@
+{
+  "Group": "MBRound18",
+  "Name": "Friends",
+  "Version": "0.1.0",
+  "Description": "Friends list and party UI.",
+  "Authors": [
+    {
+      "Name": "Your Name",
+      "Email": "you@example.com",
+      "Url": "https://example.com"
+    }
+  ],
+  "Website": "https://example.com",
+  "ServerVersion": "*",
+  "Dependencies": {},
+  "OptionalDependencies": {},
+  "DisabledByDefault": false,
+  "IncludesAssetPack": true
+}

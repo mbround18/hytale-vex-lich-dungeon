@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.prefab;
 
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import javax.annotation.Nonnull;
 import java.io.BufferedReader;

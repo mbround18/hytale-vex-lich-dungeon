@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.commands;
 
-import MBRound18.PortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.i18n.EngineLang;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;

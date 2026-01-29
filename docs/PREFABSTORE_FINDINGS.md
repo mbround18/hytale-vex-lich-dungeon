@@ -19,7 +19,7 @@ The decompiled bytecode shows this exact algorithm:
 for (AssetPack pack : AssetModule.get().getAssetPacks()) {
     Path basePath = pack.getRoot().resolve("Server").resolve("Prefabs")
     Path fullPath = basePath.resolve(inputPath)
-    
+
     if (Files.exists(fullPath)) {
         return getPrefab(fullPath)
     }
@@ -32,16 +32,19 @@ return null
 ### 2. Your Path Transformation
 
 **What You're Passing:**
+
 ```
 "Mods/VexLichDungeon/Rooms/Vex_Room_S_Lava_B"
 ```
 
 **What Gets Constructed:**
+
 ```
 /assets/Server/Prefabs/Mods/VexLichDungeon/Rooms/Vex_Room_S_Lava_B
 ```
 
 **Result:**
+
 ```
 FILE NOT FOUND ❌
 ```
@@ -49,16 +52,19 @@ FILE NOT FOUND ❌
 ### 3. The Correct Path
 
 **What You Should Pass:**
+
 ```
 "Rooms/Vex_Room_S_Lava_B"
 ```
 
 **What Gets Constructed:**
+
 ```
 /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B
 ```
 
 **Result:**
+
 ```
 FILE FOUND ✓
 ```
@@ -66,9 +72,11 @@ FILE FOUND ✓
 ### 4. Why The "Mods/VexLichDungeon/" Prefix is Wrong
 
 Your comment in the code states:
+
 > Asset packs are namespaced - prefabs show in-game as "Mods/VexLichDungeon/Category/Name"
 
 This is the **in-game display name**, not a file path. The `getAssetPrefabFromAnyPack()` method:
+
 - ✓ Works with multiple asset packs
 - ✓ Handles the pack selection automatically
 - ❌ Does NOT apply namespace prefixes to paths
@@ -91,28 +99,28 @@ This is the **in-game display name**, not a file path. The `getAssetPrefabFromAn
 ```
 Method Called:
     prefabStore.getAssetPrefabFromAnyPack("Rooms/Vex_Room_S_Lava_B")
-    
+
 Step 1: Get all registered packs
     List<AssetPack> packs = AssetModule.get().getAssetPacks()
     // Result: [AssetPack(VexLichDungeon, /assets/), ...]
-    
+
 Step 2: Iterate and construct paths
     for (pack : packs) {
         // Step 2a: Build base prefabs directory
         Path base = pack.getRoot()              // /assets/
         base = base.resolve("Server")            // /assets/Server/
         base = base.resolve("Prefabs")           // /assets/Server/Prefabs/
-        
+
         // Step 2b: Append user input
         Path full = base.resolve("Rooms/Vex_Room_S_Lava_B")
                 // /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B
-        
+
         // Step 2c: Check existence
         if (Files.exists(full)) {
             return getPrefab(full)  // ✓ RETURN PREFAB
         }
     }
-    
+
 Step 3: Not found
     return null  // ❌ NOTHING FOUND
 ```
@@ -142,6 +150,7 @@ Step 3: Not found
 ```
 
 **Verification:**
+
 ```bash
 $ ls -l /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json
 -rw-r--r-- 1 mbruno mbruno 283556 Jan 26 23:45 Vex_Room_S_Lava_B.prefab.json
@@ -184,13 +193,13 @@ $ ls -l /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json
 ```java
 1. Load manifest.json from packLocation
    PluginManifest manifest = loadPackManifest(packLocation)
-   
+
 2. If invalid manifest, skip
    if (manifest == null) {
        log.warning("Skipping pack: missing manifest.json")
        return
    }
-   
+
 3. Check if mod is enabled
    PluginIdentifier id = new PluginIdentifier(manifest)
    ModConfig config = server.getConfig().getModConfig(id)
@@ -198,7 +207,7 @@ $ ls -l /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json
        log.info("Skipped disabled pack: %s", id)
        return
    }
-   
+
 4. Register the pack
    registerPack(id.toString(), packLocation, manifest)
    assetPacks.add(new AssetPack(
@@ -207,7 +216,7 @@ $ ls -l /assets/Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json
        manifest = manifest,
        // ... other fields
    ))
-   
+
 5. Log success
    log.info("Loaded pack: %s from %s", id, packLocation)
 ```
@@ -233,6 +242,7 @@ class AssetPack {
 ### There is NO separate prefab registry file
 
 The system relies on:
+
 1. **manifest.json** - Registers the pack
 2. **File system** - Prefabs discovered by file listing
 3. **In-memory list** - `AssetModule.assetPacks`
@@ -250,20 +260,20 @@ This is the method to discover all available prefabs:
 ```java
 public List<AssetPackPrefabPath> getAllAssetPrefabPaths() {
     List<AssetPackPrefabPath> result = new ObjectArrayList()
-    
+
     // For each registered asset pack
     for (AssetPack pack : AssetModule.get().getAssetPacks()) {
-        
+
         // Get the Server/Prefabs directory for this pack
         Path prefabsPath = getAssetPrefabsPathForPack(pack)
         // Result: {pack.root}/Server/Prefabs
-        
+
         // Only include if directory exists
         if (Files.isDirectory(prefabsPath)) {
             result.add(new AssetPackPrefabPath(pack, prefabsPath))
         }
     }
-    
+
     return result
 }
 ```
@@ -290,24 +300,24 @@ public AssetPack findAssetPackForPrefabPath(Path prefabPath)
 public BlockSelection getAssetPrefabFromAnyPack(String inputPath) {
     // Get iterator over all registered asset packs
     Iterator iterator = AssetModule.get().getAssetPacks().iterator()
-    
+
     while (iterator.hasNext()) {
         // Get next pack
         AssetPack pack = (AssetPack) iterator.next()
-        
+
         // Get base prefabs path for this pack
         Path basePath = getAssetPrefabsPathForPack(pack)
-        
+
         // Resolve input path relative to base
         Path fullPath = basePath.resolve(inputPath)
-        
+
         // Check if file exists
         if (Files.exists(fullPath, new LinkOption[0])) {
             // Load and return
             return getPrefab(fullPath)
         }
     }
-    
+
     // Not found in any pack
     return null
 }
@@ -371,6 +381,7 @@ public Path getAssetPrefabsPathForPack(AssetPack pack) {
 ## Why Your Current Code Returns NULL
 
 **Current Code:**
+
 ```java
 String namespacedPath = "Mods/VexLichDungeon/" + modRelativePath
 BlockSelection prefab = prefabStore.getAssetPrefabFromAnyPack(namespacedPath)
@@ -382,16 +393,16 @@ BlockSelection prefab = prefabStore.getAssetPrefabFromAnyPack(namespacedPath)
 1. namespacedPath = "Mods/VexLichDungeon/Rooms/Vex_Room_S_Lava_B"
 
 2. getAssetPrefabFromAnyPack(namespacedPath):
-   
+
    For pack = AssetPack(VexLichDungeon, /assets/):
        basePath = /assets/Server/Prefabs/
        fullPath = /assets/Server/Prefabs/Mods/VexLichDungeon/Rooms/Vex_Room_S_Lava_B
-       
+
        Files.exists(fullPath) ?
        NO ❌ (This directory structure doesn't exist)
-   
+
    No other packs have this path
-   
+
 3. Return null
 
 4. Your code then throws:
@@ -488,14 +499,14 @@ public CompletableFuture<BlockSelection> loadPrefab(@Nonnull String modRelativeP
 
 ## Final Summary Table
 
-| Component | Current | Issue | Fixed |
-|-----------|---------|-------|-------|
-| manifest.json | ✓ Exists | None | ✓ OK |
-| Asset pack registered | ✓ Yes | None | ✓ OK |
-| Prefab files | ✓ Exist | None | ✓ OK |
-| Path string | ❌ Wrong | Has `"Mods/VexLichDungeon/"` prefix | Remove prefix |
-| API usage | ❌ Wrong | Passing wrong path | Pass correct path |
-| Result | ❌ null | Returns null | ✓ Returns BlockSelection |
+| Component             | Current  | Issue                               | Fixed                    |
+| --------------------- | -------- | ----------------------------------- | ------------------------ |
+| manifest.json         | ✓ Exists | None                                | ✓ OK                     |
+| Asset pack registered | ✓ Yes    | None                                | ✓ OK                     |
+| Prefab files          | ✓ Exist  | None                                | ✓ OK                     |
+| Path string           | ❌ Wrong | Has `"Mods/VexLichDungeon/"` prefix | Remove prefix            |
+| API usage             | ❌ Wrong | Passing wrong path                  | Pass correct path        |
+| Result                | ❌ null  | Returns null                        | ✓ Returns BlockSelection |
 
 ---
 

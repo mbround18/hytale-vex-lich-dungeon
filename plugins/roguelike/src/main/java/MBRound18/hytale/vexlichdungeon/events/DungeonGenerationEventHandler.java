@@ -1,13 +1,14 @@
 package MBRound18.hytale.vexlichdungeon.events;
 
-import MBRound18.PortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.i18n.EngineLang;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.data.PlayerSpawnTracker;
 import MBRound18.hytale.vexlichdungeon.dungeon.DungeonGenerator;
 import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
-import MBRound18.PortalEngine.api.logging.InternalLogger;
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.vexlichdungeon.commands.VexChallengeCommand;
+import MBRound18.ImmortalEngine.api.logging.InternalLogger;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.ui.VexHudSequenceSupport;
 import com.hypixel.hytale.event.EventBus;
@@ -143,6 +144,46 @@ public class DungeonGenerationEventHandler {
   }
 
   /**
+   * Force-remove all Vex dungeon instances during plugin shutdown.
+   */
+  public void shutdownAllInstances() {
+    try {
+      Map<String, World> worlds = Universe.get().getWorlds();
+      ArrayList<String> removed = new ArrayList<>();
+
+      for (World world : worlds.values()) {
+        String worldName = world.getName();
+        if (!worldName.contains("Vex_The_Lich_Dungeon")) {
+          continue;
+        }
+        if (!shuttingDownWorlds.add(worldName)) {
+          continue;
+        }
+
+        dataStore.clearCurrentPlayers(worldName);
+        MBRound18.ImmortalEngine.api.RunSummary summary = engineAdapter.finalizeRun(worldName);
+        if (summary != null) {
+          dataStore.applyRunSummary(worldName, summary);
+        }
+        roguelikeController.removeWorldState(worldName);
+        spawnTracker.clearWorld(worldName);
+        Universe.get().removeWorld(worldName);
+        removed.add(worldName);
+        log.info("[INSTANCE] Removed dungeon instance during shutdown: %s", worldName);
+      }
+
+      if (!removed.isEmpty()) {
+        dataStore.removeInstances(removed);
+      }
+    } catch (Exception e) {
+      log.error("Failed to remove dungeon instances during shutdown: %s", e.getMessage());
+      if (eventsLogger != null) {
+        eventsLogger.error("shutdownAllInstances failed: " + e.getMessage());
+      }
+    }
+  }
+
+  /**
    * Called when a world starts.
    * If it's a VexLichDungeon world that hasn't been generated yet,
    * triggers automatic dungeon generation.
@@ -248,6 +289,9 @@ public class DungeonGenerationEventHandler {
         Player eventPlayer = event.getHolder().getComponent(Player.getComponentType());
         if (eventPlayer != null) {
           UUID uuid = eventPlayer.getUuid();
+          if (world.getName().contains("Vex_The_Lich_Dungeon")) {
+            VexChallengeCommand.stopPortalCountdown(uuid);
+          }
           boolean showWelcome = welcomedPlayers.add(uuid);
           roguelikeController.initializePlayer(world, eventPlayer, showWelcome);
         }
@@ -344,7 +388,7 @@ public class DungeonGenerationEventHandler {
     }
 
     dataStore.clearCurrentPlayers(worldName);
-    MBRound18.PortalEngine.api.RunSummary summary = engineAdapter.finalizeRun(worldName);
+    MBRound18.ImmortalEngine.api.RunSummary summary = engineAdapter.finalizeRun(worldName);
     if (summary != null) {
       dataStore.applyRunSummary(worldName, summary);
       announceRunSummary(summary);
@@ -356,7 +400,7 @@ public class DungeonGenerationEventHandler {
     log.info("[INSTANCE] Removed empty dungeon instance: %s", worldName);
   }
 
-  private void announceRunSummary(@Nonnull MBRound18.PortalEngine.api.RunSummary summary) {
+  private void announceRunSummary(@Nonnull MBRound18.ImmortalEngine.api.RunSummary summary) {
     String header = EngineLang.t(
         "event.vex.summary.header",
         summary.getTotalScore(),
@@ -373,11 +417,11 @@ public class DungeonGenerationEventHandler {
         summary.getRoundsCleared(),
         summary.getSafeRoomsVisited());
 
-    ArrayList<MBRound18.PortalEngine.api.RunSummary.PlayerSummary> players = new ArrayList<>(summary.getPlayers());
-    players.sort(Comparator.comparingInt(MBRound18.PortalEngine.api.RunSummary.PlayerSummary::getScore)
+    ArrayList<MBRound18.ImmortalEngine.api.RunSummary.PlayerSummary> players = new ArrayList<>(summary.getPlayers());
+    players.sort(Comparator.comparingInt(MBRound18.ImmortalEngine.api.RunSummary.PlayerSummary::getScore)
         .reversed());
 
-    for (MBRound18.PortalEngine.api.RunSummary.PlayerSummary player : players) {
+    for (MBRound18.ImmortalEngine.api.RunSummary.PlayerSummary player : players) {
       try {
         UUID uuid = UUID.fromString(player.getPlayerId());
         PlayerRef ref = Universe.get().getPlayer(uuid);
@@ -386,7 +430,7 @@ public class DungeonGenerationEventHandler {
         }
         ref.sendMessage(Message.raw(header));
         StringBuilder bodyBuilder = new StringBuilder();
-        for (MBRound18.PortalEngine.api.RunSummary.PlayerSummary progress : players) {
+        for (MBRound18.ImmortalEngine.api.RunSummary.PlayerSummary progress : players) {
           String name = progress.getDisplayName() != null ? progress.getDisplayName() : progress.getPlayerId();
           String line = EngineLang.t(
               "customUI.vexSummary.leaderboardDetail",

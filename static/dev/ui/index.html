@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hytale UI | Vex Dev Grimoire</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Showdown for Markdown Rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+
+  <!-- Highlight.js for Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <!-- We load SCSS and Java languages as they approximate Hytale UI syntax best -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/scss.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+
+  <!-- Fonts: Cinzel (Headers), Inter (Body), Fira Code (Code) -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Fira+Code:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <!-- Configuration & Custom Styles -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'vex-dark': '#121212',       // Main bg
+            'vex-panel': '#1e1e1e',      // Sidebar/Cards
+            'vex-border': '#333333',     // Subtle borders
+            'vex-purple': '#8b5cf6',     // Primary
+            'vex-purple-dim': 'rgba(139, 92, 246, 0.1)',
+            'necro-green': '#4ade80',    // Success/Active
+            'ancient-gold': '#fbbf24',   // Warnings/Headers
+            'code-bg': '#282c34',        // Code block background
+          },
+          fontFamily: {
+            'fantasy': ['"Cinzel"', 'serif'],
+            'sans': ['"Inter"', 'sans-serif'],
+            'mono': ['"Fira Code"', 'monospace'],
+          },
+          typography: (theme) => ({
+            DEFAULT: {
+              css: {
+                color: theme('colors.gray.300'),
+                h1: { fontFamily: 'Cinzel', color: theme('colors.ancient-gold') },
+                h2: { fontFamily: 'Cinzel', color: theme('colors.white'), marginTop: '2em' },
+                code: { color: theme('colors.necro-green'), backgroundColor: '#2d2d2d', padding: '0.2rem 0.4rem', borderRadius: '0.25rem', fontWeight: '400' },
+                'code::before': { content: '""' },
+                'code::after': { content: '""' },
+                pre: { backgroundColor: theme('colors.code-bg'), borderRadius: '0.5rem', border: '1px solid #333' },
+              },
+            },
+          }),
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #121212;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #8b5cf6;
+    }
+
+    /* Markdown Content Styles */
+
+    /* H1: Grand Page Title */
+    .markdown-body h1 {
+      @apply text-5xl font-fantasy font-bold text-ancient-gold mb-12 mt-2 tracking-wide pl-10 py-6 rounded-r shadow-lg;
+      text-shadow: 0 4px 24px rgba(251, 191, 36, 0.15);
+      border-left: 8px solid #8b5cf6;
+      /* Thicker Purple Border */
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, transparent 100%);
+    }
+
+    /* H2: Section Headers */
+    .markdown-body h2 {
+      @apply text-3xl font-fantasy text-white mt-16 mb-8 flex items-center gap-3 pl-6 py-3 rounded-r;
+      border-left: 4px solid #8b5cf6;
+      /* Standard Purple Border */
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%);
+    }
+
+    /* H3: Sub-sections */
+    .markdown-body h3 {
+      @apply text-xl font-bold text-necro-green mt-12 mb-6 uppercase tracking-wider pl-4 py-2 rounded-r flex items-center;
+      border-left: 3px solid #8b5cf6;
+      /* Thinner Purple Border */
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%);
+    }
+
+    /* Body Text */
+    .markdown-body p {
+      @apply text-gray-300 text-lg leading-8 mb-8 font-sans font-light;
+    }
+
+    /* Unordered Lists with Custom Bullets */
+    .markdown-body ul {
+      @apply space-y-3 mb-10 pl-6 list-none;
+    }
+
+    .markdown-body ul>li {
+      @apply flex items-start gap-3 text-gray-300 leading-7;
+    }
+
+    .markdown-body ul>li::before {
+      content: "▹";
+      @apply text-ancient-gold font-bold mt-0.5;
+    }
+
+    /* Ordered Lists with Custom Counters */
+    .markdown-body ol {
+      @apply space-y-3 mb-10 pl-6 list-none;
+      counter-reset: item;
+    }
+
+    .markdown-body ol>li {
+      @apply flex items-start gap-3 text-gray-300 leading-7;
+      counter-increment: item;
+    }
+
+    .markdown-body ol>li::before {
+      content: counter(item) ".";
+      @apply text-ancient-gold font-bold mt-0.5 font-mono min-w-[1.5em];
+    }
+
+    /* Links */
+    .markdown-body a {
+      @apply text-vex-purple hover:text-necro-green transition-colors underline decoration-dotted decoration-2 underline-offset-4;
+    }
+
+    /* Strong/Bold Emphasis */
+    .markdown-body strong {
+      @apply text-white font-semibold;
+    }
+
+    /* Code Blocks - Syntax Highlighting Adjustments */
+    .markdown-body pre {
+      @apply bg-[#1a1b21] border border-gray-700 rounded-xl p-6 overflow-x-auto mb-10 shadow-2xl relative group;
+    }
+
+    .markdown-body code {
+      @apply font-mono text-sm;
+    }
+
+    .markdown-body pre code {
+      @apply bg-transparent p-0 text-gray-300;
+    }
+
+    /* Inline Code */
+    .markdown-body p code,
+    .markdown-body li code {
+      @apply text-necro-green bg-[#1f2937] px-1.5 py-0.5 rounded border border-gray-700/50 text-[0.9em];
+    }
+
+    /* HighlightJS Overrides for Vex Theme */
+    .hljs {
+      background: transparent !important;
+      padding: 0 !important;
+    }
+
+    .hljs-comment {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .hljs-keyword {
+      color: #c084fc;
+    }
+
+    /* Vex Purple */
+    .hljs-string {
+      color: #4ade80;
+    }
+
+    /* Necro Green */
+    .hljs-variable {
+      color: #fbbf24;
+    }
+
+    /* Ancient Gold */
+    .hljs-title {
+      color: #fbbf24;
+    }
+
+    .hljs-number {
+      color: #f87171;
+    }
+
+    /* Tables */
+    .markdown-body table {
+      @apply w-full border-collapse mb-12 text-left overflow-hidden rounded-lg shadow-lg border border-gray-800;
+    }
+
+    .markdown-body th {
+      @apply bg-gray-900 text-ancient-gold font-fantasy p-4 border-b border-gray-700 tracking-wider;
+    }
+
+    .markdown-body td {
+      @apply p-4 border-b border-gray-800 text-gray-400 bg-[#151515];
+    }
+
+    .markdown-body tr:last-child td {
+      @apply border-b-0;
+    }
+
+    .markdown-body tr:hover td {
+      @apply bg-[#1e1e1e] transition-colors;
+    }
+
+    /* Blockquotes */
+    .markdown-body blockquote {
+      @apply border-l-4 border-vex-purple pl-6 italic text-gray-400 my-10 bg-[#1a1821] p-6 rounded-r-lg shadow-inner relative;
+    }
+
+    .markdown-body blockquote::before {
+      content: '"';
+      @apply absolute top-2 left-2 text-4xl text-vex-purple opacity-20 font-fantasy;
+    }
+
+    /* Custom "Note" patterns */
+    .note-warn {
+      @apply border-l-4 border-red-500 bg-red-900/10 p-4 my-6 rounded-r;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-vex-dark text-gray-200 antialiased h-screen flex overflow-hidden selection:bg-necro-green selection:text-black">
+
+  <!-- Sidebar -->
+  <aside class="w-72 bg-vex-panel border-r border-gray-800 flex flex-col shadow-2xl z-20">
+
+    <!-- Brand -->
+    <div class="p-6 border-b border-gray-800 bg-black/20">
+      <div class="flex items-center gap-3 mb-1">
+        <span class="text-2xl">💀</span>
+        <div class="font-fantasy text-xl text-white tracking-wider">Hytale UI</div>
+      </div>
+      <div class="text-xs text-ancient-gold font-mono uppercase tracking-widest pl-10 opacity-70">Dev Grimoire</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="nav" class="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+      <!-- Nav links generated by JS -->
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="p-4 border-t border-gray-800 text-xs text-gray-600 font-mono text-center">
+      v1.0.4 • Vex Engine
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto relative bg-[#121212]">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-[0.03] pointer-events-none"
+      style="background-image: url('https://www.transparenttextures.com/patterns/black-scales.png');"></div>
+
+    <div class="max-w-5xl mx-auto px-12 py-16 relative z-10">
+      <div id="output" class="markdown-body min-h-[50vh]">
+        <!-- Content loads here -->
+        <div class="flex items-center justify-center h-64 text-gray-500 animate-pulse">
+          Loading Scroll...
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /* --- Configuration --- */
+    const pages = [
+      { title: "Overview", file: "rules.md", icon: "📜" },
+      { title: "Syntax Guide", file: "syntax.md", icon: "🔮" },
+      { title: "Cheat Sheet", file: "cheat-sheet.md", icon: "⚡" },
+      { title: "UI Patterns", file: "patterns.md", icon: "🧩" },
+      { title: "Asset Validator", file: "validator.md", icon: "✅" },
+    ];
+
+    /* --- Showdown Setup --- */
+    const converter = new showdown.Converter({
+      tables: true,
+      strikethrough: true,
+      ghCodeBlocks: true,
+      tasklists: true,
+    });
+
+    const nav = document.getElementById("nav");
+    const output = document.getElementById("output");
+
+    /* --- UI Functions --- */
+    function setActive(link) {
+      // Reset all
+      nav.querySelectorAll("a").forEach(a => {
+        a.classList.remove("bg-vex-purple-dim", "text-necro-green", "border-l-4", "border-necro-green");
+        a.classList.add("text-gray-400", "border-l-4", "border-transparent", "hover:text-white", "hover:bg-white/5");
+      });
+
+      // Set active
+      if (link) {
+        link.classList.remove("text-gray-400", "border-transparent", "hover:text-white", "hover:bg-white/5");
+        link.classList.add("bg-vex-purple-dim", "text-necro-green", "border-l-4", "border-necro-green");
+      }
+    }
+
+    /* --- Content Loading --- */
+    async function loadPage(file, link) {
+      if (link) setActive(link);
+
+      try {
+        const res = await fetch(file);
+        if (!res.ok) throw new Error("File not found");
+        const md = await res.text();
+        output.innerHTML = converter.makeHtml(md);
+      } catch (e) {
+        console.warn(`Could not fetch ${file}. Loading mock data for preview.`);
+        // Fallback for when files aren't present (like in this chat preview)
+        const mockContent = getMockContent(file);
+        output.innerHTML = converter.makeHtml(mockContent);
+      }
+
+      // Apply Syntax Highlighting
+      output.querySelectorAll('pre code').forEach((block) => {
+        // If no class is set, guess SCSS as it handles the $var and { } syntax well
+        if (!block.className) {
+          block.classList.add('language-scss');
+        }
+        hljs.highlightElement(block);
+      });
+    }
+
+    /* --- Initialization --- */
+    pages.forEach(page => {
+      const a = document.createElement("a");
+      a.href = `#${page.file}`;
+      a.className = "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-r transition-all duration-200 border-l-4 border-transparent text-gray-400 hover:text-white hover:bg-white/5 group";
+
+      // Icon
+      const iconSpan = document.createElement("span");
+      iconSpan.textContent = page.icon || "📄";
+      iconSpan.className = "opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-transform";
+
+      const textSpan = document.createElement("span");
+      textSpan.textContent = page.title;
+
+      a.appendChild(iconSpan);
+      a.appendChild(textSpan);
+
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        loadPage(page.file, a);
+      });
+      nav.appendChild(a);
+    });
+
+    // Load initial page
+    const initialLink = nav.querySelector("a");
+    if (initialLink) {
+      loadPage(pages[0].file, initialLink);
+    }
+
+    /* --- Mock Data (Based on provided images) --- */
+    function getMockContent(filename) {
+
+      if (filename === "rules.md") {
+        return `
+# Hytale UI Overview
+
+Welcome to the **Vex Dev Grimoire**, a public-facing guide to building stable Hytale UI files.
+
+## Purpose
+This documentation is the **single source of truth** for UI syntax, layout patterns, and validation rules. It is derived from the behavior seen in core client UI files to keep custom interfaces aligned with the game's parser.
+
+## How to Use This Grimoire
+
+### 1. Syntax Guide 🔮
+Understand the fundamental structure of \`.ui\` files, including:
+* Template definitions and instantiation
+* Property assignments and tuples
+* Valid statement boundaries and semicolons
+
+### 2. UI Patterns 🧩
+Copy safe, proven patterns for:
+* **Panels & Containers:** Standard backgrounds and headers
+* **Modals:** Centered overlays for dialogs
+* **Inputs:** Text fields and buttons that match the game's look
+
+### 3. Asset Validator ✅
+Run the validator before launching. It catches crash-causing errors like:
+* Missing semicolons
+* Unsupported node types (ex: \`Image\`)
+* Invalid property usage on a node type
+
+> This guide is written to be safe for public sharing and does not include local paths.
+`;
+      }
+
+      if (filename === "syntax.md") {
+        return `
+# Hytale UI Rules (Observed)
+
+These rules are inferred from core UI files in a current Hytale install. They are treated as the golden reference for syntax and structure.
+
+## File Structure
+* **Imports:** \`$Alias = "Relative/Path.ui";\`
+* **Assignments:** \`@Name = ... ;\` (styles, numbers, tuples, templates)
+* **Elements:** \`Group { ... }\`, \`Label #Id { ... }\`, \`TextButton { ... }\`
+* **Template definitions:** \`@Template = Group { ... };\`
+* **Template instantiation:** \`$Alias.@Template { ... }\`
+
+## Statements
+Every statement ends with \`;\` unless it is an element block (\`Group { ... }\`) or a template instantiation block.
+
+### Example Code
+\`\`\`scss
+// Imports
+$Alias = "Relative/Path.ui";
+
+// Template Definition
+@Template = Group {
+    #Title { Text: "Hello World"; }
+};
+
+// Template Instantiation
+$Alias.@Template {
+    LayoutMode: Top;
+    Width: 100%;
+}
+\`\`\`
+
+## Comments
+* Line comments: \`// like this\`
+* Block comments: \`/* like this */\`
+
+## Colors
+Valid forms observed in core UI:
+* \`#RGB\`
+* \`#RGBA\`
+* \`#RRGGBB\`
+* \`#RRGGBBAA\`
+
+## Spread / Merge
+Spread is valid **inside tuples only**:
+\`\`\`scss
+Style: (...@DefaultLabelStyle, FontSize: 18);
+Padding: (...@DefaultPadding, Horizontal: 8);
+\`\`\`
+
+Standalone spread statements like \`...@Template;\` are not supported.
+`;
+      }
+
+      if (filename === "patterns.md") {
+        return `
+# Common Patterns
+
+### Container with Title
+Standard pattern for creating a panel with a header.
+
+\`\`\`scss
+$C = "../Common.ui";
+
+$C.@Panel {
+    #Title {
+        $C.@Title { @Text = "My Panel"; }
+    }
+    
+    #Content {
+        LayoutMode: Top;
+    }
+}
+\`\`\`
+
+### Overlay + Centered Modal
+Used for popups and dialogs.
+
+\`\`\`scss
+$C = "../Common.ui";
+
+Group {
+    $C.@PageOverlay { }
+    LayoutMode: Middle;
+    
+    $C.@DecoratedContainer {
+        Anchor: (Width: 680);
+    }
+}
+\`\`\`
+
+### Style Merge
+Combining default styles with custom overrides.
+
+\`\`\`scss
+Label {
+    Style: ( ... $C.@DefaultLabelStyle, FontSize: 18, RenderBold: true );
+}
+\`\`\`
+
+## Common Gotchas
+1. **Missing semicolons** after properties or assignments are the #1 crash cause.
+2. **Standalone spread statements** like \`... @Template;\` are not supported. Spread is for tuples only.
+3. **Template instantiation** should use \`$Alias.@Template { ... }\` for element bodies.
+4. **Image is not a node type.** Use \`BackgroundImage\` or a \`Group\` with \`Background\`.
+`;
+      }
+
+      if (filename === "validator.md") {
+        return `
+# Validator Notes
+
+## What It Checks
+* Balanced braces \`{}\` and parentheses \`()\`
+* Unterminated strings and block comments
+* Missing semicolons / merged statements
+* Invalid assignment targets (\`@Name =\` or \`$Alias =\`)
+* Invalid property names (\`Property:\`)
+* Import existence + unknown import aliases
+* Malformed color hex
+* Standalone spread statements (disallowed)
+* Unsupported node types (ex: \`Image\`)
+* Node-specific property validation when core rules are provided
+* TexturePath / Background image resolution against asset roots
+
+## Why This Is "Robust"
+The validator rules are aligned to patterns seen in core Hytale UI files from a current client install.
+
+## Known Limitations
+> **Import Resolution** is relative to the file path. If your UI relies on runtime asset packs outside your plugin folder, the validator may flag missing imports.
+
+### Running
+To run the validator manually:
+\`\`\`bash
+./gradlew validateUi
+\`\`\`
+`;
+      }
+
+      // Default fallback
+      return `
+# ${pages.find(p => p.file === filename)?.title || "Document"}
+
+> Welcome, developer. This is a **simulated preview** of the \`${filename}\` file. 
+
+## Loading Error
+We could not fetch the live markdown file. This often happens in preview environments.
+
+Please ensure \`${filename}\` is located in your root directory.
+`;
+    }
+  </script>
+</body>
+
+</html>

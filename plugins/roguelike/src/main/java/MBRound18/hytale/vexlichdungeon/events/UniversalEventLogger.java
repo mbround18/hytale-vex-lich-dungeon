@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.events;
 
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.event.IBaseEvent;
 import java.lang.reflect.Method;

@@ -8,16 +8,22 @@ import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
 import MBRound18.hytale.vexlichdungeon.events.DungeonGenerationEventHandler;
 import MBRound18.hytale.vexlichdungeon.events.UniversalEventLogger;
-import MBRound18.PortalEngine.api.logging.InternalLogger;
-import MBRound18.PortalEngine.api.logging.EngineLog;
-import MBRound18.PortalEngine.api.logging.LoggingController;
+import MBRound18.ImmortalEngine.api.logging.InternalLogger;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.LoggingController;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
-import MBRound18.PortalEngine.api.ui.HudRegistry;
-import MBRound18.PortalEngine.api.ui.UiRegistry;
-import MBRound18.PortalEngine.api.ui.UiTemplate;
-import MBRound18.PortalEngine.api.ui.UiTemplateLoader;
-import MBRound18.PortalEngine.api.prefab.StitchIndexBuilder;
+import MBRound18.hytale.vexlichdungeon.loot.LootCatalog;
+import MBRound18.hytale.vexlichdungeon.loot.LootService;
+import MBRound18.hytale.vexlichdungeon.loot.LootTableConfig;
+import MBRound18.hytale.vexlichdungeon.loot.LootTableLoader;
+import MBRound18.ImmortalEngine.api.ui.HudRegistry;
+import MBRound18.ImmortalEngine.api.ui.UiRegistry;
+import MBRound18.ImmortalEngine.api.ui.UiTemplate;
+import MBRound18.ImmortalEngine.api.ui.UiTemplateLoader;
+import MBRound18.ImmortalEngine.api.prefab.StitchIndex;
+import MBRound18.ImmortalEngine.api.prefab.StitchIndexBuilder;
+import MBRound18.ImmortalEngine.api.prefab.StitchIndexStore;
 import MBRound18.hytale.vexlichdungeon.ui.HudController;
 import MBRound18.hytale.vexlichdungeon.ui.UIController;
 import MBRound18.hytale.vexlichdungeon.ui.UiAssetResolver;
@@ -78,10 +84,21 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     log.lifecycle().atInfo().log("Initialized data store at: %s", dataDirectory);
 
     Path templatesPath = dataDirectory.resolve("ui-templates.json");
+    Path lootTablePath = dataDirectory.resolve("loottable.json");
     Path assetsZipPath = resolveAssetsZipPath(pluginJarPath, modsDirectory);
     UiAssetResolver.setAssetsZipPath(assetsZipPath);
-    MBRound18.PortalEngine.api.i18n.EngineLang.setAssetsZipPath(assetsZipPath);
-    StitchIndexBuilder.loadOrBuild(assetsZipPath, dataDirectory.resolve("index.db"), log);
+    MBRound18.ImmortalEngine.api.i18n.EngineLang.setAssetsZipPath(assetsZipPath);
+    Path stitchIndexPath = dataDirectory.resolve("index.db");
+    StitchIndex stitchIndex = StitchIndexBuilder.build(assetsZipPath, log);
+    if (stitchIndex != null) {
+      try {
+        long size = assetsZipPath.toFile().length();
+        long modified = assetsZipPath.toFile().lastModified();
+        StitchIndexStore.save(stitchIndexPath, size, modified, stitchIndex, log);
+      } catch (Exception e) {
+        log.warn("Failed to save stitch index: %s", e.getMessage());
+      }
+    }
     boolean loadedTemplates = false;
     try {
       syncTemplatesFile(templatesPath, "ui-templates.json");
@@ -104,6 +121,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     }
 
     preflightUiAssets(pluginJarPath, modsDirectory);
+    syncDataFile(lootTablePath, "loottable.json");
 
     // Register commands
     CommandManager.get().register(new VexCommand(dataStore, log));
@@ -126,8 +144,10 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     GenerationConfig config = new GenerationConfig();
     DungeonGenerator dungeonGenerator = new DungeonGenerator(config, log, prefabDiscovery);
     prefabSpawner = new PrefabSpawner(log, prefabDiscovery.getZipFile(), config);
+    LootService lootService = buildLootService(lootTablePath, log, generatorSeed(config), dataDirectory);
     RoguelikeDungeonController roguelikeController = new RoguelikeDungeonController(
-        log, dungeonGenerator, prefabDiscovery, prefabSpawner, dataStore, engineAdapter, eventsLogger);
+        log, dungeonGenerator, prefabDiscovery, prefabSpawner, dataStore, engineAdapter, eventsLogger, stitchIndex,
+        lootService);
 
     // Create and register event handler with data store for concurrency control
     dungeonEventHandler = new DungeonGenerationEventHandler(
@@ -208,6 +228,42 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     }
   }
 
+  private void syncDataFile(@Nonnull Path targetPath, @Nonnull String resourcePath) {
+    try (InputStream stream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+      if (stream == null) {
+        return;
+      }
+      byte[] resourceBytes = stream.readAllBytes();
+      if (Files.exists(targetPath)) {
+        byte[] existingBytes = Files.readAllBytes(targetPath);
+        if (Arrays.equals(existingBytes, resourceBytes)) {
+          return;
+        }
+      }
+      Files.createDirectories(targetPath.getParent());
+      Files.write(targetPath, resourceBytes);
+    } catch (Exception e) {
+      log.warn("Failed to sync %s: %s", resourcePath, e.getMessage());
+    }
+  }
+
+  private LootService buildLootService(@Nonnull Path lootTablePath, @Nonnull EngineLog log,
+      long seed, @Nonnull Path dataDirectory) {
+    LootTableLoader loader = new LootTableLoader();
+    LootTableConfig table = loader.load(lootTablePath, log);
+    if (table == null) {
+      return null;
+    }
+    LootCatalog catalog = new LootCatalog();
+    Path itemsRoot = Path.of("data", "assets", "Server", "Item", "Items");
+    catalog.load(itemsRoot, table, log);
+    return new LootService(table, catalog, seed, log);
+  }
+
+  private long generatorSeed(@Nonnull GenerationConfig config) {
+    return config.getSeed();
+  }
+
   @Override
   protected void shutdown() {
     log.lifecycle().atInfo().log("Plugin shutting down");
@@ -239,7 +295,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
         if (dungeonEventHandler != null) {
           dungeonEventHandler.pollAndGenerate();
         }
-        MBRound18.PortalEngine.api.portal.PortalPlacementRegistry.tick();
+        MBRound18.ImmortalEngine.api.portal.PortalPlacementRegistry.tick();
       }
 
       @Override

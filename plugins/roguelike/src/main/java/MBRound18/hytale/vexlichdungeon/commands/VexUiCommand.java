@@ -1,10 +1,10 @@
 package MBRound18.hytale.vexlichdungeon.commands;
 
-import MBRound18.PortalEngine.api.i18n.EngineLang;
-import MBRound18.PortalEngine.api.ui.HudRegistry;
-import MBRound18.PortalEngine.api.ui.UiRegistry;
-import MBRound18.PortalEngine.api.ui.UiTemplate;
-import MBRound18.PortalEngine.api.ui.UiTemplateLoader;
+import MBRound18.ImmortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.ui.HudRegistry;
+import MBRound18.ImmortalEngine.api.ui.UiRegistry;
+import MBRound18.ImmortalEngine.api.ui.UiTemplate;
+import MBRound18.ImmortalEngine.api.ui.UiTemplateLoader;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.ui.HudController;
 import MBRound18.hytale.vexlichdungeon.ui.UIController;

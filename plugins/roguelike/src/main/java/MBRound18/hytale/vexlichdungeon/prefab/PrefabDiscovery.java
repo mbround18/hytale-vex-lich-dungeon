@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.prefab;
 
-import MBRound18.PortalEngine.api.logging.EngineLog;
+import MBRound18.ImmortalEngine.api.logging.EngineLog;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.nio.file.Path;
@@ -20,6 +20,7 @@ public class PrefabDiscovery {
   private final List<String> hallways = new ArrayList<>();
   private final List<String> gates = new ArrayList<>();
   private final List<String> dungeonPrefabs = new ArrayList<>();
+  private final List<String> eventPrefabs = new ArrayList<>();
   private final ZipFile zipFile;
 
   /**
@@ -117,14 +118,23 @@ public class PrefabDiscovery {
           } else {
             rooms.add(prefabPath);
           }
+          continue;
+        }
+
+        if (entryName.startsWith("Server/Prefabs/Event/")) {
+          String prefabPath = toPrefabPath(entryName);
+          eventPrefabs.add(prefabPath);
         }
       }
 
-      log.info("Discovered %d dungeon prefabs (%d hallways, %d rooms) and %d gates from ZIP",
-          dungeonPrefabs.size(), hallways.size(), rooms.size(), gates.size());
+      log.info("Discovered %d dungeon prefabs (%d hallways, %d rooms), %d event prefabs, and %d gates from ZIP",
+          dungeonPrefabs.size(), hallways.size(), rooms.size(), eventPrefabs.size(), gates.size());
 
       if (dungeonPrefabs.isEmpty()) {
         log.warn("No dungeon prefabs found under Server/Prefabs/Dungeon/");
+      }
+      if (eventPrefabs.isEmpty()) {
+        log.warn("No event prefabs found under Server/Prefabs/Event/");
       }
       if (gates.isEmpty()) {
         log.warn("No gate prefabs found under Server/Prefabs/Gates/");
@@ -220,6 +230,13 @@ public class PrefabDiscovery {
    */
   public List<String> getAllDungeonPrefabs() {
     return new ArrayList<>(dungeonPrefabs);
+  }
+
+  /**
+   * Gets all available event prefabs (recursive under Server/Prefabs/Event).
+   */
+  public List<String> getAllEventPrefabs() {
+    return new ArrayList<>(eventPrefabs);
   }
 
   private String toPrefabPath(String entryName) {

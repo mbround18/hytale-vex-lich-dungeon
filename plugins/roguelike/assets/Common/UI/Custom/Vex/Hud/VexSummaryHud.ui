@@ -1,0 +1,32 @@
+$V = "../VexCommon.ui";
+
+Group {
+    Anchor: (Top: 50, Left: 0, Right: 0, Height: 220);
+    LayoutMode: Middle;
+
+    $V.@DecoratedContainer {
+        Anchor: (Width: 680);
+
+        #VexTitle {
+            $V.@Title {
+                @Text = %server.customUI.vexSummaryHud.title;
+            }
+        }
+
+        #VexContent {
+            LayoutMode: Top;
+            Padding: (Full: 18);
+
+            Label #VexSummaryStats {
+                Text: "";
+                Anchor: (Bottom: 10);
+                Style: (...$V.@DefaultLabelStyle, FontSize: 16, RenderBold: true, TextColor: $V.@HighlightColor);
+            }
+
+            Label #VexSummaryBody {
+                Text: "";
+                Style: (...$V.@DefaultLabelStyle, Wrap: true, TextColor: $V.@BodyColor);
+            }
+        }
+    }
+}

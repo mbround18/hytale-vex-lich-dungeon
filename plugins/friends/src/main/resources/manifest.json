@@ -1,0 +1,12 @@
+{
+  "Group": "MBRound18",
+  "Name": "Friends",
+  "Version": "${version}",
+  "Authors": "GRADLE_INJECT_AUTHORS",
+  "Website": "https://example.com",
+  "Main": "MBRound18.hytale.friends.FriendsPlugin",
+  "ServerVersion": "*",
+  "Dependencies": {
+    "MBRound18:ImmortalEngine": "*"
+  }
+}

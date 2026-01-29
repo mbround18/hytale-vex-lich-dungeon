@@ -2,7 +2,7 @@
   "ui": [
     {
       "id": "summary",
-      "path": "UI/Custom/Vex/Pages/VexDungeonSummary.ui",
+      "path": "Custom/Vex/Pages/VexDungeonSummary.ui",
       "vars": ["SummaryStats", "SummaryBody"]
     },
     {
