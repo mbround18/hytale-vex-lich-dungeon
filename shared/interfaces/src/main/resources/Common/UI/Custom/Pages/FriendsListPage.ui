@@ -1,0 +1,47 @@
+$C = "../Common.ui";
+$F = "../FriendsCommon.ui";
+
+Group {
+  Anchor: (Top: 40, Left: 80, Width: 520, Height: 360);
+
+  $F.@Panel {
+    Group #FriendsTitle {
+      $F.@Title {
+        @Alignment = $F.@Alignment;
+        @Text = "Friends";
+      }
+    }
+
+    Group #FriendsContent {
+      Label #FriendsSubtitle {
+        Anchor: (Left: 0, Top: 0, Height: 16);
+        Text: "Online friends and party controls";
+        Style: (FontSize: 12, TextColor: $F.@MutedColor);
+      }
+
+      Label #FriendsPartyStatus {
+        Anchor: (Left: 0, Top: 22, Width: 480, Height: 20);
+        Text: "Party: none";
+        Style: (FontSize: 14, RenderBold: true, TextColor: $F.@AccentColor);
+      }
+
+      Label #FriendsListBody {
+        Anchor: (Left: 0, Top: 50, Width: 480, Height: 240);
+        Text: "No friends yet.";
+        Style: (FontSize: 14, TextColor: $F.@BodyColor);
+      }
+
+      $C.@TextField #FriendSearch {
+        Anchor: (Left: 0, Bottom: 0, Width: 480, Height: 30);
+        PlaceholderText: "Search friends...";
+      }
+
+      TextButton #AddFriendButton {
+        Anchor: (Right: 0, Bottom: 0, Width: 100, Height: 30);
+        Text: "Add Friend";
+        Style: (...$C.@DefaultTextButtonStyle);
+      }
+
+    }
+  }
+}

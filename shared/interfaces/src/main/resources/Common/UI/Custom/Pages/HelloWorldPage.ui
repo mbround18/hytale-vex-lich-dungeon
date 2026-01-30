@@ -1,0 +1,23 @@
+Group {
+  Anchor: (Width: 400, Height: 250);
+  Background: #1f1f1f(0.95);
+  LayoutMode: Top;
+  Padding: (Full: 20);
+
+  Label #Title {
+    Text: "customUI.helloWorld.title";
+    Anchor: (Height: 40);
+    Style: (FontSize: 24, TextColor: #ffffff, Alignment: Center);
+  }
+
+  Label #Body {
+    Text: "customUI.helloWorld.body";
+    Style: (FontSize: 16, TextColor: #dddddd, Wrap: true);
+  }
+
+  Label #Footer {
+    Text: "customUI.helloWorld.footer";
+    Anchor: (Height: 30, Top: 10);
+    Style: (FontSize: 14, TextColor: #aaaaaa, Alignment: Center);
+  }
+}

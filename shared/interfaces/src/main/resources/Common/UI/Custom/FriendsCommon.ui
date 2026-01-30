@@ -1,0 +1,46 @@
+@AccentColor = #4ade80;
+@TitleColor = #e5f5ea;
+@BodyColor = #c7e8d2;
+@MutedColor = #9bb9a5;
+@HighlightColor = #f1f8f4;
+@PanelBackground = #0b1a12(0.95);
+@HeaderBackground = #1b3a2a;
+@BorderColor = #2f5b44;
+
+@Text = "Friends List";
+
+@Alignment = Center;
+
+@TextStyle = LabelStyle(FontSize: 20, RenderBold: true);
+
+
+@Title = Label {
+  @Alignment = Center;
+  @Text = "";
+
+  Style: (
+    ...@TextStyle,
+    HorizontalAlignment: @Alignment
+  );
+  Padding: (Horizontal: 16);
+  Text: @Text;
+};
+
+@HeaderHeight = 44;
+
+@Panel = Group {
+  @ContentPadding = Padding(Full: 18);
+
+  Group #FriendsTitle {
+    Anchor: (Height: @HeaderHeight, Top: 0);
+    Background: (Color: @HeaderBackground);
+    Padding: (Top: 7);
+  }
+
+  Group #FriendsContent {
+    LayoutMode: Top;
+    Anchor: (Top: @HeaderHeight);
+    Padding: @ContentPadding;
+    Background: (Color: @PanelBackground);
+  }
+};
