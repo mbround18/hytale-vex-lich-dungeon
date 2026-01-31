@@ -1,47 +1,110 @@
-$C = "../Common.ui";
 $F = "../FriendsCommon.ui";
 
-Group {
-  Anchor: (Top: 40, Left: 80, Width: 520, Height: 360);
+Group #FriendsListPage {
+  Anchor: (Full: 0);
+  LayoutMode: Center;
+  Background: #1d1d1d(0.55);
 
-  $F.@Panel {
-    Group #FriendsTitle {
-      $F.@Title {
-        @Alignment = $F.@Alignment;
-        @Text = "Friends";
+  $F.@FriendsPanel #Panel {
+    Anchor: (Width: 620, Height: 420);
+
+    Group #Header {
+      LayoutMode: Left;
+      Anchor: (Height: 34);
+      Padding: (Bottom: $F.@FriendsGap);
+
+      Label #Title {
+        Text: "Friends";
+        Style: $F.@FriendsHeaderStyle;
+        Anchor: (Height: 34);
       }
     }
 
-    Group #FriendsContent {
-      Label #FriendsSubtitle {
-        Anchor: (Left: 0, Top: 0, Height: 16);
-        Text: "Online friends and party controls";
-        Style: (FontSize: 12, TextColor: $F.@MutedColor);
-      }
+    Group #Actions {
+      LayoutMode: Left;
+      Anchor: (Height: 40);
+      Padding: (Bottom: $F.@FriendsGap);
 
-      Label #FriendsPartyStatus {
-        Anchor: (Left: 0, Top: 22, Width: 480, Height: 20);
-        Text: "Party: none";
-        Style: (FontSize: 14, RenderBold: true, TextColor: $F.@AccentColor);
-      }
-
-      Label #FriendsListBody {
-        Anchor: (Left: 0, Top: 50, Width: 480, Height: 240);
-        Text: "No friends yet.";
-        Style: (FontSize: 14, TextColor: $F.@BodyColor);
-      }
-
-      $C.@TextField #FriendSearch {
-        Anchor: (Left: 0, Bottom: 0, Width: 480, Height: 30);
+      TextField #FriendSearch {
+        Anchor: (MinWidth: 220);
+        Background: $F.@FriendsInputBackground;
         PlaceholderText: "Search friends...";
       }
 
-      TextButton #AddFriendButton {
-        Anchor: (Right: 0, Bottom: 0, Width: 100, Height: 30);
-        Text: "Add Friend";
-        Style: (...$C.@DefaultTextButtonStyle);
+      TextButton #TogglePartyStateButton {
+        Text: "Toggle Party";
+        Style: $F.@FriendsSecondaryButtonStyle;
+        Anchor: (Left: $F.@FriendsGap, MinWidth: 130, Height: 32);
+      }
+    }
+
+    $F.@FriendsSection #ListPanel {
+      LayoutMode: Top;
+      Anchor: (Full: 0, Bottom: 52);
+      Padding: (Full: 8);
+
+      Group #FriendRow {
+        LayoutMode: Left;
+        Background: $F.@FriendsSectionBackground;
+        Padding: (Full: 8);
+        Anchor: (Height: 72, Bottom: 8);
+
+        $F.@FriendsAvatar #AvatarWrap {
+          AssetImage #Avatar { Anchor: (Width: 44, Height: 44); }
+        }
+
+        Group #Info {
+          LayoutMode: Top;
+          Anchor: (Left: 10);
+          FlexWeight: 1;
+
+          Label #Name {
+            Anchor: (Height: 20);
+            Text: "PlayerName";
+            Style: $F.@FriendsNameStyle;
+          }
+
+          Label #Status {
+            Anchor: (Height: 18);
+            Text: "Online • In Lobby";
+            Style: $F.@FriendsStatusStyle;
+          }
+        }
+
+        Group #RowActions {
+          LayoutMode: Right;
+
+          TextButton #InvitePartyButton {
+            Text: "Invite";
+            Style: $F.@FriendsPrimaryButtonStyle;
+            Anchor: (Right: 8, MinWidth: 90, Height: 32);
+          }
+
+          TextButton #RemoveFriendButton {
+            Text: "Remove";
+            Style: $F.@FriendsSecondaryButtonStyle;
+            Anchor: (MinWidth: 90, Height: 32);
+          }
+        }
+      }
+    }
+
+    Group #AddFriendBar {
+      LayoutMode: Left;
+      Anchor: (Height: 44, Bottom: 0);
+      Padding: (Top: 6);
+
+      TextField #AddFriendSearch {
+        Anchor: (MinWidth: 240);
+        Background: $F.@FriendsInputBackground;
+        PlaceholderText: "Add friend by name...";
       }
 
+      TextButton #AddFriendButton {
+        Text: "Add Friend";
+        Style: $F.@FriendsPrimaryButtonStyle;
+        Anchor: (Left: $F.@FriendsGap, MinWidth: 120, Height: 32);
+      }
     }
   }
 }

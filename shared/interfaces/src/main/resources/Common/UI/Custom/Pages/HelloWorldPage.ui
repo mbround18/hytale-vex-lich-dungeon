@@ -1,3 +1,10 @@
+@TextStyle = LabelStyle(
+  FontSize: 16,
+  TextColor: #ffffff,
+  HorizontalAlignment: Center,
+  VerticalAlignment: Center
+);
+
 Group {
   Anchor: (Width: 400, Height: 250);
   Background: #1f1f1f(0.95);
@@ -5,19 +12,19 @@ Group {
   Padding: (Full: 20);
 
   Label #Title {
-    Text: "customUI.helloWorld.title";
+    Text: "Title of the Page";
     Anchor: (Height: 40);
-    Style: (FontSize: 24, TextColor: #ffffff, Alignment: Center);
+    Style: (FontSize: 24, TextColor: #ffffff, HorizontalAlignment: Center);
   }
 
   Label #Body {
-    Text: "customUI.helloWorld.body";
+    Text: "Body of the Page";
     Style: (FontSize: 16, TextColor: #dddddd, Wrap: true);
   }
 
   Label #Footer {
-    Text: "customUI.helloWorld.footer";
+    Text: "Footer of the Page";
     Anchor: (Height: 30, Top: 10);
-    Style: (FontSize: 14, TextColor: #aaaaaa, Alignment: Center);
+    Style: (FontSize: 14, TextColor: #aaaaaa, HorizontalAlignment: Center);
   }
 }

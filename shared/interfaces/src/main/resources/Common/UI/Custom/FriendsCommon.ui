@@ -1,46 +1,83 @@
-@AccentColor = #4ade80;
-@TitleColor = #e5f5ea;
-@BodyColor = #c7e8d2;
-@MutedColor = #9bb9a5;
-@HighlightColor = #f1f8f4;
-@PanelBackground = #0b1a12(0.95);
-@HeaderBackground = #1b3a2a;
-@BorderColor = #2f5b44;
+// FriendsCommon.ui (texture-free)
 
-@Text = "Friends List";
+@FriendsPagePadding = 14;
+@FriendsCardPadding = 12;
+@FriendsGap = 8;
 
-@Alignment = Center;
+@FriendsPanelBackground = #1f2a36;
+@FriendsSectionBackground = #223244;
+@FriendsInputBackground = #1b2633;
+@FriendsButtonPrimary = #4fb6a7;
+@FriendsButtonPrimaryHover = #5fc4b6;
+@FriendsButtonPrimaryPressed = #44a89a;
+@FriendsButtonSecondary = #3a4146;
+@FriendsButtonSecondaryHover = #454e55;
+@FriendsButtonSecondaryPressed = #32383d;
 
-@TextStyle = LabelStyle(FontSize: 20, RenderBold: true);
 
+@FriendsHeaderStyle = LabelStyle(
+  FontSize: 18,
+  TextColor: #c6d5e5,
+  RenderBold: true,
+  RenderUppercase: true,
+  FontName: "Secondary",
+  HorizontalAlignment: Start,
+  VerticalAlignment: Center
+);
 
-@Title = Label {
-  @Alignment = Center;
-  @Text = "";
+@FriendsNameStyle = LabelStyle(
+  FontSize: 16,
+  TextColor: #e3eef9,
+  RenderBold: true
+);
 
-  Style: (
-    ...@TextStyle,
-    HorizontalAlignment: @Alignment
-  );
-  Padding: (Horizontal: 16);
-  Text: @Text;
+@FriendsStatusStyle = LabelStyle(
+  FontSize: 13,
+  TextColor: #9fb3c6
+);
+
+@FriendsPrimaryButtonStyle = TextButtonStyle(
+  Default: (
+    Background: @FriendsButtonPrimary,
+    LabelStyle: LabelStyle(FontSize: 14, TextColor: #ffffff, RenderBold: true)
+  ),
+  Hovered: (
+    Background: @FriendsButtonPrimaryHover,
+    LabelStyle: LabelStyle(FontSize: 14, TextColor: #ffffff, RenderBold: true)
+  ),
+  Pressed: (
+    Background: @FriendsButtonPrimaryPressed,
+    LabelStyle: LabelStyle(FontSize: 14, TextColor: #ffffff, RenderBold: true)
+  )
+);
+
+@FriendsSecondaryButtonStyle = TextButtonStyle(
+  Default: (
+    Background: @FriendsButtonSecondary,
+    LabelStyle: LabelStyle(FontSize: 14, TextColor: #d6dce1)
+  ),
+  Hovered: (
+    Background: @FriendsButtonSecondaryHover,
+    LabelStyle: LabelStyle(FontSize: 14, TextColor: #e4e9ed)
+  ),
+  Pressed: (
+    Background: @FriendsButtonSecondaryPressed,
+    LabelStyle: LabelStyle(FontSize: 14, TextColor: #d0d7dd)
+  )
+);
+
+@FriendsPanel = Group {
+  Background: @FriendsPanelBackground;
+  Padding: (Full: @FriendsCardPadding);
 };
 
-@HeaderHeight = 44;
+@FriendsSection = Group {
+  Background: @FriendsSectionBackground;
+  Padding: (Full: 10);
+};
 
-@Panel = Group {
-  @ContentPadding = Padding(Full: 18);
-
-  Group #FriendsTitle {
-    Anchor: (Height: @HeaderHeight, Top: 0);
-    Background: (Color: @HeaderBackground);
-    Padding: (Top: 7);
-  }
-
-  Group #FriendsContent {
-    LayoutMode: Top;
-    Anchor: (Top: @HeaderHeight);
-    Padding: @ContentPadding;
-    Background: (Color: @PanelBackground);
-  }
+@FriendsAvatar = Group {
+  Anchor: (Width: 56, Height: 56);
+  Background: @FriendsSectionBackground;
+  Padding: (Full: 4);
 };

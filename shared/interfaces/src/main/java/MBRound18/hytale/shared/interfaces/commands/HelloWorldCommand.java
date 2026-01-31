@@ -3,15 +3,18 @@ package MBRound18.hytale.shared.interfaces.commands;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
+import MBRound18.hytale.shared.interfaces.abstracts.AbstractCommand;
+import MBRound18.hytale.shared.interfaces.debug.interactions.HelloInteractions;
 import MBRound18.hytale.shared.interfaces.pages.HelloWorldPage;
 
-public class HelloWorldCommand extends AbstractPlayerCommand {
+public class HelloWorldCommand extends AbstractCommand<Object> {
   /**
    * Register the command metadata (name, description, confirmation requirement).
    */
@@ -28,7 +31,8 @@ public class HelloWorldCommand extends AbstractPlayerCommand {
         /**
          * Requires confirmation
          */
-        false);
+        false,
+        (ref, store) -> new Object());
   }
 
   @Override
@@ -36,23 +40,23 @@ public class HelloWorldCommand extends AbstractPlayerCommand {
       /**
        * Command Context
        */
-      CommandContext context,
+      @Nonnull CommandContext context,
       /**
        * Entity Store
        */
-      Store<EntityStore> store,
+      @Nonnull Store<EntityStore> store,
       /**
        * 
        */
-      Ref<EntityStore> ref,
+      @Nonnull Ref<EntityStore> ref,
       /**
        * 
        */
-      PlayerRef playerRef,
+      @Nonnull PlayerRef playerRef,
       /**
        * World
        */
-      World world) {
+      @Nonnull World world) {
     /**
      * Resolve the executing player from the entity store.
      */
@@ -60,6 +64,9 @@ public class HelloWorldCommand extends AbstractPlayerCommand {
      * Open the HelloWorldPage for the Player who executed the command
      */
     Player player = store.getComponent(ref, Player.getComponentType());
+    player = Objects.requireNonNull(player, "player");
+    HelloInteractions interactions = new HelloInteractions(ref, store);
+    interactions.sendWrittenBy(player);
     /**
      * Build the page instance targeted to the executing player.
      */

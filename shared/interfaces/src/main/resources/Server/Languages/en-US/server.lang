@@ -1,3 +1,3 @@
-customUI.helloWorld.title = Hello World
-customUI.helloWorld.body = This is a simple Hello World page.
-customUI.helloWorld.footer = Close with ESC key!
+customUI.helloWorld.title=Hello World
+customUI.helloWorld.body=This is a simple Hello World page.
+customUI.helloWorld.footer=Close with ESC key!

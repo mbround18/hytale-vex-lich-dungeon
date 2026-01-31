@@ -1,9 +1,12 @@
 package MBRound18.hytale.shared.interfaces.pages;
 
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.BasicCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 public class HelloWorldPage
     /**
@@ -17,12 +20,12 @@ public class HelloWorldPage
    * 
    * @param playerRef
    */
-  public HelloWorldPage(PlayerRef playerRef) {
+  public HelloWorldPage(@Nonnull PlayerRef playerRef) {
     super(
         /**
          * PlayerRef which player sees the UI
          */
-        playerRef,
+        Objects.requireNonNull(playerRef, "playerRef"),
         /**
          * CantClose, Player cannot close the UI
          * CanDismiss, ESC to close
@@ -41,7 +44,7 @@ public class HelloWorldPage
   @Override
   public void build(UICommandBuilder builder) {
     // Relative path from Common/UI/Custom/*
-    builder.append("Pages/HelloWorldPage.ui");
+    builder.append("Demos/Pages/DemoInputs.ui");
   }
 
 }

@@ -6,31 +6,80 @@ import com.hypixel.hytale.codec.builder.BuilderCodec;
 
 public class FriendFinder {
 
-    public String friendSearch;
+        // UI Buttons: @AddFriendButton, @RemoveFriendButton, @InvitePartyButton,
+        // @TogglePartyStateButton
 
-    public FriendFinder() {
-    }
+        public enum Action {
+                ADD_FRIEND("AddFriend"),
+                REMOVE_FRIEND("RemoveFriend"),
+                INVITE_TO_PARTY("InviteToParty"),
+                TOGGLE_PARTY_STATE("TogglePartyState");
 
-    /**
-     * Builder Codec for FriendFinder, how do we want hytale to serialzie this data
-     */
-    public static final BuilderCodec<FriendFinder> CODEC = BuilderCodec.builder(FriendFinder.class, FriendFinder::new)
-            .append(
-                    /**
-                     * Here we map the #FriendSearch from the ui file via @FriendSearch to the type
-                     * of STRING
-                     */
-                    new KeyedCodec<>("@FriendSearch", Codec.STRING), // TLDR; key mapping
-                    /**
-                     * Now we say, okay the string value coming out of that gets mapped to our class
-                     * field friendSearch
-                     */
-                    (f, v) -> f.friendSearch = v, // TLDR; setter
-                    /**
-                     * On the inverse to serialize it back, we take the field friendSearch and map
-                     * it back to the @FriendSearch key
-                     */
-                    f -> f.friendSearch) // TLDR; getter
-            .add()
-            .build();
+                private final String wireValue;
+
+                Action(String wireValue) {
+                        this.wireValue = wireValue;
+                }
+
+                public String getWireValue() {
+                        return wireValue;
+                }
+
+                public static Action fromWireValue(String value) {
+                        if (value == null) {
+                                return null;
+                        }
+                        for (Action action : values()) {
+                                if (action.wireValue.equalsIgnoreCase(value)) {
+                                        return action;
+                                }
+                        }
+                        return null;
+                }
+        }
+
+        public String friendSearch;
+        public Action action;
+
+        public FriendFinder() {
+        }
+
+        /**
+         * Builder Codec for FriendFinder, how do we want hytale to serialzie this data
+         */
+        public static final BuilderCodec<FriendFinder> CODEC = BuilderCodec
+                        .builder(FriendFinder.class, FriendFinder::new)
+                        .append(new KeyedCodec<>("@AddFriendButton", Codec.STRING),
+                                        (f, v) -> {
+                                                if (v != null)
+                                                        f.action = Action.fromWireValue(v);
+                                        },
+                                        f -> f.action == Action.ADD_FRIEND ? f.action.getWireValue() : null)
+                        .add()
+                        .append(new KeyedCodec<>("@RemoveFriendButton", Codec.STRING),
+                                        (f, v) -> {
+                                                if (v != null)
+                                                        f.action = Action.fromWireValue(v);
+                                        },
+                                        f -> f.action == Action.REMOVE_FRIEND ? f.action.getWireValue() : null)
+                        .add()
+                        .append(new KeyedCodec<>("@InvitePartyButton", Codec.STRING),
+                                        (f, v) -> {
+                                                if (v != null)
+                                                        f.action = Action.fromWireValue(v);
+                                        },
+                                        f -> f.action == Action.INVITE_TO_PARTY ? f.action.getWireValue() : null)
+                        .add()
+                        .append(new KeyedCodec<>("@TogglePartyStateButton", Codec.STRING),
+                                        (f, v) -> {
+                                                if (v != null)
+                                                        f.action = Action.fromWireValue(v);
+                                        },
+                                        f -> f.action == Action.TOGGLE_PARTY_STATE ? f.action.getWireValue() : null)
+                        .add()
+                        .append(new KeyedCodec<>("@FriendSearch", Codec.STRING),
+                                        (f, v) -> f.friendSearch = v,
+                                        f -> f.friendSearch)
+                        .add()
+                        .build();
 }
