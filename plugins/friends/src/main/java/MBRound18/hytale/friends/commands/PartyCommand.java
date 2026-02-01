@@ -11,6 +11,8 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
+import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -19,6 +21,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -37,84 +40,188 @@ public class PartyCommand extends AbstractCommand {
     super("party", "Party management");
     this.dataStore = dataStore;
     this.partyService = partyService;
+    addSubCommand(new PartyNewCommand());
+    addSubCommand(new PartyInviteCommand());
+    addSubCommand(new PartyJoinCommand());
+    addSubCommand(new PartyDeclineCommand());
+    addSubCommand(new PartyLeaveCommand());
+    addSubCommand(new PartyDisbandCommand());
   }
 
   @Nullable
   @Override
   protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-    if (!context.sender().hasPermission(PERMISSION_USE)) {
-      context.sendMessage(Message.raw("Missing permission: " + PERMISSION_USE));
+    UUID playerId = requirePlayerId(context, PERMISSION_USE);
+    if (playerId == null) {
       return CompletableFuture.completedFuture(null);
     }
-    if (!context.isPlayer()) {
-      context.sendMessage(Message.raw("This command can only be used by players."));
-      return CompletableFuture.completedFuture(null);
-    }
-    UUID playerId = context.sender().getUuid();
     String[] tokens = tokenize(context.getInputString());
     int index = skipCommandTokens(tokens, "party");
-    if (index >= tokens.length) {
-      sendPartyStatus(context, playerId);
+    if (index < tokens.length) {
+      context.sendMessage(Message.raw("Usage: /party [new|invite|join|decline|leave|disband]"));
       return CompletableFuture.completedFuture(null);
     }
-    String sub = tokens[index].toLowerCase(java.util.Locale.ROOT);
-    switch (sub) {
-      case "new":
-        if (!context.sender().hasPermission(PERMISSION_CREATE)) {
-          context.sendMessage(Message.raw("Missing permission: " + PERMISSION_CREATE));
-          return CompletableFuture.completedFuture(null);
-        }
-        respond(context, partyService.createParty(playerId, context.sender().getDisplayName()));
+    sendPartyStatus(context, playerId);
+    return CompletableFuture.completedFuture(null);
+  }
+
+  private boolean checkPermission(@Nonnull CommandContext context, @Nonnull String permission) {
+    if (context.sender().hasPermission(permission)) {
+      return true;
+    }
+    context.sendMessage(Message.raw("Missing permission: " + permission));
+    return false;
+  }
+
+  @Nullable
+  private UUID requirePlayerId(@Nonnull CommandContext context) {
+    if (!context.isPlayer()) {
+      context.sendMessage(Message.raw("This command can only be used by players."));
+      return null;
+    }
+    UUID playerId = context.sender().getUuid();
+    if (playerId == null) {
+      context.sendMessage(Message.raw("Unable to resolve player id."));
+      return null;
+    }
+    return playerId;
+  }
+
+  @Nullable
+  private UUID requirePlayerId(@Nonnull CommandContext context, @Nonnull String permission) {
+    if (!checkPermission(context, permission)) {
+      return null;
+    }
+    return requirePlayerId(context);
+  }
+
+  private final class PartyNewCommand extends AbstractCommand {
+    private PartyNewCommand() {
+      super("new", "Create a new party");
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      UUID playerId = requirePlayerId(context, PERMISSION_USE);
+      if (playerId == null) {
         return CompletableFuture.completedFuture(null);
-      case "invite":
-        if (!context.sender().hasPermission(PERMISSION_INVITE)) {
-          context.sendMessage(Message.raw("Missing permission: " + PERMISSION_INVITE));
-          return CompletableFuture.completedFuture(null);
-        }
-        if (index + 1 >= tokens.length) {
-          context.sendMessage(Message.raw("Usage: /party invite <name>"));
-          return CompletableFuture.completedFuture(null);
-        }
-        return invitePlayer(context, playerId, tokens[index + 1]);
-      case "join":
-        if (!context.sender().hasPermission(PERMISSION_JOIN)) {
-          context.sendMessage(Message.raw("Missing permission: " + PERMISSION_JOIN));
-          return CompletableFuture.completedFuture(null);
-        }
-        Optional<PartyInvite> invite = partyService.getInvite(playerId);
-        respond(context, partyService.acceptInvite(playerId));
-        if (invite.isPresent()) {
-          playInviteAcceptedSounds(playerId, invite.get().getInviterId());
-        }
+      }
+      if (!checkPermission(context, PERMISSION_CREATE)) {
         return CompletableFuture.completedFuture(null);
-      case "decline":
-        if (!context.sender().hasPermission(PERMISSION_DECLINE)) {
-          context.sendMessage(Message.raw("Missing permission: " + PERMISSION_DECLINE));
-          return CompletableFuture.completedFuture(null);
-        }
-        Optional<PartyInvite> declineInvite = partyService.getInvite(playerId);
-        respond(context, partyService.declineInvite(playerId));
-        if (declineInvite.isPresent()) {
-          playInviteDeclinedSounds(playerId, declineInvite.get().getInviterId());
-        }
+      }
+      String displayName = context.sender().getDisplayName();
+      respond(context, partyService.createParty(playerId, displayName == null ? "" : displayName));
+      return CompletableFuture.completedFuture(null);
+    }
+  }
+
+  private final class PartyInviteCommand extends AbstractCommand {
+    private final RequiredArg<String> nameArg;
+
+    private PartyInviteCommand() {
+      super("invite", "Invite a player to your party");
+      this.nameArg = withRequiredArg("name", "Player name", ArgTypes.STRING);
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      UUID playerId = requirePlayerId(context, PERMISSION_USE);
+      if (playerId == null) {
         return CompletableFuture.completedFuture(null);
-      case "leave":
-        if (!context.sender().hasPermission(PERMISSION_LEAVE)) {
-          context.sendMessage(Message.raw("Missing permission: " + PERMISSION_LEAVE));
-          return CompletableFuture.completedFuture(null);
-        }
-        respond(context, partyService.leave(playerId));
+      }
+      if (!checkPermission(context, PERMISSION_INVITE)) {
         return CompletableFuture.completedFuture(null);
-      case "disband":
-        if (!context.sender().hasPermission(PERMISSION_DISBAND)) {
-          context.sendMessage(Message.raw("Missing permission: " + PERMISSION_DISBAND));
-          return CompletableFuture.completedFuture(null);
-        }
-        respond(context, partyService.disband(playerId));
+      }
+      String targetName = context.get(nameArg);
+      if (targetName == null || targetName.isBlank()) {
+        context.sendMessage(Message.raw("Usage: /party invite <name>"));
         return CompletableFuture.completedFuture(null);
-      default:
-        context.sendMessage(Message.raw("Usage: /party [new|invite|join|decline|leave|disband]"));
+      }
+      return invitePlayer(context, playerId, targetName);
+    }
+  }
+
+  private final class PartyJoinCommand extends AbstractCommand {
+    private PartyJoinCommand() {
+      super("join", "Join a party via invite");
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      UUID playerId = requirePlayerId(context, PERMISSION_USE);
+      if (playerId == null) {
         return CompletableFuture.completedFuture(null);
+      }
+      if (!checkPermission(context, PERMISSION_JOIN)) {
+        return CompletableFuture.completedFuture(null);
+      }
+      Optional<PartyInvite> invite = partyService.getInvite(playerId);
+      respond(context, partyService.acceptInvite(playerId));
+      if (invite.isPresent()) {
+        playInviteAcceptedSounds(playerId, invite.get().getInviterId());
+      }
+      return CompletableFuture.completedFuture(null);
+    }
+  }
+
+  private final class PartyDeclineCommand extends AbstractCommand {
+    private PartyDeclineCommand() {
+      super("decline", "Decline a party invite");
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      UUID playerId = requirePlayerId(context, PERMISSION_USE);
+      if (playerId == null) {
+        return CompletableFuture.completedFuture(null);
+      }
+      if (!checkPermission(context, PERMISSION_DECLINE)) {
+        return CompletableFuture.completedFuture(null);
+      }
+      Optional<PartyInvite> invite = partyService.getInvite(playerId);
+      respond(context, partyService.declineInvite(playerId));
+      if (invite.isPresent()) {
+        playInviteDeclinedSounds(playerId, invite.get().getInviterId());
+      }
+      return CompletableFuture.completedFuture(null);
+    }
+  }
+
+  private final class PartyLeaveCommand extends AbstractCommand {
+    private PartyLeaveCommand() {
+      super("leave", "Leave your current party");
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      UUID playerId = requirePlayerId(context, PERMISSION_USE);
+      if (playerId == null) {
+        return CompletableFuture.completedFuture(null);
+      }
+      if (!checkPermission(context, PERMISSION_LEAVE)) {
+        return CompletableFuture.completedFuture(null);
+      }
+      respond(context, partyService.leave(playerId));
+      return CompletableFuture.completedFuture(null);
+    }
+  }
+
+  private final class PartyDisbandCommand extends AbstractCommand {
+    private PartyDisbandCommand() {
+      super("disband", "Disband your party");
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      UUID playerId = requirePlayerId(context, PERMISSION_USE);
+      if (playerId == null) {
+        return CompletableFuture.completedFuture(null);
+      }
+      if (!checkPermission(context, PERMISSION_DISBAND)) {
+        return CompletableFuture.completedFuture(null);
+      }
+      respond(context, partyService.disband(playerId));
+      return CompletableFuture.completedFuture(null);
     }
   }
 
@@ -125,11 +232,13 @@ public class PartyCommand extends AbstractCommand {
       context.sendMessage(Message.raw("Player not found: " + targetName));
       return CompletableFuture.completedFuture(null);
     }
-    PartyActionResult result = partyService.invite(inviterId, context.sender().getDisplayName(),
-        target.uuid, target.displayName);
+    String displayName = context.sender().getDisplayName();
+    PartyActionResult result = partyService.invite(inviterId, displayName == null ? "" : displayName,
+        Objects.requireNonNull(target.uuid, "target uuid"),
+        Objects.requireNonNull(target.displayName, "target display"));
     respond(context, result);
     if (result.isSuccess()) {
-      PlayerRef targetRef = Universe.get().getPlayer(target.uuid);
+      PlayerRef targetRef = Universe.get().getPlayer(Objects.requireNonNull(target.uuid, "target uuid"));
       if (targetRef != null) {
         targetRef.sendMessage(Message.raw("Party invite from " + context.sender().getDisplayName()
             + ". Use /party join to accept."));
@@ -157,12 +266,12 @@ public class PartyCommand extends AbstractCommand {
     String message = result.getMessage() == null
         ? (result.isSuccess() ? "OK" : "Failed")
         : result.getMessage();
-    context.sendMessage(Message.raw(message));
+    context.sendMessage(Message.raw(Objects.requireNonNull(message, "message")));
   }
 
   private void playInviteAcceptedSounds(@Nonnull UUID targetId, @Nonnull UUID inviterId) {
-    PlayerRef targetRef = Universe.get().getPlayer(targetId);
-    PlayerRef inviterRef = Universe.get().getPlayer(inviterId);
+    PlayerRef targetRef = Universe.get().getPlayer(Objects.requireNonNull(targetId, "targetId"));
+    PlayerRef inviterRef = Universe.get().getPlayer(Objects.requireNonNull(inviterId, "inviterId"));
     if (targetRef != null) {
       FriendsSoundService.play(targetRef, FriendsSoundService.SOUND_ACCEPT, dataStore.getLog());
     }
@@ -172,8 +281,8 @@ public class PartyCommand extends AbstractCommand {
   }
 
   private void playInviteDeclinedSounds(@Nonnull UUID targetId, @Nonnull UUID inviterId) {
-    PlayerRef targetRef = Universe.get().getPlayer(targetId);
-    PlayerRef inviterRef = Universe.get().getPlayer(inviterId);
+    PlayerRef targetRef = Universe.get().getPlayer(Objects.requireNonNull(targetId, "targetId"));
+    PlayerRef inviterRef = Universe.get().getPlayer(Objects.requireNonNull(inviterId, "inviterId"));
     if (targetRef != null) {
       FriendsSoundService.play(targetRef, FriendsSoundService.SOUND_DECLINE, dataStore.getLog());
     }
@@ -186,6 +295,9 @@ public class PartyCommand extends AbstractCommand {
   private PlayerLookup findOnlinePlayerByName(@Nonnull String name) {
     for (World world : Universe.get().getWorlds().values()) {
       for (PlayerRef playerRef : world.getPlayerRefs()) {
+        if (playerRef == null) {
+          continue;
+        }
         String displayName = resolveDisplayName(playerRef);
         String username = playerRef.getUsername();
         if ((displayName != null && displayName.equalsIgnoreCase(name))
@@ -193,7 +305,10 @@ public class PartyCommand extends AbstractCommand {
           String resolved = (displayName == null || displayName.isBlank())
               ? (username == null ? "" : username)
               : displayName;
-          return new PlayerLookup(playerRef.getUuid(), resolved);
+          UUID uuid = playerRef.getUuid();
+          if (uuid != null) {
+            return new PlayerLookup(uuid, resolved);
+          }
         }
       }
     }
@@ -220,12 +335,12 @@ public class PartyCommand extends AbstractCommand {
   }
 
   private static final class PlayerLookup {
-    private final UUID uuid;
-    private final String displayName;
+    private final @Nonnull UUID uuid;
+    private final @Nonnull String displayName;
 
-    private PlayerLookup(UUID uuid, String displayName) {
-      this.uuid = uuid;
-      this.displayName = displayName;
+    private PlayerLookup(@Nonnull UUID uuid, @Nonnull String displayName) {
+      this.uuid = Objects.requireNonNull(uuid, "uuid");
+      this.displayName = Objects.requireNonNull(displayName, "displayName");
     }
   }
 

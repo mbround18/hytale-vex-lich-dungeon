@@ -16,6 +16,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -48,21 +49,26 @@ public class FriendAddCommand extends AbstractCommand {
       return CompletableFuture.completedFuture(null);
     }
     String targetName = tokens[index];
+    if (targetName == null || targetName.isBlank()) {
+      context.sendMessage(Message.raw("Usage: /friend add <name>"));
+      return CompletableFuture.completedFuture(null);
+    }
     PlayerLookup lookup = findOnlinePlayerByName(targetName);
     if (lookup == null) {
       context.sendMessage(Message.raw("Player not found: " + targetName));
       return CompletableFuture.completedFuture(null);
     }
-    UUID ownerId = context.sender().getUuid();
-    if (friendsService.areFriends(ownerId, lookup.uuid)) {
+    UUID ownerId = Objects.requireNonNull(context.sender().getUuid(), "sender uuid");
+    UUID targetId = Objects.requireNonNull(lookup.uuid, "target uuid");
+    if (friendsService.areFriends(ownerId, targetId)) {
       context.sendMessage(Message.raw("You are already friends with " + lookup.displayName));
       return CompletableFuture.completedFuture(null);
     }
-    FriendInviteRecord invite = new FriendInviteRecord(ownerId, lookup.uuid, System.currentTimeMillis());
-    dataStore.getFriendInvites().put(lookup.uuid, invite);
+    FriendInviteRecord invite = new FriendInviteRecord(ownerId, targetId, System.currentTimeMillis());
+    dataStore.getFriendInvites().put(targetId, invite);
     String ownerName = context.sender().getDisplayName();
     context.sendMessage(Message.raw("Friend invite sent to " + lookup.displayName));
-    com.hypixel.hytale.server.core.universe.PlayerRef targetRef = Universe.get().getPlayer(lookup.uuid);
+    com.hypixel.hytale.server.core.universe.PlayerRef targetRef = Universe.get().getPlayer(targetId);
     if (targetRef != null) {
       targetRef.sendMessage(Message.raw(ownerName + " sent you a friend invite. Use /friend accept."));
       FriendsSoundService.play(targetRef, FriendsSoundService.SOUND_INVITE, dataStore.getLog());
@@ -78,6 +84,9 @@ public class FriendAddCommand extends AbstractCommand {
   private PlayerLookup findOnlinePlayerByName(@Nonnull String name) {
     for (World world : Universe.get().getWorlds().values()) {
       for (PlayerRef playerRef : world.getPlayerRefs()) {
+        if (playerRef == null) {
+          continue;
+        }
         String displayName = resolveDisplayName(playerRef);
         String username = playerRef.getUsername();
         if ((displayName != null && displayName.equalsIgnoreCase(name))
@@ -85,7 +94,10 @@ public class FriendAddCommand extends AbstractCommand {
           String resolved = (displayName == null || displayName.isBlank())
               ? (username == null ? "" : username)
               : displayName;
-          return new PlayerLookup(playerRef.getUuid(), resolved);
+          UUID uuid = playerRef.getUuid();
+          if (uuid != null) {
+            return new PlayerLookup(uuid, resolved);
+          }
         }
       }
     }
@@ -112,12 +124,12 @@ public class FriendAddCommand extends AbstractCommand {
   }
 
   private static final class PlayerLookup {
-    private final UUID uuid;
-    private final String displayName;
+    private final @Nonnull UUID uuid;
+    private final @Nonnull String displayName;
 
-    private PlayerLookup(UUID uuid, String displayName) {
-      this.uuid = uuid;
-      this.displayName = displayName;
+    private PlayerLookup(@Nonnull UUID uuid, @Nonnull String displayName) {
+      this.uuid = Objects.requireNonNull(uuid, "uuid");
+      this.displayName = Objects.requireNonNull(displayName, "displayName");
     }
   }
 

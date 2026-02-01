@@ -3,10 +3,13 @@ package MBRound18.hytale.friends.ui;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import MBRound18.hytale.shared.interfaces.ui.UiPath;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class FriendsAssetResolver {
@@ -80,29 +83,44 @@ public final class FriendsAssetResolver {
   }
 
   private static List<String> buildCandidates(String uiPath) {
-    List<String> candidates = new ArrayList<>();
-    candidates.add(uiPath);
+    LinkedHashSet<String> candidates = new LinkedHashSet<>();
+    addCandidate(candidates, uiPath);
     String trimmed = uiPath;
-    // if (uiPath.startsWith("/")) {
-    // trimmed = uiPath.substring(1);
-    // candidates.add(trimmed);
-    // }
-    // if (trimmed.startsWith("Common/")) {
-    // candidates.add(trimmed.substring("Common/".length()));
-    // }
-    // if (trimmed.startsWith("UI/")) {
-    // candidates.add(trimmed.substring("UI/".length()));
-    // candidates.add("Common/" + trimmed);
-    // }
-    // if (trimmed.startsWith("Custom/")) {
-    // candidates.add("UI/" + trimmed);
-    // candidates.add("Common/UI/" + trimmed);
-    // candidates.add("Common/" + trimmed);
-    // }
-    // if (trimmed.startsWith("Common/UI/")) {
-    // candidates.add(trimmed.substring("Common/".length()));
-    // }
-    return candidates;
+    if (uiPath.startsWith("/")) {
+      trimmed = uiPath.substring(1);
+      addCandidate(candidates, trimmed);
+    }
+    if (trimmed.startsWith("Common/")) {
+      addCandidate(candidates, trimmed.substring("Common/".length()));
+    }
+    if (trimmed.startsWith("UI/")) {
+      addCandidate(candidates, "Common/" + trimmed);
+    }
+    if (trimmed.startsWith("Custom/")) {
+      addCandidate(candidates, "UI/" + trimmed);
+      addCandidate(candidates, "Common/UI/" + trimmed);
+      addCandidate(candidates, "Common/" + trimmed);
+    }
+    if (trimmed.startsWith("Common/UI/")) {
+      addCandidate(candidates, trimmed.substring("Common/".length()));
+    }
+    String clientPath = UiPath.normalizeForClient(trimmed);
+    if (clientPath != null) {
+      addCandidate(candidates, clientPath);
+      addCandidate(candidates, "Custom/" + clientPath);
+      addCandidate(candidates, "UI/Custom/" + clientPath);
+      addCandidate(candidates, "Common/UI/Custom/" + clientPath);
+      addCandidate(candidates, "Common/UI/" + clientPath);
+      addCandidate(candidates, "Common/" + clientPath);
+    }
+    return new ArrayList<>(candidates);
+  }
+
+  private static void addCandidate(@Nonnull LinkedHashSet<String> candidates, @Nullable String value) {
+    if (value == null || value.isBlank()) {
+      return;
+    }
+    candidates.add(value);
   }
 
   @Nullable

@@ -7,6 +7,7 @@
   "Main": "MBRound18.hytale.friends.FriendsPlugin",
   "ServerVersion": "*",
   "Dependencies": {
-    "MBRound18:ImmortalEngine": "*"
+    "MBRound18:ImmortalEngine": "*",
+    "MBRound18:SharedInterfaces": "*"
   }
 }

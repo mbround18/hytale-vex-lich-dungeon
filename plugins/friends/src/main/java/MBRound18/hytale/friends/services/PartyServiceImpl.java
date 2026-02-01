@@ -19,14 +19,14 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public class PartyServiceImpl implements PartyService {
   private final FriendsDataStore dataStore;
+  @SuppressWarnings("unused")
   private final EngineLog log;
 
   public PartyServiceImpl(@Nonnull FriendsDataStore dataStore, @Nonnull EngineLog log) {
@@ -38,20 +38,23 @@ public class PartyServiceImpl implements PartyService {
   @Override
   public Optional<PartySnapshot> getParty(@Nonnull UUID memberId) {
     PartyRecord party = dataStore.getPartyByMember(memberId);
-    return party == null ? Optional.empty() : Optional.of(toSnapshot(party));
+    return party == null
+        ? Objects.requireNonNull(Optional.empty(), "empty")
+        : Objects.requireNonNull(Optional.of(toSnapshot(party)), "partySnapshot");
   }
 
   @Nonnull
   @Override
   public PartyActionResult createParty(@Nonnull UUID leaderId, @Nonnull String leaderName) {
     if (dataStore.getPartyByMember(leaderId) != null) {
-      return PartyActionResult.failure("You are already in a party.");
+      return Objects.requireNonNull(PartyActionResult.failure("You are already in a party."), "failure");
     }
-    PartyRecord party = new PartyRecord(UUID.randomUUID(), leaderId, System.currentTimeMillis(),
-        List.of(new PartyMemberRecord(leaderId, leaderName)));
+    PartyRecord party = new PartyRecord(Objects.requireNonNull(UUID.randomUUID(), "partyId"), leaderId,
+        System.currentTimeMillis(),
+        Objects.requireNonNull(List.of(new PartyMemberRecord(leaderId, leaderName)), "members"));
     dataStore.indexParty(party);
     dataStore.saveAll();
-    return PartyActionResult.success("Party created.");
+    return Objects.requireNonNull(PartyActionResult.success("Party created."), "success");
   }
 
   @Nonnull
@@ -67,18 +70,18 @@ public class PartyServiceImpl implements PartyService {
       party = dataStore.getPartyByMember(inviterId);
     }
     if (party == null) {
-      return PartyActionResult.failure("Unable to create party.");
+      return Objects.requireNonNull(PartyActionResult.failure("Unable to create party."), "failure");
     }
     if (!inviterId.equals(party.getLeaderId())) {
-      return PartyActionResult.failure("Only the party leader can invite.");
+      return Objects.requireNonNull(PartyActionResult.failure("Only the party leader can invite."), "failure");
     }
     if (dataStore.getPartyByMember(targetId) != null) {
-      return PartyActionResult.failure("Target is already in a party.");
+      return Objects.requireNonNull(PartyActionResult.failure("Target is already in a party."), "failure");
     }
     PartyInvite invite = new PartyInvite(party.getPartyId(), inviterId, targetId,
         System.currentTimeMillis());
     dataStore.getInvites().put(targetId, invite);
-    return PartyActionResult.success("Invite sent to " + targetName + ".");
+    return Objects.requireNonNull(PartyActionResult.success("Invite sent to " + targetName + "."), "success");
   }
 
   @Nonnull
@@ -86,35 +89,35 @@ public class PartyServiceImpl implements PartyService {
   public PartyActionResult acceptInvite(@Nonnull UUID targetId) {
     PartyInvite invite = dataStore.getInvites().get(targetId);
     if (invite == null) {
-      return PartyActionResult.failure("No party invite found.");
+      return Objects.requireNonNull(PartyActionResult.failure("No party invite found."), "failure");
     }
     PartyRecord party = dataStore.getParties().get(invite.getPartyId());
     if (party == null) {
       dataStore.getInvites().remove(targetId);
-      return PartyActionResult.failure("Party no longer exists.");
+      return Objects.requireNonNull(PartyActionResult.failure("Party no longer exists."), "failure");
     }
     if (dataStore.getPartyByMember(targetId) != null) {
       dataStore.getInvites().remove(targetId);
-      return PartyActionResult.failure("You are already in a party.");
+      return Objects.requireNonNull(PartyActionResult.failure("You are already in a party."), "failure");
     }
     String name = findOnlinePlayerName(targetId);
     if (name == null) {
       name = targetId.toString();
     }
-    party.getMembers().add(new PartyMemberRecord(targetId, name));
+    party.getMembers().add(new PartyMemberRecord(targetId, Objects.requireNonNull(name, "name")));
     dataStore.syncPartyIndex(party);
     dataStore.getInvites().remove(targetId);
     dataStore.saveAll();
-    return PartyActionResult.success("Joined party.");
+    return Objects.requireNonNull(PartyActionResult.success("Joined party."), "success");
   }
 
   @Nonnull
   @Override
   public PartyActionResult declineInvite(@Nonnull UUID targetId) {
     if (dataStore.getInvites().remove(targetId) != null) {
-      return PartyActionResult.success("Invite declined.");
+      return Objects.requireNonNull(PartyActionResult.success("Invite declined."), "success");
     }
-    return PartyActionResult.failure("No party invite found.");
+    return Objects.requireNonNull(PartyActionResult.failure("No party invite found."), "failure");
   }
 
   @Nonnull
@@ -122,16 +125,16 @@ public class PartyServiceImpl implements PartyService {
   public PartyActionResult leave(@Nonnull UUID memberId) {
     PartyRecord party = dataStore.getPartyByMember(memberId);
     if (party == null) {
-      return PartyActionResult.failure("You are not in a party.");
+      return Objects.requireNonNull(PartyActionResult.failure("You are not in a party."), "failure");
     }
     boolean removed = party.getMembers().removeIf(member -> memberId.equals(member.getUuid()));
     if (!removed) {
-      return PartyActionResult.failure("You are not in a party.");
+      return Objects.requireNonNull(PartyActionResult.failure("You are not in a party."), "failure");
     }
     if (party.getMembers().isEmpty()) {
       dataStore.removeParty(party);
       dataStore.saveAll();
-      return PartyActionResult.success("Party disbanded.");
+      return Objects.requireNonNull(PartyActionResult.success("Party disbanded."), "success");
     }
     if (memberId.equals(party.getLeaderId())) {
       PartyMemberRecord newLeader = party.getMembers().get(0);
@@ -139,7 +142,7 @@ public class PartyServiceImpl implements PartyService {
     }
     dataStore.syncPartyIndex(party);
     dataStore.saveAll();
-    return PartyActionResult.success("Left the party.");
+    return Objects.requireNonNull(PartyActionResult.success("Left the party."), "success");
   }
 
   @Nonnull
@@ -147,14 +150,14 @@ public class PartyServiceImpl implements PartyService {
   public PartyActionResult disband(@Nonnull UUID leaderId) {
     PartyRecord party = dataStore.getPartyByMember(leaderId);
     if (party == null) {
-      return PartyActionResult.failure("You are not in a party.");
+      return Objects.requireNonNull(PartyActionResult.failure("You are not in a party."), "failure");
     }
     if (!leaderId.equals(party.getLeaderId())) {
-      return PartyActionResult.failure("Only the party leader can disband.");
+      return Objects.requireNonNull(PartyActionResult.failure("Only the party leader can disband."), "failure");
     }
     dataStore.removeParty(party);
     dataStore.saveAll();
-    return PartyActionResult.success("Party disbanded.");
+    return Objects.requireNonNull(PartyActionResult.success("Party disbanded."), "success");
   }
 
   @Nonnull
@@ -162,11 +165,13 @@ public class PartyServiceImpl implements PartyService {
   public Collection<PartySnapshot> getParties() {
     Collection<PartyRecord> values = dataStore.getParties().values();
     if (values.isEmpty()) {
-      return List.of();
+      return Objects.requireNonNull(List.of(), "empty");
     }
     List<PartySnapshot> snapshots = new ArrayList<>(values.size());
     for (PartyRecord record : values) {
-      snapshots.add(toSnapshot(record));
+      if (record != null) {
+        snapshots.add(toSnapshot(Objects.requireNonNull(record, "record")));
+      }
     }
     return snapshots;
   }
@@ -174,7 +179,7 @@ public class PartyServiceImpl implements PartyService {
   @Nonnull
   @Override
   public Optional<PartyInvite> getInvite(@Nonnull UUID targetId) {
-    return Optional.ofNullable(dataStore.getInvites().get(targetId));
+    return Objects.requireNonNull(Optional.ofNullable(dataStore.getInvites().get(targetId)), "invite");
   }
 
   @Override
@@ -190,14 +195,14 @@ public class PartyServiceImpl implements PartyService {
   @Nonnull
   @Override
   public Optional<ReturnLocation> getReturnLocation(@Nonnull UUID memberId) {
-    return Optional.ofNullable(dataStore.getReturnLocations().get(memberId));
+    return Objects.requireNonNull(Optional.ofNullable(dataStore.getReturnLocations().get(memberId)), "location");
   }
 
   @Nonnull
   @Override
   public Optional<ReturnLocation> clearReturnLocation(@Nonnull UUID memberId) {
     ReturnLocation removed = dataStore.getReturnLocations().remove(memberId);
-    return Optional.ofNullable(removed);
+    return Objects.requireNonNull(Optional.ofNullable(removed), "removed");
   }
 
   @Nonnull
@@ -211,8 +216,8 @@ public class PartyServiceImpl implements PartyService {
         party.getCreatedAtEpochMs());
   }
 
-  private String findOnlinePlayerName(UUID uuid) {
-    PlayerRef playerRef = Universe.get().getPlayer(uuid);
+  private String findOnlinePlayerName(@Nonnull UUID uuid) {
+    PlayerRef playerRef = Universe.get().getPlayer(Objects.requireNonNull(uuid, "uuid"));
     if (playerRef == null || !playerRef.isValid()) {
       return null;
     }

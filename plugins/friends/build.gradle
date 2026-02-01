@@ -17,6 +17,7 @@ java {
 
 dependencies {
     implementation project(":plugins:engine")
+    implementation project(":shared:interfaces")
     compileOnly files("${rootProject.projectDir}/data/server/Server/HytaleServer.jar")
     compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
     compileOnly 'org.slf4j:slf4j-api:2.0.7'

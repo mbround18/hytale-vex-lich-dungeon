@@ -1,20 +1,20 @@
 package MBRound18.hytale.friends.ui;
 
-import MBRound18.ImmortalEngine.api.ui.UiPath;
-import MBRound18.ImmortalEngine.api.ui.UiVars;
+import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
+import MBRound18.hytale.shared.interfaces.ui.UiPath;
+import MBRound18.hytale.shared.interfaces.ui.UiVars;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
-public class FriendsHudPage extends CustomUIHud {
-  private static final String HUD_ROOT_SELECTOR = "#hud-root";
+public class FriendsHudPage extends AbstractCustomUIHud {
   private static final Pattern ID_PATTERN = Pattern.compile("#([A-Za-z0-9_]+)");
 
   private final String uiPath;
@@ -23,7 +23,7 @@ public class FriendsHudPage extends CustomUIHud {
 
   public FriendsHudPage(@Nonnull PlayerRef playerRef, @Nonnull String uiPath,
       @Nonnull Map<String, String> vars) {
-    super(playerRef);
+    super(uiPath, playerRef);
     this.uiPath = uiPath;
     this.vars = vars;
   }
@@ -32,13 +32,14 @@ public class FriendsHudPage extends CustomUIHud {
   protected void build(UICommandBuilder commands) {
     String resolvedPath = FriendsAssetResolver.resolvePath(uiPath);
     String inline = FriendsAssetResolver.readInlineDocument(uiPath);
-    String doc = inline != null ? inline : FriendsAssetResolver.readDocument(resolvedPath != null ? resolvedPath : uiPath);
+    String doc = inline != null ? inline
+        : FriendsAssetResolver.readDocument(resolvedPath != null ? resolvedPath : uiPath);
     knownIds = extractIds(doc);
     if (inline != null) {
-      commands.appendInline(HUD_ROOT_SELECTOR, inline);
+      commands.appendInline(null, inline);
     } else {
       String clientPath = UiPath.normalizeForClient(resolvedPath != null ? resolvedPath : uiPath);
-      commands.append(HUD_ROOT_SELECTOR, clientPath != null ? clientPath : uiPath);
+      commands.append(clientPath != null ? clientPath : uiPath);
     }
   }
 
@@ -55,10 +56,15 @@ public class FriendsHudPage extends CustomUIHud {
       if (id != null && !id.contains(".")) {
         id = UiVars.textSpansId(id);
       }
+      if (id == null) {
+        continue;
+      }
       if (!id.startsWith("#")) {
         id = "#" + id;
       }
-      commands.set(id, Message.raw(entry.getValue()));
+      String value = entry.getValue();
+      String safeValue = value == null ? "" : value;
+      commands.set(id, Message.raw(Objects.requireNonNull(safeValue, "value")));
     }
   }
 

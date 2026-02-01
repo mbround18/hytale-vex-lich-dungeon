@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.universe.Universe;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -32,7 +33,7 @@ public class FriendDeclineCommand extends AbstractCommand {
       context.sendMessage(Message.raw("This command can only be used by players."));
       return CompletableFuture.completedFuture(null);
     }
-    UUID targetId = context.sender().getUuid();
+    UUID targetId = Objects.requireNonNull(context.sender().getUuid(), "targetId");
     FriendInviteRecord invite = dataStore.getFriendInvites().remove(targetId);
     if (invite == null) {
       context.sendMessage(Message.raw("No friend invite found."));

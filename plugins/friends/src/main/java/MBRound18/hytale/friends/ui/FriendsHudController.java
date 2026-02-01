@@ -1,45 +1,54 @@
 package MBRound18.hytale.friends.ui;
 
-import MBRound18.ImmortalEngine.api.ui.EngineHud;
-import MBRound18.ImmortalEngine.api.ui.UiThread;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
+import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIController;
+import MBRound18.hytale.shared.interfaces.ui.EngineHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Map;
+import java.util.logging.Logger;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public final class FriendsHudController {
-  private static final ScheduledExecutorService HUD_SCHEDULER = Executors.newSingleThreadScheduledExecutor(r -> {
-    Thread thread = new Thread(r, "FriendsHudUpdate");
-    thread.setDaemon(true);
-    return thread;
-  });
+public final class FriendsHudController extends AbstractCustomUIController<FriendsHudPage> {
+  private static final Logger LOGGER = Logger.getLogger(FriendsHudController.class.getName());
+  private static final FriendsHudController INSTANCE = new FriendsHudController();
   private static final long HUD_INITIAL_UPDATE_DELAY_MS = 1000L;
+  private static final String HUD_PATH = "Custom/Friends/Hud/FriendsPartyHud.ui";
+
   private FriendsHudController() {
+    super(LOGGER, "FriendsHud");
   }
 
-  public static boolean openPartyHud(@Nullable PlayerRef playerRef, @Nonnull String partyList) {
+  public static boolean openPartyHud(@Nullable PlayerRef playerRef, @Nullable String partyList) {
+    Map<String, String> vars = new java.util.LinkedHashMap<>();
+    vars.put("FriendsPartyList", partyList == null ? "" : partyList);
+    return INSTANCE.openPartyHudInternal(playerRef, vars);
+  }
+
+  public static boolean openPartyHud(@Nullable PlayerRef playerRef, @Nonnull Map<String, String> vars) {
+    return INSTANCE.openPartyHudInternal(playerRef, vars);
+  }
+
+  public static boolean clearHud(@Nullable PlayerRef playerRef) {
+    return INSTANCE.clearHudInternal(playerRef);
+  }
+
+  private boolean openPartyHudInternal(@Nullable PlayerRef playerRef, @Nonnull Map<String, String> vars) {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
     if (!EngineHud.isCustomUiMode()) {
-      EngineHud.show(playerRef, "Custom/Friends/Hud/FriendsPartyHud.ui",
-          java.util.Map.of("FriendsPartyList", partyList == null ? "" : partyList));
+      EngineHud.show(playerRef, HUD_PATH, vars);
       return true;
     }
-    CustomUIHud hud = new FriendsHudPage(playerRef, "Custom/Friends/Hud/FriendsPartyHud.ui",
-        java.util.Map.of("FriendsPartyList", partyList == null ? "" : partyList));
-    return applyHud(playerRef, hud);
+
+    return openHud(playerRef,
+        () -> new FriendsHudPage(playerRef, HUD_PATH, vars),
+        hud -> scheduleInitialUpdate(playerRef, hud));
   }
 
-  public static boolean clearHud(@Nullable PlayerRef playerRef) {
+  private boolean clearHudInternal(@Nullable PlayerRef playerRef) {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
@@ -47,61 +56,17 @@ public final class FriendsHudController {
       EngineHud.clear(playerRef);
       return true;
     }
-    return resetHud(playerRef);
-  }
-
-  private static boolean applyHud(@Nonnull PlayerRef playerRef, @Nonnull CustomUIHud hud) {
-    Ref<EntityStore> entityRef = playerRef.getReference();
-    if (entityRef == null || !entityRef.isValid()) {
-      return false;
-    }
-    Store<EntityStore> store = entityRef.getStore();
-    if (store.isInThread()) {
-      return applyHudOnThread(playerRef, entityRef, store, hud);
-    }
-    return UiThread.runOnPlayerWorld(playerRef, () -> applyHudOnThread(playerRef, entityRef, store, hud));
-  }
-
-  private static boolean resetHud(@Nonnull PlayerRef playerRef) {
-    Ref<EntityStore> entityRef = playerRef.getReference();
-    if (entityRef == null || !entityRef.isValid()) {
-      return false;
-    }
-    Store<EntityStore> store = entityRef.getStore();
-    if (store.isInThread()) {
-      return resetHudOnThread(playerRef, entityRef, store);
-    }
-    return UiThread.runOnPlayerWorld(playerRef, () -> resetHudOnThread(playerRef, entityRef, store));
-  }
-
-  private static boolean applyHudOnThread(PlayerRef playerRef, Ref<EntityStore> entityRef,
-      Store<EntityStore> store, CustomUIHud hud) {
-    Player player = store.getComponent(entityRef, Player.getComponentType());
-    if (player == null) {
-      return false;
-    }
-    player.getHudManager().setCustomHud(playerRef, hud);
-    if (hud instanceof FriendsHudPage friendsHud) {
-      scheduleInitialUpdate(playerRef, friendsHud);
-    }
+    closeHud(playerRef, FriendsHudPage::clear);
     return true;
   }
 
-  private static boolean resetHudOnThread(PlayerRef playerRef, Ref<EntityStore> entityRef,
-      Store<EntityStore> store) {
-    Player player = store.getComponent(entityRef, Player.getComponentType());
-    if (player == null) {
-      return false;
-    }
-    player.getHudManager().setCustomHud(playerRef, null);
-    return true;
-  }
-
-  private static void scheduleInitialUpdate(@Nonnull PlayerRef playerRef, @Nonnull FriendsHudPage hud) {
-    HUD_SCHEDULER.schedule(() -> UiThread.runOnPlayerWorld(playerRef, () -> {
-      UICommandBuilder builder = new UICommandBuilder();
-      hud.appendVarCommands(builder, hud.getVars());
-      hud.update(false, builder);
-    }), HUD_INITIAL_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
+  private void scheduleInitialUpdate(@Nonnull PlayerRef playerRef, @Nonnull FriendsHudPage hud) {
+    cancelTimer(playerRef);
+    scheduleOnce(playerRef, HUD_INITIAL_UPDATE_DELAY_MS, TimeUnit.MILLISECONDS,
+        () -> enqueue(playerRef, () -> runOnWorld(playerRef, () -> {
+          UICommandBuilder builder = new UICommandBuilder();
+          hud.appendVarCommands(builder, hud.getVars());
+          hud.update(false, builder);
+        })));
   }
 }

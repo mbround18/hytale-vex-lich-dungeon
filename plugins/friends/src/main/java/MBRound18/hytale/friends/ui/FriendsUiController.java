@@ -1,6 +1,6 @@
 package MBRound18.hytale.friends.ui;
 
-import MBRound18.ImmortalEngine.api.ui.UiVars;
+import MBRound18.hytale.shared.interfaces.ui.UiVars;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Map;

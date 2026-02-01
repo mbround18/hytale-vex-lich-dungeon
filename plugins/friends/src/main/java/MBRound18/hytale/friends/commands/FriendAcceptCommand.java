@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -37,13 +38,14 @@ public class FriendAcceptCommand extends AbstractCommand {
       context.sendMessage(Message.raw("This command can only be used by players."));
       return CompletableFuture.completedFuture(null);
     }
-    UUID targetId = context.sender().getUuid();
+    UUID targetId = Objects.requireNonNull(context.sender().getUuid(), "targetId");
     FriendInviteRecord invite = dataStore.getFriendInvites().remove(targetId);
     if (invite == null) {
       context.sendMessage(Message.raw("No friend invite found."));
       return CompletableFuture.completedFuture(null);
     }
     String targetName = context.sender().getDisplayName();
+    targetName = targetName == null ? "" : targetName;
     boolean added = friendsService.addFriend(invite.getInviterId(), targetId, targetName);
     if (!added) {
       context.sendMessage(Message.raw("Unable to accept friend invite."));
@@ -53,7 +55,7 @@ public class FriendAcceptCommand extends AbstractCommand {
     if (inviterMap != null) {
       FriendRecord record = inviterMap.get(targetId);
       if (record != null) {
-        record.setName(targetName);
+        record.setName(Objects.requireNonNull(targetName, "targetName"));
       }
     }
     dataStore.saveAll();

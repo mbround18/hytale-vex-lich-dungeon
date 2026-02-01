@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 public class PartyHudUpdater implements Runnable {
   private static final long UPDATE_INTERVAL_MS = 1000L;
+  private static final int MAX_MEMBER_SLOTS = 4;
 
   private final PartyService partyService;
   private final EngineLog log;
@@ -64,12 +65,12 @@ public class PartyHudUpdater implements Runnable {
 
     Set<UUID> partyMembers = new HashSet<>();
     for (PartySnapshot party : partyService.getParties()) {
-      String listText = buildPartyList(party, online);
+      Map<String, String> vars = buildPartyVars(party, online);
       for (PartyMemberSnapshot member : party.getMembers()) {
         partyMembers.add(member.getUuid());
         PlayerContext context = online.get(member.getUuid());
         if (context != null) {
-          FriendsHudController.openPartyHud(context.playerRef, listText);
+          FriendsHudController.openPartyHud(context.playerRef, vars);
         }
       }
     }
@@ -79,6 +80,46 @@ public class PartyHudUpdater implements Runnable {
         FriendsHudController.clearHud(context.playerRef);
       }
     }
+  }
+
+  private Map<String, String> buildPartyVars(PartySnapshot party, Map<UUID, PlayerContext> online) {
+    Map<String, String> vars = new HashMap<>();
+    String summary = buildPartyList(party, online);
+    vars.put("FriendsPartyList", summary);
+
+    int slot = 1;
+    for (PartyMemberSnapshot member : party.getMembers()) {
+      if (slot > MAX_MEMBER_SLOTS) {
+        break;
+      }
+      String name = member.getName();
+      PlayerContext context = online.get(member.getUuid());
+      ParticipantSnapshot stats = null;
+      if (context != null) {
+        stats = ParticipantTracker.get().getParticipant(context.world.getName(), member.getUuid());
+      }
+      float health = stats == null ? -1f : stats.getHealth();
+      float healthMax = stats == null ? -1f : stats.getHealthMax();
+      float stamina = stats == null ? -1f : stats.getStamina();
+      float staminaMax = stats == null ? -1f : stats.getStaminaMax();
+
+      vars.put("Member" + slot + "Name", name);
+      vars.put("Member" + slot + "Leader", member.isLeader() ? "LEAD" : "");
+      vars.put("Member" + slot + "HpBar", buildBar("HP", health, healthMax));
+      vars.put("Member" + slot + "StamBar", buildBar("ST", stamina, staminaMax));
+      vars.put("Member" + slot + "Item", "");
+      slot++;
+    }
+
+    for (int i = slot; i <= MAX_MEMBER_SLOTS; i++) {
+      vars.put("Member" + i + "Name", "");
+      vars.put("Member" + i + "Leader", "");
+      vars.put("Member" + i + "HpBar", "HP [----------]");
+      vars.put("Member" + i + "StamBar", "ST [----------]");
+      vars.put("Member" + i + "Item", "");
+    }
+
+    return vars;
   }
 
   private String buildPartyList(PartySnapshot party, Map<UUID, PlayerContext> online) {
@@ -122,6 +163,25 @@ public class PartyHudUpdater implements Runnable {
       return "?";
     }
     return current + "/" + max;
+  }
+
+  private String buildBar(String label, float currentValue, float maxValue) {
+    if (currentValue < 0f || maxValue <= 0f) {
+      return label + " [??????????]";
+    }
+    float ratio = currentValue / maxValue;
+    if (ratio < 0f) {
+      ratio = 0f;
+    } else if (ratio > 1f) {
+      ratio = 1f;
+    }
+    int segments = 10;
+    int filled = Math.round(ratio * segments);
+    StringBuilder bar = new StringBuilder();
+    for (int i = 0; i < segments; i++) {
+      bar.append(i < filled ? "#" : "-");
+    }
+    return label + " [" + bar + "]";
   }
 
   private static final class PlayerContext {
