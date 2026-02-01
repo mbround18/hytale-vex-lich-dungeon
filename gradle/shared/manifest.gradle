@@ -1,0 +1,77 @@
+// Shared manifest processing task.
+// Expected configuration on the project:
+// ext.manifestConfig = [
+//   taskName: "processAssetsManifest",
+//   inputManifest: file("path/to/manifest.json"),
+//   outputManifest: file("$buildDir/processed/manifest.json"),
+//   versionProvider: { project.version }
+// ]
+if (!project.ext.has("manifestConfig")) {
+    throw new GradleException("manifestConfig is required to apply gradle/shared/manifest.gradle")
+}
+
+def config = project.ext.manifestConfig
+if (!config.inputManifest || !config.outputManifest) {
+    throw new GradleException("manifestConfig must include inputManifest and outputManifest")
+}
+
+def taskName = config.taskName ?: "processManifest"
+
+tasks.register(taskName) {
+    group = "build"
+    description = "Process ${config.inputManifest} with version and authors"
+
+    inputs.file(config.inputManifest)
+    outputs.file(config.outputManifest)
+
+    doLast {
+        config.outputManifest.parentFile.mkdirs()
+
+        def manifestContent = config.inputManifest.text
+        def resolvedVersion = config.versionProvider ? config.versionProvider.call() : project.version
+
+        def authorsJson = """[
+  {
+    \"Name\": \"Example Dev\",
+    \"Email\": \"dev@example.com\",
+    \"Url\": \"\"
+  }
+]"""
+
+        try {
+            def gitProcess = new ProcessBuilder(["git", "log", "--format=%an|%ae"]).redirectErrorStream(true).start()
+            def gitLog = new StringBuilder()
+            gitProcess.inputStream.newReader().eachLine { line ->
+                gitLog.append(line).append('\n')
+            }
+            int gitExit = gitProcess.waitFor()
+            def authors = gitLog.toString().readLines()
+                .collect { it.split("\\|") }
+                .findAll { it.size() == 2 }
+                .collect { [name: it[0].trim(), email: it[1].trim()] }
+                .unique { [it.name, it.email] }
+
+            if (gitExit == 0 && !authors.isEmpty()) {
+                def entries = authors.collect { author ->
+                    """  {
+    \"Name\": \"${author.name}\",
+    \"Email\": \"${author.email}\",
+    \"Url\": \"\"
+  }"""
+                }.join(',\n')
+                authorsJson = "[\n${entries}\n]"
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to extract git authors for manifest: ${e.message}")
+        }
+
+        manifestContent = manifestContent.replaceAll('"Version"\\s*:\\s*"[^"]*"', "\\\"Version\\\": \\\"${resolvedVersion}\\\"")
+        manifestContent = manifestContent.replaceAll(
+            '"Authors"\\s*:\\s*\\[[^\\]]*\\]',
+            "\\\"Authors\\\": ${authorsJson}"
+        )
+
+        config.outputManifest.text = manifestContent
+        logger.lifecycle("Processed ${config.inputManifest.name} with version ${resolvedVersion}")
+    }
+}

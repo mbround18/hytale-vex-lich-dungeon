@@ -1,0 +1,233 @@
+tasks.register("updateDevFeed") {
+    group = "docs"
+    description = "Generate static/feed.xml from static/dev/logs index + front matter"
+    doLast {
+        def logsDir = file("static/dev/logs")
+        def indexFile = new File(logsDir, "index.json")
+        def outputFile = file("static/feed.xml")
+
+        if (!indexFile.exists()) {
+            throw new IllegalStateException("Missing dev log index at ${indexFile}")
+        }
+
+        def siteUrl = (project.findProperty("siteUrl") ?: "https://vex.boop.ninja").toString().trim()
+        def feedTitle = (project.findProperty("feedTitle") ?: "Vex Dev Logs").toString()
+        def feedDescription = (project.findProperty("feedDescription") ?: "Engineering logs from the Vex developer hub.").toString()
+
+        def json = new groovy.json.JsonSlurper()
+        def entries = json.parseText(indexFile.getText("UTF-8")) as List
+
+        def parseFrontMatter = { String text ->
+            def lines = text.readLines()
+            if (!lines || lines[0] != "---") {
+                return [meta: [:], body: text]
+            }
+
+            def endIndex = -1
+            for (int i = 1; i < lines.size(); i++) {
+                if (lines[i] == "---") {
+                    endIndex = i
+                    break
+                }
+            }
+
+            if (endIndex == -1) {
+                return [meta: [:], body: text]
+            }
+
+            def metaLines = lines.subList(1, endIndex)
+            def bodyLines = lines.subList(endIndex + 1, lines.size())
+            def meta = [:]
+            metaLines.each { line ->
+                def matcher = (line =~ /^([A-Za-z0-9_]+):\s*(.+)$/)
+                if (matcher.matches()) {
+                    def key = matcher.group(1)
+                    def value = matcher.group(2).trim()
+                    if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+                        value = value.substring(1, value.length() - 1)
+                    }
+                    meta[key] = value
+                }
+            }
+            return [meta: meta, body: bodyLines.join("\n")]
+        }
+
+        def cleanSummary = { String body ->
+            def paragraphs = body.split(/\n\s*\n/)
+            def summary = paragraphs.find { para ->
+                def trimmed = para.trim()
+                trimmed && !trimmed.startsWith("#")
+            } ?: ""
+            summary = summary
+                .replaceAll(/\[(.+?)\]\([^)]+\)/, "\$1")
+                .replaceAll(/[`*_>#]/, "")
+                .replaceAll(/\s+/, " ")
+                .trim()
+            return summary
+        }
+
+        def toRfc1123 = { String dateValue ->
+            def localDate = java.time.LocalDate.parse(dateValue)
+            def zoned = java.time.ZonedDateTime.of(localDate, java.time.LocalTime.MIDNIGHT, java.time.ZoneOffset.UTC)
+            return java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(zoned)
+        }
+
+        def items = []
+        def latestUpdated = null
+
+        entries.each { entry ->
+            def entryFile = new File(logsDir, entry.toString())
+            if (!entryFile.exists()) {
+                logger.warn("Dev log missing for feed: ${entryFile}")
+                return
+            }
+
+            def parsed = parseFrontMatter(entryFile.getText("UTF-8"))
+            def meta = parsed.meta
+            def title = meta.title ?: entryFile.name
+            def createdAt = meta.createdAt ?: meta.updatedAt
+            def updatedAt = meta.updatedAt ?: meta.createdAt
+
+            if (!createdAt) {
+                logger.warn("Dev log missing createdAt for feed: ${entryFile}")
+                return
+            }
+
+            def linkPath = "/dev/logs/${entryFile.name}"
+            def link = siteUrl ? "${siteUrl}${linkPath}" : linkPath
+            def description = cleanSummary(parsed.body)
+            def pubDate = toRfc1123(createdAt.toString())
+
+            if (updatedAt) {
+                def updatedDate = java.time.LocalDate.parse(updatedAt.toString())
+                if (latestUpdated == null || updatedDate.isAfter(latestUpdated)) {
+                    latestUpdated = updatedDate
+                }
+            }
+
+            items << [
+                title      : title,
+                link       : link,
+                guid       : link,
+                description: description,
+                pubDate    : pubDate
+            ]
+        }
+
+        def lastBuildDateValue = latestUpdated
+            ? toRfc1123(latestUpdated.toString())
+            : java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME.format(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC))
+
+        def channelLink = siteUrl ? "${siteUrl}/dev/" : "/dev/"
+        def selfLink = siteUrl ? "${siteUrl}/feed.xml" : "/feed.xml"
+
+        def writer = new StringWriter()
+        def xml = new groovy.xml.MarkupBuilder(writer)
+        xml.mkp.xmlDeclaration(version: "1.0", encoding: "UTF-8")
+        xml.rss(version: "2.0", "xmlns:atom": "http://www.w3.org/2005/Atom") {
+            channel {
+                title(feedTitle)
+                link(channelLink)
+                description(feedDescription)
+                "lastBuildDate"(lastBuildDateValue)
+                "atom:link"(href: selfLink, rel: "self", type: "application/rss+xml")
+                items.each { feedItem ->
+                    "item" {
+                        title(feedItem.title)
+                        link(feedItem.link)
+                        guid(feedItem.guid)
+                        description(feedItem.description)
+                        pubDate(feedItem.pubDate)
+                    }
+                }
+            }
+        }
+
+        outputFile.parentFile.mkdirs()
+        outputFile.text = writer.toString() + System.lineSeparator()
+        logger.lifecycle("Wrote dev feed to ${outputFile}")
+
+        if (!siteUrl) {
+            logger.lifecycle("Note: feed links are relative. Set -PsiteUrl=https://example.com to generate absolute links.")
+        }
+    }
+}
+
+tasks.register("validateDevFeed") {
+    group = "docs"
+    description = "Validate static/dev/logs index + front matter"
+    dependsOn "updateDevFeed"
+    doLast {
+        def logsDir = file("static/dev/logs")
+        def indexFile = new File(logsDir, "index.json")
+
+        if (!indexFile.exists()) {
+            throw new IllegalStateException("Missing dev log index at ${indexFile}")
+        }
+
+        def json = new groovy.json.JsonSlurper()
+        def entries = json.parseText(indexFile.getText("UTF-8")) as List
+        if (!entries || entries.isEmpty()) {
+            throw new IllegalStateException("Dev log index is empty: ${indexFile}")
+        }
+
+        def parseFrontMatter = { String text ->
+            def lines = text.readLines()
+            if (!lines || lines[0] != "---") {
+                return [meta: [:], body: text]
+            }
+
+            def endIndex = -1
+            for (int i = 1; i < lines.size(); i++) {
+                if (lines[i] == "---") {
+                    endIndex = i
+                    break
+                }
+            }
+
+            if (endIndex == -1) {
+                return [meta: [:], body: text]
+            }
+
+            def metaLines = lines.subList(1, endIndex)
+            def bodyLines = lines.subList(endIndex + 1, lines.size())
+            def meta = [:]
+            metaLines.each { line ->
+                def matcher = (line =~ /^([A-Za-z0-9_]+):\s*(.+)$/)
+                if (matcher.matches()) {
+                    def key = matcher.group(1)
+                    def value = matcher.group(2).trim()
+                    if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+                        value = value.substring(1, value.length() - 1)
+                    }
+                    meta[key] = value
+                }
+            }
+            return [meta: meta, body: bodyLines.join("\n")]
+        }
+
+        def failures = []
+        entries.each { entry ->
+            def entryFile = new File(logsDir, entry.toString())
+            if (!entryFile.exists()) {
+                failures << "Missing dev log: ${entryFile}"
+                return
+            }
+
+            def parsed = parseFrontMatter(entryFile.getText("UTF-8"))
+            def meta = parsed.meta
+            if (!meta.createdAt) {
+                failures << "Missing createdAt front matter in ${entryFile.name}"
+            }
+            if (!meta.title) {
+                failures << "Missing title front matter in ${entryFile.name}"
+            }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new IllegalStateException("Dev feed validation failed:\n- " + failures.join("\n- "))
+        }
+
+        logger.lifecycle("Dev feed validation passed (${entries.size()} entries)")
+    }
+}
