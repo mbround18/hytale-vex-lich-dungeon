@@ -1,11 +1,12 @@
 package MBRound18.ImmortalEngine.api.participants;
 
 import java.util.UUID;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public final class ParticipantSnapshot {
-  private final UUID uuid;
-  private final String name;
+  private final @Nonnull UUID uuid;
+  private final @Nonnull String name;
   private final float health;
   private final float healthMax;
   private final float stamina;
@@ -14,8 +15,8 @@ public final class ParticipantSnapshot {
 
   public ParticipantSnapshot(@Nonnull UUID uuid, @Nonnull String name, float health, float healthMax,
       float stamina, float staminaMax, long updatedAt) {
-    this.uuid = uuid;
-    this.name = name;
+    this.uuid = Objects.requireNonNull(uuid, "uuid");
+    this.name = Objects.requireNonNull(name, "name");
     this.health = health;
     this.healthMax = healthMax;
     this.stamina = stamina;
