@@ -187,7 +187,7 @@ public class UpnpForwarderPlugin extends JavaPlugin {
 
   private GatewayService fetchGatewayService(String locationUrl) {
     try {
-      URL url = new URL(locationUrl);
+      URL url = URI.create(locationUrl).toURL();
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setConnectTimeout(2000);
       connection.setReadTimeout(3000);
@@ -321,7 +321,7 @@ public class UpnpForwarderPlugin extends JavaPlugin {
   private boolean sendAddPortMapping(GatewayService service, String internalClient) {
     String soap = buildSoapBody(service.serviceType, internalClient);
     try {
-      URL url = new URL(service.controlURL);
+      URL url = URI.create(service.controlURL).toURL();
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setConnectTimeout(2000);
       connection.setReadTimeout(3000);
@@ -366,7 +366,7 @@ public class UpnpForwarderPlugin extends JavaPlugin {
   private boolean sendDeletePortMapping(GatewayService service) {
     String soap = buildDeleteSoapBody(service.serviceType);
     try {
-      URL url = new URL(service.controlURL);
+      URL url = URI.create(service.controlURL).toURL();
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setConnectTimeout(2000);
       connection.setReadTimeout(3000);
@@ -516,6 +516,7 @@ public class UpnpForwarderPlugin extends JavaPlugin {
 
   private static final class UpnpForwarderConfig {
     private List<String> gatewayHints;
+    @SuppressWarnings("unused")
     private String lastGateway;
 
     private static UpnpForwarderConfig defaults() {
