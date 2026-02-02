@@ -1,3 +1,5 @@
+target/
+
 # Gradle
 .gradle/
 build/
@@ -33,3 +35,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+
+# Added by cargo
+
+/target

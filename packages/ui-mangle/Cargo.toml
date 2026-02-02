@@ -1,0 +1,14 @@
+[package]
+name = "ui-mangle"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.86"
+clap = { version = "4.5.20", features = ["derive"] }
+regex = "1.10.6"
+walkdir = "2.5.0"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
