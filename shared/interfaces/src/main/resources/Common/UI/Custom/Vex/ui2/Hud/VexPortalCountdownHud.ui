@@ -1,32 +1,53 @@
+$V = "../../VexCommon.ui";
+
 Group {
-  Anchor: (Top: 80, Left: 0, Right: 0, Height: 120);
+  Anchor: (Top: 80, Left: 0, Right: 0, Height: 160);
   LayoutMode: Middle;
 
   Group {
-    Anchor: (Width: 300, Height: 96);
-    LayoutMode: Top;
-    Background: (Color: #000000(0.65));
-    Padding: (Top: 12, Bottom: 12, Horizontal: 16);
+    Anchor: (Width: 320, Height: 120);
+    Background: (Color: $V.@FrameOuter);
+    Padding: (Full: 2);
 
-    Group #Countdown {
-      Anchor: (Top: 0, Height: 28);
-      Label #CountdownTitle {
-        Text: "Countdown";
+    Group {
+      Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+      Background: (Color: $V.@HudBackground);
+      Padding: (Top: 12, Bottom: 12, Horizontal: 16);
+      LayoutMode: Top;
+
+      Group #Countdown {
+        Anchor: (Top: 0, Height: 32);
+        LayoutMode: Left;
+
+        Label #CountdownTitle {
+          Anchor: (Height: 18);
+          Text: "Countdown";
+          Style: (FontSize: 12, RenderUppercase: true, LetterSpacing: 1, TextColor: $V.@MutedColor);
+        }
+
+        TextField #CountdownValue {
+          Anchor: (Left: 12, Height: 22);
+          Value: "00:00";
+          Style: (FontSize: 18, RenderBold: true, TextColor: $V.@TitleColor);
+        }
       }
-      TextField #CountdownValue {
-        Value: "00:00";
+
+      Group #Location {
+        Anchor: (Top: 8, Height: 20);
+        LayoutMode: Left;
+
+        Label #LocationTitle {
+          Anchor: (Height: 18);
+          Text: "Location";
+          Style: (FontSize: 11, RenderUppercase: true, LetterSpacing: 1, TextColor: $V.@MutedColor);
+        }
+
+        TextField #LocationValue {
+          Anchor: (Left: 12, Height: 18);
+          Value: "X: 0  Y: 0  Z: 0";
+          Style: (FontSize: 12, TextColor: $V.@BodyColor);
+        }
       }
     }
-
-    Group #Location {
-      Anchor: (Top: 8, Height: 20);
-      Label #LocationTitle {
-        Text: "X: 0  Y: 0  Z: 0";
-      }
-      TextField #LocationValue {
-        Value: "X: 0  Y: 0  Z: 0";
-      }
-    }
-
   }
 }

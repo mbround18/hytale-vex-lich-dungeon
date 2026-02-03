@@ -1,42 +1,77 @@
 $V = "../VexCommon.ui";
 
 Group {
-    Anchor: (Top: 20, Left: 140, Width: 320, Height: 160);
-    Background: (Color: $V.@HudBackground);
+    Anchor: (Top: 24, Left: 24, Width: 360, Height: 196);
+    Background: (Color: $V.@FrameOuter);
+    Padding: (Full: 2);
 
-    Label #VexHudTitle {
-        Anchor: (Left: 10, Top: 8, Height: 18);
-        Text: %server.customUI.vexHud.title;
-        Style: (FontSize: 16, RenderBold: true, TextColor: $V.@HighlightColor);
-    }
+    Group {
+        Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+        Background: (Color: $V.@FrameInner);
+        Padding: (Full: 10);
+        LayoutMode: Top;
 
-    Label #VexHudInstanceScore {
-        Anchor: (Left: 10, Top: 30, Height: 16);
-        Text: "Instance: 0";
-        Style: (FontSize: 14, TextColor: $V.@MutedColor);
-    }
+        Group {
+            Anchor: (Top: 0, Height: 24);
+            LayoutMode: Left;
 
-    Label #VexHudPlayerScore {
-        Anchor: (Left: 10, Top: 50, Height: 16);
-        Text: "Player: 0";
-        Style: (FontSize: 14, TextColor: $V.@BodyColor);
-    }
+            Label #VexHudTitle {
+                Anchor: (Left: 0, Height: 20);
+                Text: %server.customUI.vexHud.title;
+                Style: (FontSize: 16, RenderBold: true, TextColor: $V.@HighlightColor, LetterSpacing: 1);
+            }
+        }
 
-    Label #VexHudDelta {
-        Anchor: (Left: 10, Top: 70, Height: 16);
-        Text: "+0";
-        Style: (FontSize: 14, TextColor: $V.@AccentColor);
-    }
+        Group {
+            Anchor: (Top: 6, Height: 2);
+            Background: (Color: $V.@AccentRuleSoft);
+        }
 
-    Label #VexHudPartyTitle {
-        Anchor: (Left: 10, Top: 95, Height: 16);
-        Text: "Party";
-        Style: (FontSize: 13, RenderBold: true, TextColor: $V.@MutedColor);
-    }
+        Group {
+            Anchor: (Top: 10, Height: 64);
+            LayoutMode: Left;
 
-    Label #VexHudPartyList {
-        Anchor: (Left: 10, Top: 112, Width: 300, Height: 40);
-        Text: "You — HP 0/0 | ST 0/0";
-        Style: (FontSize: 12, TextColor: $V.@BodyColor);
+            $V.@HudCard {
+                Anchor: (Width: 108, Height: 60);
+
+                Label #VexHudInstanceScore {
+                    Anchor: (Top: 2, Height: 20);
+                    Text: "Instance: 0";
+                    Style: (FontSize: 13, RenderBold: true, TextColor: $V.@MutedColor);
+                }
+            }
+
+            $V.@HudCard {
+                Anchor: (Width: 108, Height: 60);
+
+                Label #VexHudPlayerScore {
+                    Anchor: (Top: 2, Height: 20);
+                    Text: "Player: 0";
+                    Style: (FontSize: 13, RenderBold: true, TextColor: $V.@BodyColor);
+                }
+            }
+
+            $V.@HudCard {
+                Anchor: (Width: 108, Height: 60);
+
+                Label #VexHudDelta {
+                    Anchor: (Top: 2, Height: 20);
+                    Text: "+0";
+                    Style: (FontSize: 14, RenderBold: true, TextColor: $V.@AccentColor);
+                }
+            }
+        }
+
+        Label #VexHudPartyTitle {
+            Anchor: (Top: 12, Height: 16);
+            Text: "Party Status";
+            Style: (FontSize: 12, RenderUppercase: true, LetterSpacing: 1, RenderBold: true, TextColor: $V.@MutedColor);
+        }
+
+        Label #VexHudPartyList {
+            Anchor: (Top: 6, Width: 320, Height: 44);
+            Text: "You — HP 0/0 | ST 0/0";
+            Style: (FontSize: 12, TextColor: $V.@BodyColor, Wrap: true);
+        }
     }
 }

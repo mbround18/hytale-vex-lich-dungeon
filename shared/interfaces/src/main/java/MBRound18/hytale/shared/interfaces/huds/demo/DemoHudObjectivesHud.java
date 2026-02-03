@@ -10,14 +10,13 @@ import javax.annotation.Nonnull;
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.generated.DemosHudsDemohudobjectivesUi;
 
-public class DemoHudObjectivesHud extends AbstractCustomUIHud {
-  private static final String UI_PATH = DemosHudsDemohudobjectivesUi.UI_PATH;
+public class DemoHudObjectivesHud extends AbstractCustomUIHud<DemosHudsDemohudobjectivesUi> {
 
   public DemoHudObjectivesHud(
       @Nonnull CommandContext context,
       @Nonnull Store<EntityStore> store,
       @Nonnull Ref<EntityStore> ref,
       @Nonnull PlayerRef playerRef) {
-    super(UI_PATH, context, store, ref, playerRef);
+    super(DemosHudsDemohudobjectivesUi.class, store, ref, playerRef);
   }
 }

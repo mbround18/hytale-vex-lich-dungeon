@@ -19,8 +19,13 @@ Group {
 
             Label #VexSummaryStats {
                 Text: "";
-                Anchor: (Bottom: 10);
+                Anchor: (Bottom: 8);
                 Style: (...$V.@DefaultLabelStyle, FontSize: 16, RenderBold: true, TextColor: $V.@HighlightColor);
+            }
+
+            Group #VexSummaryRule {
+                Anchor: (Height: 2, Bottom: 12);
+                Background: $V.@AccentRuleSoft;
             }
 
             Label #VexSummaryBody {

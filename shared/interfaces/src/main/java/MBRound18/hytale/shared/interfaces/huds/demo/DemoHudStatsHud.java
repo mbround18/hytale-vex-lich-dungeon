@@ -2,9 +2,9 @@ package MBRound18.hytale.shared.interfaces.huds.demo;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.protocol.FormattedMessage;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatValue;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatsModule;
@@ -22,30 +22,23 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
-import MBRound18.hytale.shared.interfaces.ui.UiThread;
 import MBRound18.hytale.shared.interfaces.ui.generated.DemosHudsDemohudstatsUi;
 import MBRound18.hytale.shared.interfaces.ui.generated.ServerLang;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
+import MBRound18.hytale.shared.utilities.PlayerPoller;
 
-public class DemoHudStatsHud extends AbstractCustomUIHud {
-  private static final DemosHudsDemohudstatsUi UI = new DemosHudsDemohudstatsUi();
-
-  private static final String UI_PATH = DemosHudsDemohudstatsUi.UI_PATH;
-  private static final ScheduledExecutorService STATS_SCHEDULER = Executors.newSingleThreadScheduledExecutor(r -> {
-    Thread thread = new Thread(r, "demo-hud-stats");
-    thread.setDaemon(true);
-    return thread;
-  });
+public class DemoHudStatsHud extends AbstractCustomUIHud<DemosHudsDemohudstatsUi> {
+  private final PlayerPoller playerPoller = new PlayerPoller();
   private final LoggingHelper log;
   private final PlayerRef currentPlayerRef;
-  private ScheduledFuture<?> statsTask;
+  // private ScheduledFuture<?> statsTask;
 
   public DemoHudStatsHud(
       @Nonnull CommandContext context,
       @Nonnull Store<EntityStore> store,
       @Nonnull Ref<EntityStore> ref,
       @Nonnull PlayerRef playerRef) {
-    super(UI_PATH, context, store, ref, playerRef);
+    super(DemosHudsDemohudstatsUi.class, store, ref, playerRef);
     this.currentPlayerRef = playerRef;
     this.log = new LoggingHelper(DemoHudStatsHud.class);
   }
@@ -55,25 +48,27 @@ public class DemoHudStatsHud extends AbstractCustomUIHud {
       String health,
       String defensePercent,
       String stamina) {
-    List<Map.Entry<String, String>> entries = List.of(
-        Map.entry(UI.demoHudStatsStatsRowHealthHealthValue, health),
-        Map.entry(UI.demoHudStatsStatsRowArmorArmorValue, defensePercent),
-        Map.entry(UI.demoHudStatsStatsRowManaManaValue, stamina));
-    for (Map.Entry<String, String> entry : entries) {
-      set(playerRef, entry.getKey(), entry.getValue());
-    }
+    DemosHudsDemohudstatsUi UI = getUiModel();
+    // set(playerRef, UI.customUIDemoHudStatsStaminaLabel, stamina);
+    set(playerRef, UI.demoHudStatsStatsRowHealthHealthValue, Message.raw(health != null ? health : "--"));
+    set(playerRef, UI.demoHudStatsStatsRowArmorArmorValue, Message.raw(defensePercent != null ? defensePercent : "--"));
+    set(playerRef, UI.demoHudStatsStatsRowManaManaValue, Message.raw(stamina != null ? stamina : "--"));
+
   }
 
   @Override
   public void run() {
     applyLabelRefs();
-    startPolling();
+    playerPoller.start(currentPlayerRef, 200L, this::watchPlayerStats);
   }
 
   private void applyLabelRefs() {
     @Nonnull
     PlayerRef playerRef = Objects.requireNonNull(this.currentPlayerRef, "currentPlayerRef");
-
+    if (!isActiveHud(playerRef)) {
+      return;
+    }
+    DemosHudsDemohudstatsUi UI = getUiModel();
     List<Map.Entry<String, Message>> entries = List.of(
         Map.entry(UI.demoHudStatsHeaderHeaderText,
             ServerLang.customUIDemoHudStatsHealthLabel),
@@ -83,9 +78,7 @@ public class DemoHudStatsHud extends AbstractCustomUIHud {
         Map.entry(UI.demoHudStatsStatsRowManaManaLabel, ServerLang.customUIDemoHudStatsStaminaLabel),
         Map.entry(UI.demoHudStatsZoneInfoLabel, ServerLang.customUIDemoHudStatsZoneLabel),
         Map.entry(UI.demoHudStatsZoneInfoValue, ServerLang.customUIDemoHudStatsZoneValue));
-
     log.info("Applying label refs to demo stats HUD");
-
     for (Map.Entry<String, Message> entry : entries) {
       set(playerRef,
           Objects.requireNonNull(entry.getKey(), "entry key"),
@@ -93,75 +86,52 @@ public class DemoHudStatsHud extends AbstractCustomUIHud {
     }
   }
 
-  private synchronized void startPolling() {
-    if (statsTask != null && !statsTask.isCancelled()) {
+  public void watchPlayerStats() {
+    PlayerRef playerRef = Objects.requireNonNull(this.currentPlayerRef, "currentPlayerRef");
+    Player player = validateAndGetPlayer();
+    if (player == null) {
+      playerPoller.stop();
       return;
     }
-    statsTask = STATS_SCHEDULER.scheduleAtFixedRate(() -> {
-      if (!currentPlayerRef.isValid()) {
-        stopPolling();
-        return;
-      }
-      watchPlayerStats();
-    }, 0L, 10L, TimeUnit.MILLISECONDS);
-  }
-
-  private synchronized void stopPolling() {
-    if (statsTask != null) {
-      statsTask.cancel(false);
-      statsTask = null;
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      playerPoller.stop();
+      return;
+    }
+    Store<EntityStore> store = ref.getStore();
+    EntityStatsModule statsModule = EntityStatsModule.get();
+    ComponentType<EntityStore, EntityStatMap> componentType = statsModule != null
+        ? statsModule.getEntityStatMapComponentType()
+        : EntityStatMap.getComponentType();
+    if (componentType == null) {
+      // Just skip this update frame instead of throwing/crashing
+      // The stats module might not be loaded yet.
+      return;
+    }
+    EntityStatMap statMap = store.getComponent(ref, componentType);
+    if (statMap == null) {
+      // Just skip this update frame instead of throwing/crashing
+      // The player might be respawning or loading.
+      return;
+    }
+    EntityStatMap safeStatMap = Objects.requireNonNull(statMap, "statMap");
+    int health = Math.round(getHealth(safeStatMap));
+    int stamina = Math.round(readStat(safeStatMap, DefaultEntityStatTypes.getStamina()));
+    String defensePercent = "--";
+    try {
+      updateStats(
+          Objects.requireNonNull(playerRef, "playerRef"),
+          String.valueOf(health),
+          defensePercent,
+          String.valueOf(stamina));
+    } catch (Exception e) {
+      log.error("Failed to update UI. Check your .ui file IDs! " + e.getMessage());
+      playerPoller.stop(); // Stop to prevent spamming errors
     }
   }
 
-  public void watchPlayerStats() {
-    PlayerRef playerRef = this.currentPlayerRef;
-    UiThread.runOnPlayerWorld(playerRef, () -> {
-      if (!playerRef.isValid()) {
-        stopPolling();
-        return;
-      }
-      Ref<EntityStore> ref = playerRef.getReference();
-      if (ref == null || !ref.isValid()) {
-        stopPolling();
-        return;
-
-      }
-      Ref<EntityStore> safeRef = Objects.requireNonNull(ref, "ref");
-      Store<EntityStore> store = safeRef.getStore();
-      var player = store.getComponent(safeRef,
-          com.hypixel.hytale.server.core.entity.entities.Player.getComponentType());
-      if (player == null) {
-        stopPolling();
-        return;
-      }
-      var hudManager = player.getHudManager();
-      if (hudManager == null || hudManager.getCustomHud() != this) {
-        stopPolling();
-        return;
-      }
-      EntityStatsModule statsModule = EntityStatsModule.get();
-      ComponentType<EntityStore, EntityStatMap> componentType = statsModule != null
-          ? statsModule.getEntityStatMapComponentType()
-          : EntityStatMap.getComponentType();
-      componentType = Objects.requireNonNull(componentType, "componentType");
-      EntityStatMap statMap = store.getComponent(safeRef, componentType);
-      if (statMap == null) {
-        return;
-      }
-      EntityStatMap safeStatMap = Objects.requireNonNull(statMap, "statMap");
-      int health = Math.round(getHealth(safeStatMap));
-      int stamina = Math.round(readStat(safeStatMap, DefaultEntityStatTypes.getStamina()));
-      String defensePercent = "--";
-
-      log.debug("Updating stats HUD (health=" + health
-          + ", stamina=" + stamina + ", defense=" + defensePercent + ")");
-      updateStats(
-          Objects.requireNonNull(playerRef, "playerRef"),
-          Objects.requireNonNull(String.valueOf(health), "health"),
-          Objects.requireNonNull(defensePercent, "defensePercent"),
-          Objects.requireNonNull(String.valueOf(stamina), "stamina"));
-
-    });
+  public void onClear() {
+    playerPoller.stop();
   }
 
   private float getHealth(@Nonnull EntityStatMap statMap) {

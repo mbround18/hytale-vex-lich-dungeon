@@ -27,6 +27,7 @@ import MBRound18.hytale.shared.interfaces.huds.demo.DemoHudPartyStatusHud;
 import MBRound18.hytale.shared.interfaces.huds.demo.DemoHudQuickActionsHud;
 import MBRound18.hytale.shared.interfaces.huds.demo.DemoHudStatsHud;
 import MBRound18.hytale.shared.interfaces.huds.demo.DemoHudWidgetStripHud;
+import MBRound18.hytale.shared.utilities.UiThread;
 
 public class DemoHudCommand extends AbstractCommand<Object> {
   private final Map<String, HudFactory> huds = new LinkedHashMap<>();
@@ -90,7 +91,7 @@ public class DemoHudCommand extends AbstractCommand<Object> {
     if ("reset".equals(key)) {
       CustomUIHud currentHud = hudManager.getCustomHud();
       if (currentHud instanceof AbstractCustomUIHud) {
-        ((AbstractCustomUIHud) currentHud).clear();
+        ((AbstractCustomUIHud<?>) currentHud).clear();
         context.sendMessage(Message.raw("HUD reset."));
       } else {
         context.sendMessage(Message.raw("No custom HUD or unknown HUD to reset."));
@@ -111,10 +112,12 @@ public class DemoHudCommand extends AbstractCommand<Object> {
       return;
     }
 
-    hudManager.setCustomHud(playerRef, hud);
-    if (hud instanceof AbstractCustomUIHud) {
-      ((AbstractCustomUIHud) hud).run();
-    }
+    UiThread.runOnPlayerWorld(playerRef, () -> {
+      hudManager.setCustomHud(playerRef, hud);
+      if (hud instanceof AbstractCustomUIHud) {
+        ((AbstractCustomUIHud<?>) hud).run();
+      }
+    });
   }
 
   public static String availableHuds() {

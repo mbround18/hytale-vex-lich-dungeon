@@ -17,6 +17,11 @@ Group {
             LayoutMode: Top;
             Padding: (Full: 18);
 
+            Group #VexWelcomeRule {
+                Anchor: (Height: 2, Bottom: 10);
+                Background: $V.@AccentRuleSoft;
+            }
+
             Label #VexWelcomeBody {
                 Text: %server.customUI.vexWelcome.body;
                 Style: (...$V.@DefaultLabelStyle, Wrap: true, TextColor: $V.@MutedColor);

@@ -1,7 +1,8 @@
 package MBRound18.hytale.shared.interfaces.abstracts;
 
 import MBRound18.hytale.shared.interfaces.ui.PlayerSubscriptionController;
-import MBRound18.hytale.shared.interfaces.ui.UiThread;
+import MBRound18.hytale.shared.utilities.UiThread;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -20,7 +21,7 @@ import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public abstract class AbstractCustomUIController<T extends AbstractCustomUIHud> {
+public abstract class AbstractCustomUIController<T extends AbstractCustomUIHud<?>> {
   private final Logger logger;
   private final PlayerSubscriptionController subscriptions;
   private final ConcurrentHashMap<UUID, T> huds = new ConcurrentHashMap<>();

@@ -19,7 +19,7 @@ $V.@PageOverlay {
             Label #ScoreHeader {
                 Text: %server.customUI.vexScoreboard.header;
                 Anchor: (Bottom: 8);
-                Style: (...$V.@DefaultLabelStyle, FontSize: 18, RenderBold: true, TextColor: $V.@HighlightColor);
+                Style: (...$V.@DefaultLabelStyle, FontSize: 19, RenderBold: true, TextColor: $V.@HighlightColor, LetterSpacing: 1);
             }
 
             Group #ScoreRule {

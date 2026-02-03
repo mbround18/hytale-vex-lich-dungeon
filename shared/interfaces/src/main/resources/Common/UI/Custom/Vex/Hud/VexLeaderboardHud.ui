@@ -17,6 +17,11 @@ Group {
             LayoutMode: Top;
             Padding: (Full: 18);
 
+            Group #VexLeaderboardRule {
+                Anchor: (Height: 2, Bottom: 10);
+                Background: $V.@AccentRuleSoft;
+            }
+
             Label #VexLeaderboardBody {
                 Text: "";
                 Style: (...$V.@DefaultLabelStyle, Wrap: true, TextColor: $V.@BodyColor);
