@@ -1,12 +1,12 @@
 package MBRound18.hytale.shared.interfaces.pages;
 
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.BasicCustomUIPage;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import MBRound18.hytale.shared.interfaces.ui.generated.PagesHelloworldpageUi;
 
 public class HelloWorldPage
     /**
@@ -14,6 +14,7 @@ public class HelloWorldPage
      * Alternatively, we can use InteractiveCustomUIPage which has event handling.
      */
     extends BasicCustomUIPage {
+  private static final String UI_PATH = PagesHelloworldpageUi.UI_PATH;
 
   /**
    * Constructor
@@ -43,8 +44,8 @@ public class HelloWorldPage
    */
   @Override
   public void build(UICommandBuilder builder) {
-    // Relative path from Common/UI/Custom/*
-    builder.append("Demos/Pages/DemoInputs.ui");
+    // POM-generated UI path
+    builder.append(UI_PATH);
   }
 
 }

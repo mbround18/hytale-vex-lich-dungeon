@@ -17,6 +17,12 @@ pub struct Args {
     #[arg(long)]
     pub java_root: Option<PathBuf>,
     #[arg(long)]
+    pub lang_root: Option<PathBuf>,
+    #[arg(long)]
+    pub lang_class_file: Option<PathBuf>,
+    #[arg(long)]
+    pub lang_class_name: Option<String>,
+    #[arg(long)]
     pub include_macro_only: bool,
     #[arg(long)]
     pub verbose: bool,

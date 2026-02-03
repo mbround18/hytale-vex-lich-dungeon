@@ -3,5 +3,8 @@
   "Name": "SharedInterfaces",
   "Version": "0.1.0",
   "Main": "MBRound18.hytale.shared.interfaces.InterfacesPlugin",
-  "IncludesAssetPack": true
+  "IncludesAssetPack": true,
+  "Dependencies": {},
+  "OptionalDependencies": {},
+  "DisableByDefault": false
 }

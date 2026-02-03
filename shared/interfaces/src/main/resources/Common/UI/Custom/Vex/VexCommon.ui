@@ -1,0 +1,64 @@
+@AccentColor = #8a4bff;
+@TitleColor = #e7d7ff;
+@BodyColor = #cdb6ff;
+@MutedColor = #d4c2ff;
+@HighlightColor = #efe3ff;
+@HudBackground = #120a1f(0.7);
+@PanelBackground = #160c24(0.98);
+@HeaderBackground = #3b1a58;
+@DecorationColor = #5f2b84;
+@OverlayColor = #09050f(0.75);
+@AccentRuleStrong = #8a4bff(0.45);
+@AccentRuleSoft = #8a4bff(0.35);
+
+@DefaultLabelStyle = (FontSize: 16, TextColor: @BodyColor);
+
+@TitleStyle = LabelStyle(
+  FontSize: 20,
+  VerticalAlignment: Center,
+  RenderUppercase: true,
+  TextColor: @TitleColor,
+  FontName: "Secondary",
+  RenderBold: true,
+  LetterSpacing: 1
+);
+
+@Title = Label {
+  @Alignment = Center;
+  @Text = "";
+
+  Style: (
+    ...@TitleStyle,
+    HorizontalAlignment: @Alignment
+  );
+  Padding: (Horizontal: 16);
+  Text: @Text;
+};
+
+@TitleHeight = 44;
+
+@DecoratedContainer = Group {
+  @ContentPadding = Padding(Full: 18);
+
+  Group #VexTitle {
+    Anchor: (Height: @TitleHeight, Top: 0);
+    Background: (Color: @HeaderBackground);
+    Padding: (Top: 7);
+  }
+
+  Group #VexContent {
+    LayoutMode: Top;
+    Anchor: (Top: @TitleHeight);
+    Padding: @ContentPadding;
+    Background: (Color: @PanelBackground);
+  }
+
+  Group #VexDecorationBottom {
+    Anchor: (Width: 236, Height: 11, Bottom: -6);
+    Background: (Color: @DecorationColor);
+  }
+};
+
+@PageOverlay = Group {
+  Background: @OverlayColor;
+};

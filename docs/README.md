@@ -9,7 +9,7 @@ _To the victor goes the spoils... but beware, dear adventurer, for only those wh
 This mod splits work into two parts:
 
 - **plugins/**: Java plugins (commands, gameplay tweaks, etc.).
-- **plugins/roguelike/assets/**: Packaged data such as `manifest.json`, `Server/`, and `Common/` content that ships with the Vex roguelike plugin.
+- **plugins/roguelike/src/main/resources/**: Packaged data such as `manifest.json`, `Server/`, and `Common/` content that ships with the Vex roguelike plugin.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ This mod splits work into two parts:
 
 ## Setup
 
-Run the setup task from the repo root (wrapper downloads Gradle 8.7 automatically):
+Run the setup task from the repo root (wrapper downloads Gradle automatically):
 
 ```sh
 ./gradlew setup
@@ -36,14 +36,14 @@ What `setup` does:
 ## Working in the template
 
 - Place your Java plugin sources under `plugins/roguelike/`. Configure your Gradle build there to produce the plugin jar.
-- Place Hytale data that should be bundled (e.g., `manifest.json`, `Server/`, `Common/`) under `plugins/roguelike/assets/`.
+- Place Hytale data that should be bundled (e.g., `manifest.json`, `Server/`, `Common/`) under `plugins/roguelike/src/main/resources/`.
 - The `data/` directory is for local provisioning only and is ignored from version control; it is recreated by `setup`.
 
 ## Build and distribution
 
 - Run `./gradlew build` to produce distributables and install them into the local server mods directory.
-- Outputs land in `dist/`: `VexLichDungeon-<version>.jar` and `assets.zip` (zip root contains `manifest.json`, `Server/`, `Common/` — no leading `assets/`).
-- The same jar and zip are copied into `data/server/Server/mods/` to replace any existing copies for quick local testing.
+- Outputs land in `dist/`: `VexLichDungeon-<version>.jar` (includes bundled resources like `manifest.json`, `Server/`, and `Common/`).
+- The same jar is copied into `data/server/Server/mods/` to replace any existing copy for quick local testing.
 
 ## Local testing
 
@@ -56,6 +56,10 @@ What `setup` does:
 - Main plugin lives at `plugins/roguelike/src/main/java/MBRound18/hytale/vexlichdungeon/VexLichDungeonPlugin.java` and logs messages on startup and shutdown.
 - Plugin metadata is in `plugins/roguelike/src/main/resources/plugin.properties` and jar manifest entries are filled via Gradle.
 - Build upon this foundation to implement Vex's dungeon trials, rewards, and the path to lichdom.
+
+## UI docs
+
+- `docs/UI_LOADING_TRACKING.md` - crash investigation notes and path troubleshooting.
 
 ## Common tasks
 

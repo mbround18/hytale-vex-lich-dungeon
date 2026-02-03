@@ -1,6 +1,7 @@
 mod args;
 mod expand;
 mod java;
+mod lang;
 mod model;
 mod parser;
 mod render;
@@ -15,6 +16,7 @@ use parser::parse_ui_file;
 use render::render_items;
 use util::{collect_ui_files, normalize_path, parse_ident_at, relative_path};
 use std::path::Path;
+use lang::generate_lang_classes;
 use std::collections::BTreeSet;
 
 pub fn run(args: Args) -> Result<()> {
@@ -133,6 +135,20 @@ pub fn run(args: Args) -> Result<()> {
 
     if args.verbose {
         eprintln!("generated {} UI files", generated);
+    }
+
+    if let Some(lang_root) = &args.lang_root {
+        let lang_root = normalize_path(lang_root)?;
+        let count = generate_lang_classes(
+            &lang_root,
+            &java_out,
+            &args.java_package,
+            args.lang_class_file.as_ref().map(|v| &**v),
+            args.lang_class_name.as_deref(),
+        )?;
+        if args.verbose {
+            eprintln!("generated {} lang classes", count);
+        }
     }
 
     Ok(())

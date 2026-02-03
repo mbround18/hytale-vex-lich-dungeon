@@ -1,7 +1,7 @@
 # Vex Dungeon Palette
 
 Use these colors across web and Hytale UI to keep the look consistent.
-Sources: `static/index.html` and `plugins/roguelike/assets/Common/UI/Custom/Vex/VexCommon.ui`.
+Sources: `static/index.html` and `shared/interfaces/src/main/resources/Common/UI/Custom/Vex/VexCommon.ui`.
 
 ## Core
 

@@ -32,8 +32,7 @@ import MBRound18.hytale.shared.interfaces.pages.demo.DemoToolbarPage;
 import MBRound18.hytale.shared.interfaces.pages.demo.DemoUtilityPage;
 
 public class DemoPageCommand extends AbstractCommand<Object> {
-  private static final Map<String, Function<PlayerRef, BasicCustomUIPage>> PAGES =
-      new LinkedHashMap<>();
+  private static final Map<String, Function<PlayerRef, BasicCustomUIPage>> PAGES = new LinkedHashMap<>();
   private static final String[] PRIMARY_NAMES = {
       "grid",
       "inputs",
@@ -72,9 +71,11 @@ public class DemoPageCommand extends AbstractCommand<Object> {
 
   private final RequiredArg<String> pageArg;
 
+  @SuppressWarnings("null")
   public DemoPageCommand() {
     super("demo", "Opens a demo UI page by name", false, (ref, store) -> new Object());
-    this.pageArg = withRequiredArg("page", "Demo page name", ArgTypes.STRING);
+    this.pageArg = Objects.requireNonNull(
+        withRequiredArg("page", "Demo page name", ArgTypes.STRING), "pageArg");
   }
 
   @Override
@@ -89,7 +90,7 @@ public class DemoPageCommand extends AbstractCommand<Object> {
       return;
     }
 
-    String pageName = context.get(pageArg);
+    String pageName = context.get(Objects.requireNonNull(pageArg, "pageArg"));
     if (pageName == null || pageName.trim().isEmpty()) {
       context.sendMessage(Message.raw("Usage: /demo <page>. Available: " + availablePages()));
       return;
@@ -104,7 +105,8 @@ public class DemoPageCommand extends AbstractCommand<Object> {
     }
 
     BasicCustomUIPage page = factory.apply(Objects.requireNonNull(playerRef, "playerRef"));
-    player.getPageManager().openCustomPage(Objects.requireNonNull(ref, "ref"), store, page);
+    player.getPageManager().openCustomPage(Objects.requireNonNull(ref, "ref"), store,
+        Objects.requireNonNull(page, "page"));
   }
 
   public static String availablePages() {

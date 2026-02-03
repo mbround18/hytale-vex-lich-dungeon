@@ -8,17 +8,43 @@ Group #DemoHudStats {
   Background: #1f2a36(0.85);
   Padding: (Full: 10);
 
-  $L.@HeaderBar #Header { @Text = "Vitals"; }
+  $L.@HeaderBar #Header { @Text = ""; }
   $L.@Spacer #Space1 { @Height = 6; }
 
   Group #StatsRow {
     LayoutMode: Left;
 
-    $S.@StatCard #Health { @Label = "Health"; @Value = "100"; @Width = 96; @Height = 56; }
-    $S.@StatCard #Armor { @Label = "Armor"; @Value = "42"; @Width = 96; @Height = 56; }
-    $S.@StatCard #Mana { @Label = "Mana"; @Value = "18"; @Width = 96; @Height = 56; }
+    Group #Health {
+      Anchor: (Width: 96, Height: 56);
+      Background: #223244;
+      LayoutMode: Top;
+      Padding: (Full: 8);
+
+      Label #HealthValue { Text: "100"; Style: LabelStyle(FontSize: 18, TextColor: #e3eef9, RenderBold: true); Anchor: (Height: 24); }
+      Label #HealthLabel { Text: %customUI.demoHudStats.health.label; Style: LabelStyle(FontSize: 11, TextColor: #9fb3c6, RenderUppercase: true); Anchor: (Height: 18); }
+    }
+
+    Group #Armor {
+      Anchor: (Width: 96, Height: 56);
+      Background: #223244;
+      LayoutMode: Top;
+      Padding: (Full: 8);
+
+      Label #ArmorValue { Text: "43%"; Style: LabelStyle(FontSize: 18, TextColor: #e3eef9, RenderBold: true); Anchor: (Height: 24); }
+      Label #ArmorLabel { Text: ""; Style: LabelStyle(FontSize: 11, TextColor: #9fb3c6, RenderUppercase: true); Anchor: (Height: 18); }
+    }
+
+    Group #Mana {
+      Anchor: (Width: 96, Height: 56);
+      Background: #223244;
+      LayoutMode: Top;
+      Padding: (Full: 8);
+
+      Label #ManaValue { Text: "18"; Style: LabelStyle(FontSize: 18, TextColor: #e3eef9, RenderBold: true); Anchor: (Height: 24); }
+      Label #ManaLabel { Text: %customUI.demoHudStats.stamina.label; Style: LabelStyle(FontSize: 11, TextColor: #9fb3c6, RenderUppercase: true); Anchor: (Height: 18); }
+    }
   }
 
   $L.@Spacer #Space2 { @Height = 6; }
-  $R.@InfoRow #Zone { @Label = "Zone"; @Value = "Sanctum"; }
+  $R.@InfoRow #Zone { @Label = ""; @Value = ""; }
 }

@@ -19,7 +19,7 @@ Group #DemoRows {
       $L.@Spacer #Space2 { @Height = 6; }
       $R.@InfoRow #InfoRow { @Label = "Region"; @Value = "EU"; }
       $L.@Spacer #Space3 { @Height = 6; }
-      $R.@KeyValueRow #KeyValue { @Key = "Ping"; @Value = "42"; }
+      $R.@KeyValueRow #KeyValue { @Key = "Ping"; @Value = "43"; }
       $L.@Spacer #Space4 { @Height = 6; }
       $R.@ToggleRow #Toggle { @Text = "Allow Invites"; }
     }

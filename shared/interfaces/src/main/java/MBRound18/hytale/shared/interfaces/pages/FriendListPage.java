@@ -10,18 +10,20 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.NameMatching;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import MBRound18.hytale.shared.interfaces.ui.generated.PagesFriendslistpageUi;
+
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractInteractivePage;
 import MBRound18.hytale.shared.interfaces.codecs.FriendFinder;
 import MBRound18.hytale.shared.interfaces.interfaces.handlers.FriendPageHandler;
 
 public class FriendListPage extends AbstractInteractivePage<FriendFinder> {
+  private static final String UI_PATH = PagesFriendslistpageUi.UI_PATH;
   private final FriendPageHandler handler;
 
   public FriendListPage(@Nonnull PlayerRef playerRef, @Nonnull FriendPageHandler handler) {
@@ -48,8 +50,8 @@ public class FriendListPage extends AbstractInteractivePage<FriendFinder> {
       @Nonnull UICommandBuilder builder,
       @Nonnull UIEventBuilder events,
       @Nonnull Store<EntityStore> store) {
-    // Relative path from Common/UI/Custom/*
-    builder.append("Pages/FriendsListPage.ui");
+    // POM-generated UI path
+    builder.append(UI_PATH);
 
     events.addEventBinding(CustomUIEventBindingType.Activating, "#AddFriendButton",
         false);

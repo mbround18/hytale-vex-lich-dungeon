@@ -40,6 +40,10 @@ applyTo: "**/assets/Common/UI/Custom/**,**/assets/Server/Languages/en-US/server.
 
 - All text must use server.lang keys in assets/Server/Languages/en-US/server.lang
 - Keys must be in customUI.vex\* namespace.
+- When calling translations in Java, use Message.translation("server.ID_OF_TRANSLATION").
+- When swapping a stat label (e.g., Mana -> Stamina), update both:
+  - The UI label key in the .ui file.
+  - The matching server.lang key/value.
 
 1. Images
 

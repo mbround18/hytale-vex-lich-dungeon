@@ -1,3 +1,9 @@
 customUI.helloWorld.title=Hello World
 customUI.helloWorld.body=This is a simple Hello World page.
 customUI.helloWorld.footer=Close with ESC key!
+customUI.demoHudStats.title.label=Vitals
+customUI.demoHudStats.health.label=Health
+customUI.demoHudStats.defense.label=Defense
+customUI.demoHudStats.stamina.label=Stamina
+customUI.demoHudStats.zone.label=Zone
+customUI.demoHudStats.zone.value=Sanctum

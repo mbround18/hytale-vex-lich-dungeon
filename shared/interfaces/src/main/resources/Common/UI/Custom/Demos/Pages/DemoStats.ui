@@ -16,7 +16,7 @@ Group #DemoStats {
 
     $G.@TileRow #StatsRow {
       $S.@StatCard #StatA { @Label = "Health"; @Value = "100"; }
-      $S.@StatCard #StatB { @Label = "Armor"; @Value = "42"; }
+      $S.@StatCard #StatB { @Label = "Armor"; @Value = "43"; }
       $S.@StatCard #StatC { @Label = "Mana"; @Value = "18"; }
     }
   }

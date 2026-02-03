@@ -19,7 +19,7 @@ public abstract class AbstractDemoPage extends BasicCustomUIPage {
 
   @Override
   public void build(UICommandBuilder builder) {
-    // Relative path from Common/UI/Custom/*
+    // POM-generated UI path
     builder.append(uiPath);
   }
 }

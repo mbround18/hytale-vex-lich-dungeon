@@ -9,6 +9,8 @@ repositories {
     mavenCentral()
 }
 
+evaluationDependsOn(":shared:utilities")
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
@@ -16,21 +18,32 @@ java {
 }
 
 dependencies {
+    implementation project(":shared:utilities")
     compileOnly files("${rootProject.projectDir}/data/server/Server/HytaleServer.jar")
     compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+    implementation 'com.google.code.gson:gson:2.11.0'
 }
 
 sourceSets {
     main {
+        java {
+            srcDir "$buildDir/generated/sources/ui"
+        }
         resources {
             srcDir 'src/main/resources'
+            exclude "Common/UI/Custom/**/*.ui"
         }
     }
 }
 
 tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(sourceSets.main.resources)
+    from(sourceSets.main.output)
+    dependsOn(project(":shared:utilities").tasks.named("jar"))
+        from({
+            def utilJar = project(":shared:utilities").tasks.named("jar").get().archiveFile.get().asFile
+            return zipTree(utilJar)
+        })
 }
 
 
@@ -40,4 +53,77 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(ProcessResources).configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from("$buildDir/generated/ui") {
+        include "Common/UI/Custom/**/*.ui"
+    }
+}
+
+def uiMangleDir = rootProject.file("packages/ui-mangle")
+def uiMangleResourcesRoot = file("src/main/resources")
+def uiMangleUiRoot = file("src/main/resources/Common/UI/Custom")
+def uiMangleJavaRoot = file("src/main/java")
+def uiMangleLangRoot = file("src/main/resources/Server/Languages")
+def uiMangleUiOut = file("$buildDir/generated/ui")
+def uiMangleJavaOut = file("$buildDir/generated/sources/ui")
+
+tasks.register("compileUiMangle", Exec) {
+    group = "build"
+    description = "Flatten .ui macros and generate Java UI ids"
+    workingDir(uiMangleDir)
+    commandLine(
+        "cargo",
+        "run",
+        "--quiet",
+        "--release",
+        "--",
+        "--warn-duplicate-properties",
+        "--resources-root",
+        uiMangleResourcesRoot.absolutePath,
+        "--ui-root",
+        uiMangleUiRoot.absolutePath,
+        "--java-root",
+        uiMangleJavaRoot.absolutePath,
+        "--lang-root",
+        uiMangleLangRoot.absolutePath,
+        "--lang-class-file",
+        "en-US/en-US.lang",
+        "--lang-class-name",
+        "ServerLang",
+        "--ui-out",
+        uiMangleUiOut.absolutePath,
+        "--java-out",
+        uiMangleJavaOut.absolutePath
+    )
+    inputs.dir uiMangleUiRoot
+    inputs.dir uiMangleJavaRoot
+    inputs.file uiMangleDir.toPath().resolve("Cargo.toml").toFile()
+    inputs.dir uiMangleDir.toPath().resolve("src").toFile()
+    outputs.dir uiMangleUiOut
+    outputs.dir uiMangleJavaOut
+    outputs.upToDateWhen { false }
+}
+
+tasks.named("compileJava") {
+    dependsOn("compileUiMangle")
+}
+
+tasks.named("processResources") {
+    dependsOn("compileUiMangle")
+}
+
+tasks.named("processTestResources") {
+    dependsOn("compileUiMangle")
+}
+
+tasks.register("cleanUiMangle") {
+    group = "build"
+    description = "Remove generated UI and Java POM outputs"
+    doLast {
+        delete uiMangleUiOut
+        delete uiMangleJavaOut
+    }
+}
+
+tasks.named("clean") {
+    dependsOn("cleanUiMangle")
 }

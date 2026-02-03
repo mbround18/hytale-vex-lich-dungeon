@@ -14,6 +14,29 @@
 @FriendsButtonSecondaryHover = #454e55;
 @FriendsButtonSecondaryPressed = #32383d;
 
+@PanelBackground = @FriendsPanelBackground;
+@AccentColor = @FriendsButtonPrimary;
+@HighlightColor = #e3eef9;
+@BodyColor = #9fb3c6;
+@FriendsHudNameStyle = LabelStyle(
+  FontSize: 12,
+  TextColor: #e3eef9,
+  RenderBold: true
+);
+@FriendsHudLeaderStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: @FriendsButtonPrimary,
+  RenderBold: true
+);
+@FriendsHudStatStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #9fb3c6
+);
+@FriendsHudItemStyle = LabelStyle(
+  FontSize: 10,
+  TextColor: #c7d2de
+);
+
 
 @FriendsHeaderStyle = LabelStyle(
   FontSize: 18,

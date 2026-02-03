@@ -51,7 +51,7 @@ Group #WidgetExamples {
       $L.@Spacer #Space5 { @Height = 6; }
       $R.@InfoRow #InfoRow { @Label = "Region"; @Value = "EU"; }
       $L.@Spacer #Space6 { @Height = 6; }
-      $R.@KeyValueRow #KeyValue { @Key = "Ping"; @Value = "42"; }
+      $R.@KeyValueRow #KeyValue { @Key = "Ping"; @Value = "43"; }
       $L.@Spacer #Space7 { @Height = 6; }
       $R.@ToggleRow #Toggle { @Text = "Allow Invites"; }
     }
@@ -137,7 +137,7 @@ Group #WidgetExamples {
 
       $G.@TileRow #StatsRow {
         $S.@StatCard #StatA { @Label = "Health"; @Value = "100"; }
-        $S.@StatCard #StatB { @Label = "Armor"; @Value = "42"; }
+        $S.@StatCard #StatB { @Label = "Armor"; @Value = "43"; }
         $S.@StatCard #StatC { @Label = "Mana"; @Value = "18"; }
       }
     }

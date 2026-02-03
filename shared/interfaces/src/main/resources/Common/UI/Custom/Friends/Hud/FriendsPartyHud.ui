@@ -1,0 +1,223 @@
+$F = "../FriendsCommon.ui";
+
+Group {
+  Anchor: (Top: 20, Right: 20, Width: 240, Height: 140);
+  Background: (Color: $F.@PanelBackground);
+  Padding: (Left: 8, Top: 6, Right: 8, Bottom: 6);
+
+  Group #Header {
+    LayoutMode: Left;
+    Anchor: (Height: 14);
+    Padding: (Bottom: 6);
+
+    AssetImage #FriendsPartyIcon {
+      Anchor: (Width: 14, Height: 14);
+      Background: (TexturePath: "Friends/FriendsIcon@2x.png", Color: $F.@AccentColor);
+    }
+
+    Label #FriendsPartyTitle {
+      Anchor: (Left: 6, Height: 14);
+      Text: "Party";
+      Style: (FontSize: 12, RenderBold: true, TextColor: $F.@HighlightColor);
+    }
+  }
+
+  Group #MemberList {
+    LayoutMode: Top;
+    Anchor: (Bottom: 0);
+
+    Group #Member1Row {
+      LayoutMode: Top;
+      Padding: (Bottom: 4);
+
+      Group #Member1Header {
+        LayoutMode: Left;
+        Anchor: (Height: 12);
+
+        Label #Member1Name {
+          Anchor: (Height: 12);
+          Text: "PlayerOne";
+          Style: $F.@FriendsHudNameStyle;
+        }
+
+        Label #Member1Leader {
+          Anchor: (Left: 4, Height: 12);
+          Text: "LEAD";
+          Style: $F.@FriendsHudLeaderStyle;
+        }
+
+        Group { FlexWeight: 1; }
+
+        Label #Member1Item {
+          Anchor: (Height: 12);
+          Text: "Item";
+          Style: $F.@FriendsHudItemStyle;
+        }
+      }
+
+      Group #Member1Bars {
+        LayoutMode: Left;
+        Anchor: (Height: 10);
+
+        Label #Member1HpBar {
+          Anchor: (Height: 10);
+          Text: "HP [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+
+        Label #Member1StamBar {
+          Anchor: (Left: 6, Height: 10);
+          Text: "ST [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+      }
+    }
+
+    Group #Member2Row {
+      LayoutMode: Top;
+      Padding: (Bottom: 4);
+
+      Group #Member2Header {
+        LayoutMode: Left;
+        Anchor: (Height: 12);
+
+        Label #Member2Name {
+          Anchor: (Height: 12);
+          Text: "PlayerTwo";
+          Style: $F.@FriendsHudNameStyle;
+        }
+
+        Label #Member2Leader {
+          Anchor: (Left: 4, Height: 12);
+          Text: "";
+          Style: $F.@FriendsHudLeaderStyle;
+        }
+
+        Group { FlexWeight: 1; }
+
+        Label #Member2Item {
+          Anchor: (Height: 12);
+          Text: "";
+          Style: $F.@FriendsHudItemStyle;
+        }
+      }
+
+      Group #Member2Bars {
+        LayoutMode: Left;
+        Anchor: (Height: 10);
+
+        Label #Member2HpBar {
+          Anchor: (Height: 10);
+          Text: "HP [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+
+        Label #Member2StamBar {
+          Anchor: (Left: 6, Height: 10);
+          Text: "ST [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+      }
+    }
+
+    Group #Member3Row {
+      LayoutMode: Top;
+      Padding: (Bottom: 4);
+
+      Group #Member3Header {
+        LayoutMode: Left;
+        Anchor: (Height: 12);
+
+        Label #Member3Name {
+          Anchor: (Height: 12);
+          Text: "PlayerThree";
+          Style: $F.@FriendsHudNameStyle;
+        }
+
+        Label #Member3Leader {
+          Anchor: (Left: 4, Height: 12);
+          Text: "";
+          Style: $F.@FriendsHudLeaderStyle;
+        }
+
+        Group { FlexWeight: 1; }
+
+        Label #Member3Item {
+          Anchor: (Height: 12);
+          Text: "";
+          Style: $F.@FriendsHudItemStyle;
+        }
+      }
+
+      Group #Member3Bars {
+        LayoutMode: Left;
+        Anchor: (Height: 10);
+
+        Label #Member3HpBar {
+          Anchor: (Height: 10);
+          Text: "HP [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+
+        Label #Member3StamBar {
+          Anchor: (Left: 6, Height: 10);
+          Text: "ST [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+      }
+    }
+
+    Group #Member4Row {
+      LayoutMode: Top;
+      Padding: (Bottom: 0);
+
+      Group #Member4Header {
+        LayoutMode: Left;
+        Anchor: (Height: 12);
+
+        Label #Member4Name {
+          Anchor: (Height: 12);
+          Text: "PlayerFour";
+          Style: $F.@FriendsHudNameStyle;
+        }
+
+        Label #Member4Leader {
+          Anchor: (Left: 4, Height: 12);
+          Text: "";
+          Style: $F.@FriendsHudLeaderStyle;
+        }
+
+        Group { FlexWeight: 1; }
+
+        Label #Member4Item {
+          Anchor: (Height: 12);
+          Text: "";
+          Style: $F.@FriendsHudItemStyle;
+        }
+      }
+
+      Group #Member4Bars {
+        LayoutMode: Left;
+        Anchor: (Height: 10);
+
+        Label #Member4HpBar {
+          Anchor: (Height: 10);
+          Text: "HP [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+
+        Label #Member4StamBar {
+          Anchor: (Left: 6, Height: 10);
+          Text: "ST [----------]";
+          Style: $F.@FriendsHudStatStyle;
+        }
+      }
+    }
+  }
+
+  Label #FriendsPartyList {
+    Anchor: (Height: 0);
+    Visible: false;
+    Text: "";
+  }
+}

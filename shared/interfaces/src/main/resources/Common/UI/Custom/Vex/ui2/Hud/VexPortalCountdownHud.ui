@@ -1,0 +1,32 @@
+Group {
+  Anchor: (Top: 80, Left: 0, Right: 0, Height: 120);
+  LayoutMode: Middle;
+
+  Group {
+    Anchor: (Width: 300, Height: 96);
+    LayoutMode: Top;
+    Background: (Color: #000000(0.65));
+    Padding: (Top: 12, Bottom: 12, Horizontal: 16);
+
+    Group #Countdown {
+      Anchor: (Top: 0, Height: 28);
+      Label #CountdownTitle {
+        Text: "Countdown";
+      }
+      TextField #CountdownValue {
+        Value: "00:00";
+      }
+    }
+
+    Group #Location {
+      Anchor: (Top: 8, Height: 20);
+      Label #LocationTitle {
+        Text: "X: 0  Y: 0  Z: 0";
+      }
+      TextField #LocationValue {
+        Value: "X: 0  Y: 0  Z: 0";
+      }
+    }
+
+  }
+}

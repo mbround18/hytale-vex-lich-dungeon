@@ -17,8 +17,6 @@ ext {
     staticDir = file("static")
     
     // Assets
-    userAssetsDir = file("plugins/roguelike/assets") // User-authored assets for packing
-    friendsAssetsDir = file("plugins/friends/assets")
     serverAssetsDir = file("data/assets")       // Extracted vanilla assets from server
     
     // Server files
@@ -103,7 +101,7 @@ tasks.register("setup") {
 tasks.register("ensureDirectories") {
     group = "setup"
     description = "Ensure data directories exist with uid:gid 1000:1000"
-    def dirs = [serverDir, userAssetsDir, friendsAssetsDir, serverAssetsDir, unpackedDir]
+    def dirs = [serverDir, serverAssetsDir, unpackedDir]
     def isCI = System.getenv("CI")
     doLast {
         dirs.each { dir ->
@@ -292,134 +290,7 @@ tasks.register("unpackAssets") {
 // Tasks for building and packaging mod artifacts
 // ============================================================================
 
-tasks.register("processAssetsManifest") {
-    group = "build"
-    description = "Process plugins/roguelike/assets/manifest.json with version and authors"
-    
-    def inputManifest = file("plugins/roguelike/assets/manifest.json")
-    def outputManifest = file("$buildDir/processed-assets/manifest.json")
-    
-    inputs.file(inputManifest)
-    outputs.file(outputManifest)
-    
-    doLast {
-        outputManifest.parentFile.mkdirs()
-        
-        def manifestContent = inputManifest.text
-        def pluginVersion = project(":plugins:roguelike").version
-        
-        // Get authors from git (same logic as plugin)
-        def authorsJson = """[
-  {
-    "Name": "Example Dev",
-    "Email": "dev@example.com",
-    "Url": ""
-  }
-]"""
-        
-        try {
-            def gitProcess = new ProcessBuilder(["git", "log", "--format=%an|%ae"]).redirectErrorStream(true).start()
-            def gitLog = new StringBuilder()
-            gitProcess.inputStream.newReader().eachLine { line ->
-                gitLog.append(line).append('\n')
-            }
-            int gitExit = gitProcess.waitFor()
-            def authors = gitLog.toString().readLines()
-                .collect { it.split("\\|") }
-                .findAll { it.size() == 2 }
-                .collect { [name: it[0].trim(), email: it[1].trim()] }
-                .unique { [it.name, it.email] }
-            
-            if (gitExit == 0 && !authors.isEmpty()) {
-                def entries = authors.collect { author ->
-                    """  {
-    "Name": "${author.name}",
-    "Email": "${author.email}",
-    "Url": ""
-  }"""
-                }.join(',\n')
-                authorsJson = "[\n${entries}\n]"
-            }
-
-        } catch (Exception e) {
-            logger.warn("Failed to extract git authors for assets manifest: ${e.message}")
-        }
-        
-        // Replace version
-        manifestContent = manifestContent.replaceAll('"Version"\\s*:\\s*"[^"]*"', "\"Version\": \"${pluginVersion}\"")
-        
-        // Replace authors array
-        manifestContent = manifestContent.replaceAll(
-            '"Authors"\\s*:\\s*\\[[^\\]]*\\]',
-            "\"Authors\": ${authorsJson}"
-        )
-        
-        outputManifest.text = manifestContent
-        logger.lifecycle("Processed assets manifest.json with version ${pluginVersion}")
-    }
-}
-
-tasks.register("processFriendsAssetsManifest") {
-    group = "build"
-    description = "Process plugins/friends/assets/manifest.json with version and authors"
-
-    def inputManifest = file("plugins/friends/assets/manifest.json")
-    def outputManifest = file("$buildDir/processed-friends-assets/manifest.json")
-
-    inputs.file(inputManifest)
-    outputs.file(outputManifest)
-
-    doLast {
-        outputManifest.parentFile.mkdirs()
-
-        def manifestContent = inputManifest.text
-        def pluginVersion = project(":plugins:friends").version
-
-        def authorsJson = """[
-  {
-    "Name": "Example Dev",
-    "Email": "dev@example.com",
-    "Url": ""
-  }
-]"""
-
-        try {
-            def gitProcess = new ProcessBuilder(["git", "log", "--format=%an|%ae"]).redirectErrorStream(true).start()
-            def gitLog = new StringBuilder()
-            gitProcess.inputStream.newReader().eachLine { line ->
-                gitLog.append(line).append('\n')
-            }
-            int gitExit = gitProcess.waitFor()
-            def authors = gitLog.toString().readLines()
-                .collect { it.split("\\|") }
-                .findAll { it.size() == 2 }
-                .collect { [name: it[0].trim(), email: it[1].trim()] }
-                .unique { [it.name, it.email] }
-
-            if (gitExit == 0 && !authors.isEmpty()) {
-                def entries = authors.collect { author ->
-                    """  {
-    "Name": "${author.name}",
-    "Email": "${author.email}",
-    "Url": ""
-  }"""
-                }.join(',\n')
-                authorsJson = "[\n${entries}\n]"
-            }
-        } catch (Exception e) {
-            logger.warn("Failed to extract git authors for friends assets manifest: ${e.message}")
-        }
-
-        manifestContent = manifestContent.replaceAll('"Version"\\s*:\\s*"[^"]*"', "\"Version\": \"${pluginVersion}\"")
-        manifestContent = manifestContent.replaceAll(
-            '"Authors"\\s*:\\s*\\[[^\\]]*\\]',
-            "\"Authors\": ${authorsJson}"
-        )
-
-        outputManifest.text = manifestContent
-        logger.lifecycle("Processed friends assets manifest.json with version ${pluginVersion}")
-    }
-}
+apply from: file("$rootDir/gradle/shared/dev-feed.gradle")
 
 tasks.register("validateAssetConflicts") {
     group = "validation"
@@ -427,20 +298,17 @@ tasks.register("validateAssetConflicts") {
     
     doLast {
         def dataAssetsDir = file("data/assets")
-        def pluginAssetsDirs = [
-            file("plugins/roguelike/assets"),
-            file("plugins/friends/assets"),
-            file("plugins/forwarder/assets")
-        ].findAll { it.exists() }
+        def pluginAssetsDirs = subprojects.findAll { it.path.startsWith(":plugins:") }
+            .collect { it.file("src/main/resources") }
+            .findAll { it.exists() }
         
         // Files that are allowed to override (extensions, fallbacks, per-plugin metadata)
         def isAllowedOverride = { String relativePath ->
             return (
                 relativePath == "Server/Languages/en-US/server.lang" ||  // Language extensions
                 relativePath == "manifest.json" ||                        // Plugin manifests
-                relativePath.startsWith("Common/UI/Custom/Vex/") ||      // Vex namespace
-                relativePath.startsWith("Common/UI/Custom/Hud/") ||      // Hud namespace
-                relativePath.startsWith("Common/UI/Custom/Pages/") ||    // Custom UI Pages
+                relativePath.startsWith("Common/UI/Custom/") ||           // Custom UI
+                relativePath.startsWith("UI/Custom/") ||                  // Custom UI (alt root)
                 relativePath.startsWith("Custom/")                        // Custom root fallback
             )
         }
@@ -468,7 +336,7 @@ tasks.register("validateAssetConflicts") {
         if (conflicts) {
             def report = new StringBuilder()
             report.append("\n❌ ASSET CONFLICT ERROR: Custom assets are overwriting core game files!\n\n")
-            report.append("The following files in plugins/*/assets/ conflict with data/assets/:\n\n")
+            report.append("The following files in plugins/*/src/main/resources/ conflict with data/assets/:\n\n")
             conflicts.each { conflict ->
                 report.append("  ❌ ${conflict.relativePath}\n")
                 report.append("     Custom:   ${conflict.custom}\n")
@@ -484,90 +352,6 @@ tasks.register("validateAssetConflicts") {
     }
 }
 
-tasks.register("assetsZip", Zip) {
-    group = "build"
-    description = "Zip plugins/roguelike/assets/ into dist/assets.zip with flattened root"
-    dependsOn "ensureDirectories", "processAssetsManifest", "validateAssetConflicts"
-    archiveBaseName.set(project(":plugins:roguelike").tasks.named("jar").get().archiveBaseName.get())
-    archiveVersion.set(project(":plugins:roguelike").version)
-    archiveExtension.set("zip")
-    destinationDirectory.set(distDir)
-    zip64 = true
-    
-    // Include processed manifest
-    from("$buildDir/processed-assets") {
-        include "manifest.json"
-        into("")
-    }
-    
-    // Include all other assets except the original manifest
-    from(userAssetsDir) {
-        into("")
-        exclude "manifest.json"
-        exclude "Common/UI/Custom/Common.ui"
-        exclude "Common/UI/Custom/Common/**"
-        exclude "Common/UI/Custom/Pages/**"
-        exclude "**/*~"
-        eachFile { FileCopyDetails details ->
-            // Exclude .gitkeep files (and their parent directories if empty)
-            if (details.name == ".gitkeep") {
-                details.exclude()
-            }
-        }
-    }
-
-    // Duplicate Vex Custom UI under Custom/ root for client lookup fallback
-    from(userAssetsDir) {
-        include "Common/UI/Custom/Vex/**"
-        include "Common/UI/Custom/Hud/**"
-        eachFile { FileCopyDetails details ->
-            details.path = details.path.replaceFirst('^Common/UI/Custom/', 'Custom/')
-        }
-        includeEmptyDirs = false
-    }
-    doFirst {
-        distDir.mkdirs()
-    }
-}
-
-tasks.register("friendsAssetsZip", Zip) {
-    group = "build"
-    description = "Zip plugins/friends/assets/ into dist/Friends-<version>.zip"
-    dependsOn "ensureDirectories", "processFriendsAssetsManifest", "validateAssetConflicts"
-    archiveBaseName.set(project(":plugins:friends").tasks.named("jar").get().archiveBaseName.get())
-    archiveVersion.set(project(":plugins:friends").version)
-    archiveExtension.set("zip")
-    destinationDirectory.set(distDir)
-    zip64 = true
-
-    from("$buildDir/processed-friends-assets") {
-        include "manifest.json"
-        into("")
-    }
-
-    from(friendsAssetsDir) {
-        into("")
-        exclude "manifest.json"
-        exclude "**/*~"
-        eachFile { FileCopyDetails details ->
-            if (details.name == ".gitkeep") {
-                details.exclude()
-            }
-        }
-    }
-
-    from(friendsAssetsDir) {
-        include "Common/UI/Custom/Friends/**"
-        eachFile { FileCopyDetails details ->
-            details.path = details.path.replaceFirst('^Common/UI/Custom/', 'Custom/')
-        }
-        includeEmptyDirs = false
-    }
-
-    doFirst {
-        distDir.mkdirs()
-    }
-}
 
 tasks.register("exportPermissions") {
     group = "build"
@@ -674,8 +458,35 @@ tasks.register("exportPermissions") {
     }
 }
 
-tasks.named("build") {
-    dependsOn "exportPermissions", "copyStaticToDist"
+
+tasks.register("cleanDist") {
+    group = "build"
+    description = "Remove dist directory"
+    doLast {
+        delete distDir
+    }
+}
+
+tasks.named("clean") {
+    dependsOn "cleanDist"
+}
+
+def resolveJarProjects = {
+    subprojects.findAll { projectRef ->
+        (projectRef.path.startsWith(":plugins:") || projectRef.path.startsWith(":shared:")) &&
+            projectRef.path != ":plugins:forwarder" &&
+            projectRef.path != ":shared:utilities" &&
+            (projectRef.plugins.hasPlugin("java") || projectRef.plugins.hasPlugin("java-library"))
+    }
+}
+
+tasks.register("copyAllProjectJarsToDist", Copy) {
+    group = "build"
+    description = "Copy all plugin/shared jars into dist (excluding forwarder)"
+    into(distDir)
+    doFirst {
+        distDir.mkdirs()
+    }
 }
 
 tasks.register("copyPluginJarToDist", Copy) {
@@ -710,6 +521,7 @@ tasks.register("copyAllPluginJarsToDist", Copy) {
 tasks.register("copyStaticToDist", Copy) {
     group = "build"
     description = "Copy static site into dist/static"
+    dependsOn "updateDevFeed"
     from(staticDir)
     into(new File(distDir, "static"))
     exclude "**/.DS_Store"
@@ -732,31 +544,43 @@ tasks.register("copyEngineJarToDist") {
 
 tasks.register("installToServerMods") {
     group = "distribution"
-    description = "Copy jar and assets.zip into data/server/Server/mods"
-    dependsOn "ensureModsDir", "assetsZip", "friendsAssetsZip", "copyAllPluginJarsToDist"
-    doFirst {
-        def assetsZipName = tasks.named("assetsZip").get().archiveFileName.get()
-        def friendsZipName = tasks.named("friendsAssetsZip").get().archiveFileName.get()
-        def pluginJarNames = pluginProjects.collect { projectRef ->
-            projectRef.tasks.named("jar").get().archiveFileName.get()
-        }
-        delete {
-            delete fileTree(modsDir) {
-                include assetsZipName
-                include friendsZipName
-                pluginJarNames.each { include it }
-            }
+    description = "Copy jars into data/server/Server/mods"
+    // TEMP: Only install selected jars during build
+    // dependsOn "ensureModsDir", "assetsZip", "friendsAssetsZip", "copyAllPluginJarsToDist"
+    dependsOn "ensureModsDir", "copyAllProjectJarsToDist"
+    doFirst { }
+    doLast { }
+}
+
+gradle.projectsEvaluated {
+    def jarProjects = resolveJarProjects()
+
+    tasks.named("copyAllProjectJarsToDist").configure {
+        dependsOn(jarProjects.collect { it.tasks.named("jar") })
+        jarProjects.each { projectRef ->
+            from(projectRef.tasks.named("jar").flatMap { it.archiveFile })
         }
     }
-    doLast {
-        copy {
-            pluginProjects.each { projectRef ->
-                from(projectRef.tasks.named("jar").flatMap { it.archiveFile })
+
+    tasks.named("installToServerMods").configure {
+        doFirst {
+            def pluginJarNames = jarProjects.collect { projectRef ->
+                projectRef.tasks.named("jar").get().archiveFileName.get()
             }
-            from(tasks.named("assetsZip").flatMap { it.archiveFile })
-            from(tasks.named("friendsAssetsZip").flatMap { it.archiveFile })
-            into(modsDir)
-            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            pluginJarNames.each { jarName ->
+                delete new File(modsDir, jarName)
+            }
+        }
+        doLast {
+            copy {
+                jarProjects.each { projectRef ->
+                    from(projectRef.tasks.named("jar").flatMap { it.archiveFile })
+                }
+                // from(tasks.named("assetsZip").flatMap { it.archiveFile })
+                // from(tasks.named("friendsAssetsZip").flatMap { it.archiveFile })
+                into(modsDir)
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            }
         }
     }
 }
@@ -845,11 +669,16 @@ tasks.register("test") {
 }
 
 tasks.named("assemble") {
-    dependsOn "copyPluginJarToDist", "assetsZip", "validateUi"
+    dependsOn "copyAllProjectJarsToDist", "validateUi"
 }
 
 tasks.named("build") {
-    dependsOn "installToServerMods"
+    dependsOn "exportPermissions",
+        "copyStaticToDist",
+        "updateDevFeed",
+        "validateDevFeed",
+        "copyAllProjectJarsToDist",
+        "installToServerMods"
     mustRunAfter "composeDown"
 }
 

@@ -246,9 +246,9 @@ public class UiValidator {
 
       if (c == '{') {
         if (current != null
-          && parenDepth == current.startParenDepth
-          && braceDepth == current.startBraceDepth
-          && current.type == StatementType.UNKNOWN) {
+            && parenDepth == current.startParenDepth
+            && braceDepth == current.startBraceDepth
+            && current.type == StatementType.UNKNOWN) {
           current.type = StatementType.ELEMENT;
           current = null;
         }
@@ -260,16 +260,16 @@ public class UiValidator {
         braceDepth--;
         if (braceDepth < 0) {
           errors.add(new ValidationError(file, line,
-            "Unmatched closing brace at position " + charIndex));
+              "Unmatched closing brace at position " + charIndex));
           braceDepth = 0;
         }
         continue;
       }
 
       if (current != null
-        && parenDepth == current.startParenDepth
-        && braceDepth == current.startBraceDepth
-        && (c == ':' || c == '=')) {
+          && parenDepth == current.startParenDepth
+          && braceDepth == current.startBraceDepth
+          && (c == ':' || c == '=')) {
         if (current.type == StatementType.UNKNOWN) {
           current.type = (c == ':') ? StatementType.PROPERTY : StatementType.ASSIGNMENT;
         }
@@ -278,9 +278,9 @@ public class UiValidator {
       }
 
       if (current != null
-        && parenDepth == current.startParenDepth
-        && braceDepth == current.startBraceDepth
-        && c == ';') {
+          && parenDepth == current.startParenDepth
+          && braceDepth == current.startBraceDepth
+          && c == ';') {
         analyzeStatement(file, current.text.toString(), current.startLine, current.type, current.topLevelSeparators);
         current = null;
       }
@@ -288,7 +288,7 @@ public class UiValidator {
 
     if (current != null && current.type != StatementType.ELEMENT && current.text.length() > 0) {
       errors.add(new ValidationError(file, current.startLine,
-        "Missing semicolon at end of statement"));
+          "Missing semicolon at end of statement"));
     }
 
     if (braceDepth != 0) {
@@ -316,7 +316,6 @@ public class UiValidator {
           "Unterminated block comment"));
     }
   }
-
 
   private void analyzeStatement(Path file, String statement, int line, StatementType type, int topLevelSeparators) {
     String trimmed = statement.trim();
@@ -374,6 +373,7 @@ public class UiValidator {
   private void checkImports(Path file, List<String> lines) {
     Pattern importPattern = Pattern.compile("^\\$\\w+\\s*=\\s*\"([^\"]+)\";?$");
     Path fileDir = file.getParent();
+    Path assetRelativeDir = extractAssetRelativeDir(fileDir);
 
     for (int i = 0; i < lines.size(); i++) {
       String line = lines.get(i).trim();
@@ -381,23 +381,53 @@ public class UiValidator {
 
       if (m.matches()) {
         String importPath = m.group(1);
-        Path resolvedPath = fileDir.resolve(importPath).normalize();
+        String normalizedImport = importPath.startsWith("/") ? importPath.substring(1) : importPath;
+        Path resolvedPath = fileDir.resolve(normalizedImport).normalize();
         if (!Files.exists(resolvedPath)) {
           boolean found = false;
           for (Path root : importRoots) {
-            Path candidate = root.resolve(importPath).normalize();
+            Path candidate = root.resolve(normalizedImport).normalize();
             if (Files.exists(candidate)) {
               found = true;
               break;
             }
+            if (assetRelativeDir != null) {
+              Path assetCandidate = root.resolve(assetRelativeDir).resolve(normalizedImport).normalize();
+              if (Files.exists(assetCandidate)) {
+                found = true;
+                break;
+              }
+            }
           }
           if (!found) {
-          errors.add(new ValidationError(file, i + 1,
-              "Import not found: " + importPath + " (resolved to: " + resolvedPath + ")"));
+            errors.add(new ValidationError(file, i + 1,
+                "Import not found: " + importPath + " (resolved to: " + resolvedPath + ")"));
           }
         }
       }
     }
+  }
+
+  private Path extractAssetRelativeDir(Path fileDir) {
+    if (fileDir == null) {
+      return null;
+    }
+    int count = fileDir.getNameCount();
+    for (int i = 0; i < count - 1; i++) {
+      String first = fileDir.getName(i).toString();
+      String second = fileDir.getName(i + 1).toString();
+      if ("Common".equals(first) && "UI".equals(second)) {
+        return fileDir.subpath(i, count);
+      }
+    }
+    for (int i = 0; i < count - 1; i++) {
+      String first = fileDir.getName(i).toString();
+      String second = fileDir.getName(i + 1).toString();
+      if ("UI".equals(first) && "Custom".equals(second)) {
+        return fileDir.subpath(i, count);
+      }
+    }
+    return null;
   }
 
   /**
@@ -502,6 +532,7 @@ public class UiValidator {
 
   private interface UiScanHandler {
     void onNode(String type, boolean explicit, int line);
+
     void onProperty(String name, boolean explicitNode, String nodeType, int line);
   }
 
@@ -717,7 +748,8 @@ public class UiValidator {
   private void checkColorSyntax(Path file, List<String> lines) {
     // Valid color: #RGB/#RGBA/#RRGGBB/#RRGGBBAA with optional (alpha)
     // Element IDs: #NameLikeThis (letters after #)
-    Pattern validColor = Pattern.compile("#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})(\\([0-9.]+\\))?");
+    Pattern validColor = Pattern
+        .compile("#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})(\\([0-9.]+\\))?");
     Pattern elementId = Pattern.compile("#[A-Za-z][A-Za-z0-9_]*");
     boolean[] inBlockComment = new boolean[] { false };
 
@@ -783,7 +815,6 @@ public class UiValidator {
       if (inBlockComment[0]) {
         continue;
       }
-      String cleaned = stripStringLiterals(line);
       String original = line;
 
       checkTextureMatch(file, i + 1, original, texturePath, candidates);
@@ -969,7 +1000,8 @@ public class UiValidator {
 
   public static void main(String[] args) {
     if (args.length == 0) {
-      System.err.println("Usage: UiValidator <scan-dir> [--import-root <path> ...] [--asset-root <path> ...] [--core-ui-root <path>]");
+      System.err.println(
+          "Usage: UiValidator <scan-dir> [--import-root <path> ...] [--asset-root <path> ...] [--core-ui-root <path>]");
       System.exit(1);
     }
 

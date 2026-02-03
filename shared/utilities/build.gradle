@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'MBRound18.hytale'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+dependencies {
+    compileOnly files("${rootProject.projectDir}/data/server/Server/HytaleServer.jar")
+    compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(ProcessResources).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

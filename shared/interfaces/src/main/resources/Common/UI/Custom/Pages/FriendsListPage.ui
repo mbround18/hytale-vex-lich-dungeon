@@ -1,4 +1,4 @@
-$F = "../FriendsCommon.ui";
+$F = "../Friends/FriendsCommon.ui";
 
 Group #FriendsListPage {
   Anchor: (Full: 0);

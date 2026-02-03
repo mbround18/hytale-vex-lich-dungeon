@@ -1,0 +1,42 @@
+$V = "../VexCommon.ui";
+
+Group {
+    Anchor: (Top: 20, Left: 140, Width: 320, Height: 160);
+    Background: (Color: $V.@HudBackground);
+
+    Label #VexHudTitle {
+        Anchor: (Left: 10, Top: 8, Height: 18);
+        Text: %server.customUI.vexHud.title;
+        Style: (FontSize: 16, RenderBold: true, TextColor: $V.@HighlightColor);
+    }
+
+    Label #VexHudInstanceScore {
+        Anchor: (Left: 10, Top: 30, Height: 16);
+        Text: "Instance: 0";
+        Style: (FontSize: 14, TextColor: $V.@MutedColor);
+    }
+
+    Label #VexHudPlayerScore {
+        Anchor: (Left: 10, Top: 50, Height: 16);
+        Text: "Player: 0";
+        Style: (FontSize: 14, TextColor: $V.@BodyColor);
+    }
+
+    Label #VexHudDelta {
+        Anchor: (Left: 10, Top: 70, Height: 16);
+        Text: "+0";
+        Style: (FontSize: 14, TextColor: $V.@AccentColor);
+    }
+
+    Label #VexHudPartyTitle {
+        Anchor: (Left: 10, Top: 95, Height: 16);
+        Text: "Party";
+        Style: (FontSize: 13, RenderBold: true, TextColor: $V.@MutedColor);
+    }
+
+    Label #VexHudPartyList {
+        Anchor: (Left: 10, Top: 112, Width: 300, Height: 40);
+        Text: "You — HP 0/0 | ST 0/0";
+        Style: (FontSize: 12, TextColor: $V.@BodyColor);
+    }
+}
