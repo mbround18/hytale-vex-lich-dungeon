@@ -1,7 +1,7 @@
 package MBRound18.hytale.friends;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
-import MBRound18.ImmortalEngine.api.logging.LoggingController;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.ImmortalEngine.api.social.SocialServices;
 import MBRound18.hytale.friends.commands.FriendCommand;
 import MBRound18.hytale.friends.commands.FriendsCommand;
@@ -19,12 +19,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public class FriendsPlugin extends JavaPlugin {
-  private final EngineLog log;
+  private final LoggingHelper log;
   private FriendsDataStore dataStore;
   private FriendsServiceImpl friendsService;
   private PartyServiceImpl partyService;
@@ -32,7 +31,7 @@ public class FriendsPlugin extends JavaPlugin {
 
   public FriendsPlugin(@Nonnull JavaPluginInit init) {
     super(init);
-    this.log = LoggingController.forPlugin(this, "Friends");
+    this.log = Objects.requireNonNull(new LoggingHelper("Friends"), "log");
   }
 
   @Override
@@ -44,25 +43,32 @@ public class FriendsPlugin extends JavaPlugin {
     }
 
     Path dataDirectory = modsDirectory.resolve("Friends");
-    dataStore = new FriendsDataStore(log, dataDirectory);
+    dataStore = new FriendsDataStore(
+        Objects.requireNonNull(log, "log"),
+        Objects.requireNonNull(dataDirectory, "dataDirectory"));
     dataStore.initialize();
 
-    Path assetsZipPath = resolveAssetsZipPath(pluginJarPath, modsDirectory);
-    FriendsAssetResolver.setAssetsZipPath(assetsZipPath);
-
-    friendsService = new FriendsServiceImpl(dataStore);
-    partyService = new PartyServiceImpl(dataStore, log);
+    friendsService = new FriendsServiceImpl(Objects.requireNonNull(dataStore, "dataStore"));
+    partyService = new PartyServiceImpl(
+        Objects.requireNonNull(dataStore, "dataStore"),
+        Objects.requireNonNull(log, "log"));
     SocialServices.registerFriends(friendsService);
     SocialServices.registerParty(partyService);
 
-    CommandManager.get().register(new FriendsCommand(dataStore, partyService));
-    CommandManager.get().register(new FriendCommand(dataStore, friendsService));
-    CommandManager.get().register(new PartyCommand(dataStore, partyService));
+    CommandManager.get().register(new FriendsCommand(
+        Objects.requireNonNull(dataStore, "dataStore"),
+        Objects.requireNonNull(partyService, "partyService")));
+    CommandManager.get().register(new FriendCommand(
+        Objects.requireNonNull(dataStore, "dataStore"),
+        Objects.requireNonNull(friendsService, "friendsService")));
+    CommandManager.get().register(new PartyCommand(
+        Objects.requireNonNull(dataStore, "dataStore"),
+        Objects.requireNonNull(partyService, "partyService")));
 
-    hudUpdater = new PartyHudUpdater(partyService, log);
+    hudUpdater = new PartyHudUpdater(
+        Objects.requireNonNull(partyService, "partyService"),
+        Objects.requireNonNull(log, "log"));
     hudUpdater.start();
-
-    preflightUiAssets(assetsZipPath);
 
     log.info("[FRIENDS] Friends plugin initialized at %s", dataDirectory);
   }
@@ -78,90 +84,5 @@ public class FriendsPlugin extends JavaPlugin {
     SocialServices.clear();
   }
 
-  private Path resolveAssetsZipPath(@Nonnull Path pluginJarPath, @Nonnull Path modsDirectory) {
-    String jarName = pluginJarPath.getFileName().toString();
-    String baseFull = jarName.endsWith(".jar")
-        ? jarName.substring(0, jarName.length() - 4)
-        : jarName;
-    String versionedZip = baseFull + ".zip";
-    Path zipPath = modsDirectory.resolve(versionedZip);
-    if (Files.exists(zipPath)) {
-      return zipPath;
-    }
-
-    String legacyBase = baseFull.split("-")[0];
-    String legacyZip = legacyBase + ".zip";
-    Path legacyPath = modsDirectory.resolve(legacyZip);
-    if (Files.exists(legacyPath)) {
-      return legacyPath;
-    }
-
-    Path fallback = findZipFallback(modsDirectory, versionedZip, legacyZip, baseFull, legacyBase);
-    if (fallback != null) {
-      return fallback;
-    }
-
-    return zipPath;
-  }
-
-  private void preflightUiAssets(@Nonnull Path assetsZipPath) {
-    if (!Files.exists(assetsZipPath)) {
-      log.error("UI preflight failed: assets zip not found at %s", assetsZipPath);
-      return;
-    }
-
-    List<String> required = List.of(
-        "Custom/Friends/Pages/FriendsList.ui",
-        "Custom/Friends/Hud/FriendsPartyHud.ui",
-        "Custom/Friends/FriendsCommon.ui");
-
-    List<String> missing = new ArrayList<>();
-    try (ZipFile zipFile = new ZipFile(assetsZipPath.toFile())) {
-      for (String path : required) {
-        ZipEntry entry = zipFile.getEntry(path);
-        if (entry == null) {
-          missing.add(path);
-        }
-      }
-    } catch (Exception e) {
-      log.error("UI preflight failed reading %s: %s", assetsZipPath, e.getMessage());
-      return;
-    }
-
-    if (missing.isEmpty()) {
-      log.lifecycle().atInfo().log("UI preflight OK: Friends UI documents found in %s",
-          assetsZipPath.getFileName());
-      return;
-    }
-
-    log.error("UI preflight failed: missing %d Friends UI document(s) in %s",
-        missing.size(), assetsZipPath.getFileName());
-    for (String path : missing) {
-      log.error("- Missing UI: %s", path);
-    }
-  }
-
-  private Path findZipFallback(@Nonnull Path modsDirectory, @Nonnull String versionedZip,
-      @Nonnull String legacyZip, @Nonnull String baseFull, @Nonnull String legacyBase) {
-    String versionedLower = versionedZip.toLowerCase();
-    String legacyLower = legacyZip.toLowerCase();
-    String baseLower = baseFull.toLowerCase();
-    String legacyBaseLower = legacyBase.toLowerCase();
-    try (java.util.stream.Stream<Path> stream = Files.list(modsDirectory)) {
-      return stream
-          .filter(path -> path.getFileName().toString().toLowerCase().endsWith(".zip"))
-          .sorted(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()))
-          .filter(path -> {
-            String name = path.getFileName().toString().toLowerCase();
-            return name.equals(versionedLower)
-                || name.equals(legacyLower)
-                || name.startsWith(baseLower)
-                || name.startsWith(legacyBaseLower);
-          })
-          .findFirst()
-          .orElse(null);
-    } catch (Exception ignored) {
-      return null;
-    }
-  }
+  
 }

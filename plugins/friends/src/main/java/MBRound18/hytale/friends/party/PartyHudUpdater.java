@@ -1,6 +1,6 @@
 package MBRound18.hytale.friends.party;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.ImmortalEngine.api.participants.ParticipantSnapshot;
 import MBRound18.ImmortalEngine.api.participants.ParticipantTracker;
 import MBRound18.ImmortalEngine.api.social.PartyMemberSnapshot;
@@ -24,10 +24,10 @@ public class PartyHudUpdater implements Runnable {
   private static final int MAX_MEMBER_SLOTS = 4;
 
   private final PartyService partyService;
-  private final EngineLog log;
+  private final LoggingHelper log;
   private ScheduledFuture<?> task;
 
-  public PartyHudUpdater(PartyService partyService, EngineLog log) {
+  public PartyHudUpdater(PartyService partyService, LoggingHelper log) {
     this.partyService = partyService;
     this.log = log;
   }

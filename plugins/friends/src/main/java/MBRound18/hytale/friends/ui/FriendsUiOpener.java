@@ -2,7 +2,8 @@ package MBRound18.hytale.friends.ui;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIPage;
 import MBRound18.hytale.shared.interfaces.ui.PlayerSubscriptionController;
-import MBRound18.hytale.shared.interfaces.ui.UiThread;
+import MBRound18.hytale.shared.utilities.UiThread;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.Page;

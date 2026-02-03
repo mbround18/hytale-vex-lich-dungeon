@@ -1,9 +1,10 @@
 package MBRound18.hytale.friends.ui;
 
-import MBRound18.hytale.shared.interfaces.ui.UiVars;
+import MBRound18.hytale.shared.interfaces.ui.generated.PagesFriendslistpageUi;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -16,10 +17,13 @@ public final class FriendsUiController {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
-    CustomUIPage page = new FriendsUiPage(playerRef, "Custom/Friends/Pages/FriendsList.ui",
-        Map.of(
-            UiVars.textId("FriendsPartyStatus"), partyStatus == null ? "" : partyStatus,
-            UiVars.textId("FriendsListBody"), listBody == null ? "" : listBody));
+    PagesFriendslistpageUi ui = new PagesFriendslistpageUi();
+    CustomUIPage page = new FriendsUiPage(playerRef, PagesFriendslistpageUi.UI_PATH,
+        Objects.requireNonNull(
+            Map.of(
+                ui.friendsListPagePanelHeaderTitle, partyStatus == null ? "" : partyStatus,
+                ui.friendsListPagePanelListPanelFriendRowInfoStatus, listBody == null ? "" : listBody),
+            "vars"));
     return FriendsUiOpener.open(playerRef, page);
   }
 }

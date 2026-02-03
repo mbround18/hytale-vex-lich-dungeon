@@ -118,9 +118,11 @@ public class PartyCommand extends AbstractCommand {
   private final class PartyInviteCommand extends AbstractCommand {
     private final RequiredArg<String> nameArg;
 
+    @SuppressWarnings("null")
     private PartyInviteCommand() {
       super("invite", "Invite a player to your party");
-      this.nameArg = withRequiredArg("name", "Player name", ArgTypes.STRING);
+      this.nameArg = Objects.requireNonNull(
+          withRequiredArg("name", "Player name", ArgTypes.STRING), "nameArg");
     }
 
     @Override
@@ -132,7 +134,7 @@ public class PartyCommand extends AbstractCommand {
       if (!checkPermission(context, PERMISSION_INVITE)) {
         return CompletableFuture.completedFuture(null);
       }
-      String targetName = context.get(nameArg);
+      String targetName = context.get(Objects.requireNonNull(nameArg, "nameArg"));
       if (targetName == null || targetName.isBlank()) {
         context.sendMessage(Message.raw("Usage: /party invite <name>"));
         return CompletableFuture.completedFuture(null);

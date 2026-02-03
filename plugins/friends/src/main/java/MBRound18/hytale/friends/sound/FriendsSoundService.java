@@ -1,6 +1,6 @@
 package MBRound18.hytale.friends.sound;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.hypixel.hytale.protocol.SoundCategory;
 import com.hypixel.hytale.server.core.asset.type.soundevent.config.SoundEvent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -17,7 +17,7 @@ public final class FriendsSoundService {
   }
 
   public static void play(@Nullable PlayerRef playerRef, @Nonnull String soundId,
-      @Nonnull EngineLog log) {
+      @Nonnull LoggingHelper log) {
     if (playerRef == null || !playerRef.isValid()) {
       return;
     }

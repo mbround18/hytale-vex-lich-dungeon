@@ -1,7 +1,6 @@
 package MBRound18.hytale.friends.ui;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIController;
-import MBRound18.hytale.shared.interfaces.ui.EngineHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.Map;
@@ -38,11 +37,6 @@ public final class FriendsHudController extends AbstractCustomUIController<Frien
     if (playerRef == null || !playerRef.isValid()) {
       return false;
     }
-    if (!EngineHud.isCustomUiMode()) {
-      EngineHud.show(playerRef, HUD_PATH, vars);
-      return true;
-    }
-
     return openHud(playerRef,
         () -> new FriendsHudPage(playerRef, HUD_PATH, vars),
         hud -> scheduleInitialUpdate(playerRef, hud));
@@ -51,10 +45,6 @@ public final class FriendsHudController extends AbstractCustomUIController<Frien
   private boolean clearHudInternal(@Nullable PlayerRef playerRef) {
     if (playerRef == null || !playerRef.isValid()) {
       return false;
-    }
-    if (!EngineHud.isCustomUiMode()) {
-      EngineHud.clear(playerRef);
-      return true;
     }
     closeHud(playerRef, FriendsHudPage::clear);
     return true;

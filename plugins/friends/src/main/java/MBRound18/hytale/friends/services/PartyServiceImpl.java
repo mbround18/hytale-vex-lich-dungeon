@@ -1,6 +1,6 @@
 package MBRound18.hytale.friends.services;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.ImmortalEngine.api.social.PartyActionResult;
 import MBRound18.ImmortalEngine.api.social.PartyInvite;
 import MBRound18.ImmortalEngine.api.social.PartyMemberSnapshot;
@@ -27,9 +27,9 @@ import javax.annotation.Nonnull;
 public class PartyServiceImpl implements PartyService {
   private final FriendsDataStore dataStore;
   @SuppressWarnings("unused")
-  private final EngineLog log;
+  private final LoggingHelper log;
 
-  public PartyServiceImpl(@Nonnull FriendsDataStore dataStore, @Nonnull EngineLog log) {
+  public PartyServiceImpl(@Nonnull FriendsDataStore dataStore, @Nonnull LoggingHelper log) {
     this.dataStore = dataStore;
     this.log = log;
   }

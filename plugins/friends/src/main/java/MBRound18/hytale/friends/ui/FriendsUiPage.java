@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,7 +38,8 @@ public class FriendsUiPage extends AbstractCustomUIPage {
   public void init(@Nonnull UICommandBuilder commands) {
     String resolvedPath = FriendsAssetResolver.resolvePath(uiPath);
     String inline = FriendsAssetResolver.readInlineDocument(uiPath);
-    String doc = inline != null ? inline : FriendsAssetResolver.readDocument(resolvedPath != null ? resolvedPath : uiPath);
+    String doc = inline != null ? inline
+        : FriendsAssetResolver.readDocument(resolvedPath != null ? resolvedPath : uiPath);
     Set<String> ids = extractIds(doc);
     for (Map.Entry<String, String> entry : vars.entrySet()) {
       String id = entry.getKey();
@@ -50,11 +52,8 @@ public class FriendsUiPage extends AbstractCustomUIPage {
       if (id != null && !id.startsWith("#")) {
         id = "#" + id;
       }
-      if (id != null && !id.contains(".")) {
-        id = id + ".Text";
-      }
-      if (id != null) {
-        commands.set(id, entry.getValue());
+      if (id != null && !id.isBlank()) {
+        commands.set(id, Objects.requireNonNull(entry.getValue(), "value"));
       }
     }
   }

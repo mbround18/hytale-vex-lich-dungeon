@@ -2,7 +2,6 @@ package MBRound18.hytale.friends.ui;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.UiPath;
-import MBRound18.hytale.shared.interfaces.ui.UiVars;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -14,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
-public class FriendsHudPage extends AbstractCustomUIHud {
+public class FriendsHudPage extends AbstractCustomUIHud<Object> {
   private static final Pattern ID_PATTERN = Pattern.compile("#([A-Za-z0-9_]+)");
 
   private final String uiPath;
@@ -29,7 +28,7 @@ public class FriendsHudPage extends AbstractCustomUIHud {
   }
 
   @Override
-  protected void build(UICommandBuilder commands) {
+  protected void build(@Nonnull UICommandBuilder commands) {
     String resolvedPath = FriendsAssetResolver.resolvePath(uiPath);
     String inline = FriendsAssetResolver.readInlineDocument(uiPath);
     String doc = inline != null ? inline
@@ -53,14 +52,8 @@ public class FriendsHudPage extends AbstractCustomUIHud {
           continue;
         }
       }
-      if (id != null && !id.contains(".")) {
-        id = UiVars.textSpansId(id);
-      }
-      if (id == null) {
+      if (id == null || id.isBlank()) {
         continue;
-      }
-      if (!id.startsWith("#")) {
-        id = "#" + id;
       }
       String value = entry.getValue();
       String safeValue = value == null ? "" : value;

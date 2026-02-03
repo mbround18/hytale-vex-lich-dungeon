@@ -2,7 +2,7 @@ package MBRound18.hytale.friends.commands;
 
 import MBRound18.ImmortalEngine.api.social.PartyService;
 import MBRound18.hytale.shared.interfaces.ui.PlayerSubscriptionController;
-import MBRound18.hytale.shared.interfaces.ui.UiThread;
+import MBRound18.hytale.shared.utilities.UiThread;
 import MBRound18.hytale.friends.data.FriendRecord;
 import MBRound18.hytale.friends.data.FriendsDataStore;
 import MBRound18.hytale.friends.ui.FriendsUiController;
@@ -50,6 +50,7 @@ public class FriendsCommand extends AbstractCommand {
     if (!checkPermission(context, PERMISSION_USE)) {
       return CompletableFuture.completedFuture(null);
     }
+    @Nonnull
     String[] tokens = tokenize(context.getInputString());
     int index = skipCommandTokens(tokens, "friends");
     if (index < tokens.length) {
@@ -141,6 +142,7 @@ public class FriendsCommand extends AbstractCommand {
         context.sendMessage(Message.raw("Unable to run UI test."));
         return CompletableFuture.completedFuture(null);
       }
+      @Nonnull
       String[] tokens = tokenize(context.getInputString());
       int index = skipCommandTokens(tokens, "friends", "ui", "test");
       int delaySeconds = parseDelaySeconds(tokens, index);
@@ -232,18 +234,19 @@ public class FriendsCommand extends AbstractCommand {
     }
   }
 
-  private static String[] tokenize(String input) {
+  @Nonnull
+  private static String[] tokenize(@Nullable String input) {
     String trimmed = input == null ? "" : input.trim();
     if (trimmed.isEmpty()) {
       return new String[0];
     }
-    return trimmed.split("\\s+");
+    return Objects.requireNonNull(trimmed.split("\\s+"), "tokens");
   }
 
-  private static int skipCommandTokens(String[] tokens, String... expected) {
+  private static int skipCommandTokens(@Nonnull String[] tokens, @Nonnull String... expected) {
     int index = 0;
     for (String token : expected) {
-      if (index < tokens.length && tokenEquals(token, tokens[index])) {
+      if (index < tokens.length && tokenEquals(Objects.requireNonNull(token, "token"), tokens[index])) {
         index++;
       }
     }
