@@ -47,3 +47,19 @@ Label {
 - **Block comments** use `/* ... */`. Line comments use `// ...`.
 - **When setting label text, use `#Id.Text`** (not `#Id`).
 - **Client UI paths should not include `Common/UI/Custom/` or `UI/Custom/`.** Strip to after `Custom/`.
+- **Server translations live in** `shared/interfaces/src/main/resources/Server/Languages/en-US/server.lang` **and are used via** `Message.translation("server.ID_OF_TRANSLATION")`.
+
+## HUD Overlay Pattern
+
+```ui
+Group {
+  // Overlay layer
+  Background: #000(0.35);
+  LayoutMode: Middle;
+
+  // HUD panel
+  $C.@DecoratedContainer {
+    Anchor: (Width: 480);
+  }
+}
+```

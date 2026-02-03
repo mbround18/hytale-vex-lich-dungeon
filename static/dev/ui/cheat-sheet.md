@@ -58,3 +58,10 @@ $C.@Title {
 - **Avoid** standalone spread statements: `...@Template;`
 - **Do** use `BackgroundImage` for images, not `Image`
 - **Avoid** `Border` on `Group`; use `Background`/`PatchStyle` tuples
+
+## Demo Commands (This Repo)
+- `/demo <page>` open a demo page
+- `/dlist` list demo pages
+- `/dhud <name>` show a HUD
+- `/dhud list` list HUDs
+- `/dhud reset` clear + reset HUD state

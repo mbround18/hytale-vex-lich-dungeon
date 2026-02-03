@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rss version='2.0' xmlns:atom='http://www.w3.org/2005/Atom'>
+  <channel>
+    <title>Vex Dev Logs</title>
+    <link>https://vex.boop.ninja/dev/</link>
+    <lastBuildDate>Mon, 2 Feb 2026 00:00:00 GMT</lastBuildDate>
+    <atom:link href='https://vex.boop.ninja/feed.xml' rel='self' type='application/rss+xml' />
+    <item>
+      <title>Vex UI Components + UI Mangle</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-02-vex-ui-components-and-ui-mangle.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-02-vex-ui-components-and-ui-mangle.md</guid>
+      <pubDate>Mon, 2 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Dev Feed + Forwarder Hardening</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-02-dev-feed-and-forwarder-hardening.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-02-dev-feed-and-forwarder-hardening.md</guid>
+      <pubDate>Mon, 2 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Friends UI + Party HUD Refactors</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-02-friends-hud-refactors.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-02-friends-hud-refactors.md</guid>
+      <pubDate>Mon, 2 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>TroubleDev Alignment Check</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-31-troubledev-alignment-check.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-31-troubledev-alignment-check.md</guid>
+      <pubDate>Sat, 31 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>UI Pipeline Stabilized</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-31-ui-pipeline-stabilized.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-31-ui-pipeline-stabilized.md</guid>
+      <pubDate>Sat, 31 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Friend Management Interfaces</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-30-friend-management-interfaces.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-30-friend-management-interfaces.md</guid>
+      <pubDate>Fri, 30 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Vex Challenge Landing Goes Live</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-28-homepage-launch.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-28-homepage-launch.md</guid>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>ImmortalEngine Backpressure + Stitching</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-28-engine-stitching.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-28-engine-stitching.md</guid>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Developer Hub + Engineering Log Layout</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-28-dev-hub-logs.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-28-dev-hub-logs.md</guid>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>UI Grimoire Reference Pages</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-28-ui-grimoire-reference.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-28-ui-grimoire-reference.md</guid>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Procedural Core + Static Rooms</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-27-procedural-dungeon-core.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-27-procedural-dungeon-core.md</guid>
+      <pubDate>Tue, 27 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Project Bootstrap + Vex Naming</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-01-26-project-bootstrap.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-01-26-project-bootstrap.md</guid>
+      <pubDate>Mon, 26 Jan 2026 00:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

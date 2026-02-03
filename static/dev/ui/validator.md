@@ -1,5 +1,19 @@
 # Validator Notes
 
+## Hytale UI Ultimate (VS Code Extension)
+
+**This is the fastest way to validate UI while you type.** It adds syntax highlighting, intellisense, and live validation for Hytale `.ui` files so you can catch parser errors before booting the game.
+
+Install from VS Code Marketplace:
+```
+https://marketplace.visualstudio.com/items?itemName=MBRound18.hytale-ui-ultimate
+```
+
+Source + updates:
+```
+https://github.com/mbround18/hytale-ui-vscode-extension
+```
+
 ## What It Checks
 - Balanced braces `{}` and parentheses `()`
 - Unterminated strings and block comments
@@ -30,3 +44,7 @@ The validator rules are aligned to patterns seen in core Hytale UI files from a 
 ```bash
 ./gradlew validateUi
 ```
+
+## VS Code Extension (Recommended)
+
+Live validation + highlighting is the most reliable way to keep UI stable. Use the extension above to keep the feedback loop tight while authoring new screens.

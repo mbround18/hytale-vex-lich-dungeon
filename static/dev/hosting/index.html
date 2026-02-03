@@ -50,7 +50,10 @@
 <body class="bg-vex-bg text-text-primary antialiased min-h-screen flex flex-col font-sans">
 
   <!-- Navbar -->
-  <nav class="sticky top-0 z-50 bg-vex-surface/90 backdrop-blur-md border-b border-vex-border">
+  <nav
+    class="sticky top-0 z-50 bg-vex-surface/90 backdrop-blur-md border-b border-vex-border"
+    x-data="vexHeader({ variant: 'hosting' })"
+  >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Brand -->
@@ -63,13 +66,88 @@
         </div>
 
         <!-- Links -->
-        <div class="hidden md:flex items-center space-x-8 text-sm font-medium" x-data="vexHeader({ variant: 'hosting' })">
+        <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
           <template x-for="link in links" :key="link.id">
-            <div class="relative" @mouseenter="hover = link.id" @mouseleave="hover = null">
-              <a :href="link.href" :class="linkClass(link)" x-text="link.label"></a>
+            <div class="relative" @mouseenter="setHover(link.id)" @mouseleave="scheduleHoverClear()">
+              <a :href="link.href" :class="linkClass(link)" :target="linkTarget(link)" :rel="linkRel(link)">
+                <span x-text="link.label"></span>
+                <span x-show="link.children" class="ml-1 text-[10px] text-text-secondary">▾</span>
+              </a>
+              <template x-if="link.children">
+                <div
+                  x-show="hover === link.id"
+                  x-transition.opacity.duration.200ms
+                  :class="dropdownClass()"
+                  @mouseenter="setHover(link.id)"
+                  @mouseleave="scheduleHoverClear()"
+                >
+                  <div class="space-y-2">
+                    <template x-for="child in link.children" :key="child.href">
+                      <a
+                        :href="child.href"
+                        class="block text-sm text-text-secondary hover:text-white transition"
+                        x-text="child.label"
+                        :target="linkTarget(child)"
+                        :rel="linkRel(child)"
+                      ></a>
+                    </template>
+                  </div>
+                  <span
+                    class="absolute left-1/2 -translate-x-1/2 -top-2 w-3 h-3 bg-vex-surface/95 border-l border-t border-vex-border rotate-45"
+                  ></span>
+                </div>
+              </template>
             </div>
           </template>
         </div>
+
+        <div class="md:hidden flex items-center">
+          <button
+            class="text-ancient-gold hover:text-white"
+            aria-controls="mobile-nav"
+            :aria-expanded="navOpen.toString()"
+            @click="navOpen = !navOpen"
+          >
+            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      x-cloak
+      x-show="navOpen"
+      class="md:hidden border-t border-vex-border bg-vex-surface/95"
+      id="mobile-nav"
+      @click="navOpen = false"
+    >
+      <div class="px-6 py-5 space-y-4">
+        <template x-for="link in links" :key="link.id">
+          <div class="space-y-2">
+            <a
+              :href="link.href"
+              :class="mobileLinkClass(link)"
+              x-text="link.label"
+              :target="linkTarget(link)"
+              :rel="linkRel(link)"
+            ></a>
+            <template x-if="link.children">
+              <div class="pl-4 space-y-2">
+                <template x-for="child in link.children" :key="child.href">
+                  <a
+                    :href="child.href"
+                    class="block text-sm text-text-secondary hover:text-white transition"
+                    x-text="child.label"
+                    :target="linkTarget(child)"
+                    :rel="linkRel(child)"
+                  ></a>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
       </div>
     </div>
   </nav>

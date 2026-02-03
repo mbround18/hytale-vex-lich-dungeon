@@ -70,47 +70,5 @@
         "permission": "friends.remove",
         "description": "Remove a friend via /friend remove <name>.",
         "command": "/friend remove <name>"
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.purge",
-        "description": "Purge Vex instance data and delete dungeons.json via /vex purge.",
-        "command": "/vex purge"
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.ui.list",
-        "description": "List Vex UI templates via /vex ui list.",
-        "command": "/vex ui list"
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.ui.show",
-        "description": "Show a Vex UI template via /vex ui show <id>.",
-        "command": "/vex ui show <id>"
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.ui.reload",
-        "description": "Reload Vex UI templates via /vex ui reload.",
-        "command": "/vex ui reload"
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.score.view",
-        "description": "View the Vex leaderboard via /vex score.",
-        "command": "/vex score"
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.score.edit",
-        "description": "Edit Vex score metrics via /vex score edit <player> <metric> <value>.",
-        "command": "/vex score edit <player> <metric> <value>"
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.removeinstances",
-        "description": "Remove all Vex dungeon instance data via /vex removeinstances.",
-        "command": "/vex removeinstances"
     }
 ]

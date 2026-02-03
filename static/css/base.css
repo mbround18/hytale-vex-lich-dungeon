@@ -24,3 +24,7 @@
 .text-glow {
   text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
 }
+
+[x-cloak] {
+  display: none !important;
+}

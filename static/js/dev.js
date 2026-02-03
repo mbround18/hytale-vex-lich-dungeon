@@ -155,6 +155,9 @@ async function loadLogs() {
             ${htmlContent}
           </div>
         `;
+        if (window.vexSetExternalTargets) {
+          window.vexSetExternalTargets(article);
+        }
         container.appendChild(article);
       });
   } catch (error) {

@@ -2,6 +2,9 @@
 const pages = [
   { title: "Core Rules", file: "core-rules.md", icon: "📘" },
   { title: "Overview", file: "rules.md", icon: "📜" },
+  { title: "UI Usage", file: "ui-usage.md", icon: "🧭" },
+  { title: "Java Usage", file: "java-usage.md", icon: "☕" },
+  { title: "Gallery", file: "gallery.md", icon: "🖼️" },
   { title: "Syntax", file: "syntax.md", icon: "🔮" },
   { title: "Cheat Sheet", file: "cheat-sheet.md", icon: "⚡" },
   { title: "Patterns", file: "patterns.md", icon: "🧩" },
@@ -18,6 +21,8 @@ const converter = new showdown.Converter({
 
 const nav = document.getElementById("nav");
 const output = document.getElementById("output");
+const fileSet = new Set(pages.map((page) => page.file));
+let ignoreNextHash = false;
 
 /* --- UI Functions --- */
 function setActive(link) {
@@ -71,6 +76,10 @@ async function loadPage(file, link) {
     output.innerHTML = converter.makeHtml(mockContent);
   }
 
+  if (window.vexSetExternalTargets) {
+    window.vexSetExternalTargets(output);
+  }
+
   // Apply Syntax Highlighting
   output.querySelectorAll("pre code").forEach((block) => {
     // If no class is set, guess SCSS as it handles the $var and { } syntax well
@@ -81,10 +90,25 @@ async function loadPage(file, link) {
   });
 }
 
+function getLinkForFile(file) {
+  return nav.querySelector(`a[data-file="${file}"]`);
+}
+
+function loadFromHash() {
+  const raw = window.location.hash ? window.location.hash.slice(1) : "";
+  const file = decodeURIComponent(raw);
+  if (fileSet.has(file)) {
+    loadPage(file, getLinkForFile(file));
+    return true;
+  }
+  return false;
+}
+
 /* --- Initialization --- */
 pages.forEach((page) => {
   const a = document.createElement("a");
   a.href = `#${page.file}`;
+  a.dataset.file = page.file;
   a.className =
     "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-r transition-all duration-200 border-l-4 border-transparent text-gray-400 hover:text-white hover:bg-white/5 group";
 
@@ -102,15 +126,27 @@ pages.forEach((page) => {
 
   a.addEventListener("click", (e) => {
     e.preventDefault();
+    ignoreNextHash = true;
+    window.location.hash = page.file;
     loadPage(page.file, a);
   });
   nav.appendChild(a);
 });
 
+window.addEventListener("hashchange", () => {
+  if (ignoreNextHash) {
+    ignoreNextHash = false;
+    return;
+  }
+  loadFromHash();
+});
+
 // Load initial page
 const initialLink = nav.querySelector("a");
 if (initialLink) {
-  loadPage(pages[0].file, initialLink);
+  if (!loadFromHash()) {
+    loadPage(pages[0].file, initialLink);
+  }
 }
 
 /* --- Mock Data (Based on provided images) --- */

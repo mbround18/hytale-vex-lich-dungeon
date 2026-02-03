@@ -27,6 +27,10 @@ async function loadPage(file, link) {
   const md = await res.text();
   output.innerHTML = converter.makeHtml(md);
   if (link) setActive(link);
+
+  if (window.vexSetExternalTargets) {
+    window.vexSetExternalTargets(output);
+  }
 }
 
 for (const page of pages) {
