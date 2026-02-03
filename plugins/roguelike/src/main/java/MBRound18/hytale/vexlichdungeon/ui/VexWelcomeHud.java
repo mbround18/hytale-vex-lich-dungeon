@@ -2,7 +2,7 @@ package MBRound18.hytale.vexlichdungeon.ui;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIPage;
-import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexdemohudUi;
+import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexwelcomehudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
 import com.hypixel.hytale.component.Ref;
@@ -16,23 +16,20 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
-public final class VexDemoHud extends AbstractCustomUIHud<VexHudVexdemohudUi> {
-  private VexDemoHud(@Nonnull PlayerRef playerRef) {
-    super(VexHudVexdemohudUi.class, playerRef);
+public final class VexWelcomeHud extends AbstractCustomUIHud<VexHudVexwelcomehudUi> {
+  private VexWelcomeHud(@Nonnull PlayerRef playerRef) {
+    super(VexHudVexwelcomehudUi.class, playerRef);
   }
 
-  public static void open(@Nonnull PlayerRef playerRef, @Nonnull String scoreText,
-      @Nonnull String timerText, @Nonnull String debugStat) {
-    VexDemoHud hud = new VexDemoHud(playerRef);
+  public static void open(@Nonnull PlayerRef playerRef, @Nonnull String bodyText) {
+    VexWelcomeHud hud = new VexWelcomeHud(playerRef);
     Map<String, String> vars = new HashMap<>();
-    VexHudVexdemohudUi ui = hud.getUiModel();
-    vars.put(ui.demoScore, scoreText);
-    vars.put(ui.demoTimer, timerText);
-    vars.put(ui.vexDebugStat, debugStat);
+    VexHudVexwelcomehudUi ui = hud.getUiModel();
+    vars.put(ui.vexContentVexWelcomeBody, bodyText);
     openHud(playerRef, hud, vars);
   }
 
-  private static void openHud(@Nonnull PlayerRef playerRef, @Nonnull VexDemoHud hud,
+  private static void openHud(@Nonnull PlayerRef playerRef, @Nonnull VexWelcomeHud hud,
       @Nonnull Map<String, String> vars) {
     UiThread.runOnPlayerWorld(playerRef, () -> {
       Ref<EntityStore> ref = playerRef.getReference();

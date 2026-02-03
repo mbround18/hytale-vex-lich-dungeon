@@ -3,7 +3,7 @@ package MBRound18.hytale.vexlichdungeon.prefab;
 import MBRound18.hytale.vexlichdungeon.dungeon.CardinalDirection;
 import MBRound18.hytale.vexlichdungeon.dungeon.DungeonTile;
 import MBRound18.hytale.vexlichdungeon.dungeon.GenerationConfig;
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -52,7 +53,7 @@ public class PrefabSpawner {
   private static final int GATE_Y_OFFSET = 15;
   private static final int MAX_PREFAB_CACHE = 64;
 
-  private final EngineLog log;
+  private final LoggingHelper log;
   private final ZipFile zipFile;
   private final PrefabInspector inspector;
   private final GenerationConfig config;
@@ -64,7 +65,7 @@ public class PrefabSpawner {
    * @param log     Logger for spawning events
    * @param zipFile The asset ZIP file containing prefabs
    */
-  public PrefabSpawner(@Nonnull EngineLog log, @Nonnull ZipFile zipFile, @Nonnull GenerationConfig config) {
+  public PrefabSpawner(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, @Nonnull GenerationConfig config) {
     this.log = log;
     this.zipFile = zipFile;
     this.config = config;
@@ -86,7 +87,7 @@ public class PrefabSpawner {
    */
   @Nonnull
   public CompletableFuture<BlockSelection> loadPrefab(@Nonnull String modRelativePath) {
-    return CompletableFuture.supplyAsync(() -> {
+    return Objects.requireNonNull(CompletableFuture.supplyAsync(() -> {
       Path tempFile = null;
       StringBuilder jsonBuilder = new StringBuilder();
       try {
@@ -128,13 +129,10 @@ public class PrefabSpawner {
         log.info("Extracted prefab JSON to temporary file: %s", tempFile);
 
         // Use PrefabStore to deserialize the BlockSelection from the JSON file
-        BlockSelection prefab = PrefabStore.get().getPrefab(tempFile);
+        BlockSelection prefab = PrefabStore.get().getPrefab(Objects.requireNonNull(tempFile, "tempFile"));
 
-        if (prefab == null) {
-          throw new PrefabLoadException("Failed to deserialize prefab from JSON: " + zipEntryPath);
-        }
-
-        hydrateFluidsFromJson(prefab, jsonBuilder.toString(), modRelativePath);
+        hydrateFluidsFromJson(prefab, Objects.requireNonNull(jsonBuilder.toString(), "jsonContent"),
+            modRelativePath);
 
         if (prefab.getFluidCount() > 0) {
           log.info("Prefab %s contains %d fluids", modRelativePath, prefab.getFluidCount());
@@ -157,7 +155,7 @@ public class PrefabSpawner {
           }
         }
       }
-    });
+    }), "prefabFuture");
   }
 
   private void hydrateFluidsFromJson(
@@ -283,6 +281,9 @@ public class PrefabSpawner {
       if (spawnGates) {
         // Spawn gates: blocked gates always; interior gates only once per edge
         for (CardinalDirection direction : CardinalDirection.all()) {
+          if (direction == null) {
+            continue;
+          }
           String gatePath = tile.getGate(direction);
           if (gatePath == null) {
             continue;
@@ -362,7 +363,9 @@ public class PrefabSpawner {
           null,
           entityRef -> {
             log.info("Spawned entity in gate: %s", entityRef);
-            unfreezeSpawnedEntity(entityRef);
+            if (entityRef != null) {
+              unfreezeSpawnedEntity(entityRef);
+            }
           });
 
       log.info("Successfully spawned gate at (%d, %d, %d) facing %s with %d degree rotation (dims: %s)",
@@ -416,6 +419,7 @@ public class PrefabSpawner {
    * @param tileSize  Size of the tile (19)
    * @return X offset from tile origin
    */
+  @SuppressWarnings("unused")
   private int calculateGateOffsetX(@Nonnull CardinalDirection direction, int tileSize) {
     // Gates are placed at the edges to connect 20-block spaced tiles
     // Gates fill the 1-block gap between tiles (after the 19-block tile)
@@ -434,6 +438,7 @@ public class PrefabSpawner {
    * @param tileSize  Size of the tile (19)
    * @return Z offset from tile origin
    */
+  @SuppressWarnings("unused")
   private int calculateGateOffsetZ(@Nonnull CardinalDirection direction, int tileSize) {
     // Gates are placed at the edges to connect 20-block spaced tiles
     // Gates fill the 1-block gap between tiles (after the 19-block tile)

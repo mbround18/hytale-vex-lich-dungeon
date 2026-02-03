@@ -1,6 +1,6 @@
 package MBRound18.ImmortalEngine.api.portal;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ public final class PortalBlockResolver {
   }
 
   @Nullable
-  public BlockType resolve(@Nullable EngineLog log) {
+  public BlockType resolve(@Nullable LoggingHelper log) {
     if (candidates.isEmpty()) {
       if (log != null) {
         log.warn("[PORTAL] No portal block candidates provided.");

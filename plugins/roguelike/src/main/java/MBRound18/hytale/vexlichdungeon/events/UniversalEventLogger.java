@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.events;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.event.IBaseEvent;
 import java.lang.reflect.Method;
@@ -18,9 +18,9 @@ import javax.annotation.Nonnull;
  */
 public class UniversalEventLogger {
 
-    private final EngineLog log;
+    private final LoggingHelper log;
 
-    public UniversalEventLogger(@Nonnull EngineLog log) {
+    public UniversalEventLogger(@Nonnull LoggingHelper log) {
         this.log = log;
     }
 
@@ -88,7 +88,7 @@ public class UniversalEventLogger {
                 }
 
                 eventBus.register(
-                        (Class) eventClass,
+                        (Class<? super IBaseEvent<Void>>) java.util.Objects.requireNonNull(eventClass, "eventClass"),
                         (java.util.function.Consumer) (Object e) -> {
                             try {
                                 log.info("🔴 EVENT: %s", describeEvent(e));

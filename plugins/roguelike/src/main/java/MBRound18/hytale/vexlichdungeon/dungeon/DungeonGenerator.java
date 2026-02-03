@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.dungeon;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabInspector;
 import javax.annotation.Nonnull;
@@ -18,11 +18,11 @@ import java.util.zip.ZipEntry;
  */
 public class DungeonGenerator {
 
-  private final EngineLog log;
-  private final GenerationConfig config;
-  private final PrefabSelector selector;
-  private final PrefabDiscovery discovery;
-  private final Map<TilePosition, DungeonTile> tileMap;
+  private final @Nonnull LoggingHelper log;
+  private final @Nonnull GenerationConfig config;
+  private final @Nonnull PrefabSelector selector;
+  private final @Nonnull PrefabDiscovery discovery;
+  private final @Nonnull Map<TilePosition, DungeonTile> tileMap;
 
   // Spawn center coordinates (world coords) where base tile will be centered
   private int spawnCenterX;
@@ -37,12 +37,12 @@ public class DungeonGenerator {
    * @param log       Logger for generation events
    * @param discovery Prefab discovery system
    */
-  public DungeonGenerator(@Nonnull GenerationConfig config, @Nonnull EngineLog log,
+  public DungeonGenerator(@Nonnull GenerationConfig config, @Nonnull LoggingHelper log,
       @Nonnull PrefabDiscovery discovery) {
-    this.config = config;
-    this.log = log;
-    this.discovery = discovery;
-    this.selector = new PrefabSelector(config.getSeed(), discovery);
+    this.config = Objects.requireNonNull(config, "config");
+    this.log = Objects.requireNonNull(log, "log");
+    this.discovery = Objects.requireNonNull(discovery, "discovery");
+    this.selector = new PrefabSelector(this.config.getSeed(), this.discovery);
     this.tileMap = new HashMap<>();
     this.spawnCenterX = 0;
     this.spawnCenterY = 64;
@@ -165,9 +165,11 @@ public class DungeonGenerator {
     long startTime = System.currentTimeMillis();
 
     if (config.isAsyncGeneration()) {
-      return CompletableFuture.supplyAsync(() -> performGeneration(startTime));
+      return Objects.requireNonNull(CompletableFuture.supplyAsync(() -> performGeneration(startTime)),
+          "generationFuture");
     } else {
-      return CompletableFuture.completedFuture(performGeneration(startTime));
+      return Objects.requireNonNull(CompletableFuture.completedFuture(performGeneration(startTime)),
+          "generationFuture");
     }
   }
 
@@ -184,7 +186,9 @@ public class DungeonGenerator {
       // Phase 2: Generate tiles in each cardinal direction
       log.info("Phase 2: Generating tiles in cardinal directions");
       for (CardinalDirection direction : CardinalDirection.all()) {
-        generateDirectionalChain(direction);
+        if (direction != null) {
+          generateDirectionalChain(direction);
+        }
       }
 
       // Phase 3: Layout complete (no gates; tiles stitch edge-to-edge)
@@ -278,7 +282,7 @@ public class DungeonGenerator {
    */
   @Nonnull
   public Map<TilePosition, DungeonTile> getTileMap() {
-    return Collections.unmodifiableMap(tileMap);
+    return Objects.requireNonNull(Collections.unmodifiableMap(tileMap), "tileMap");
   }
 
   /**
@@ -300,7 +304,7 @@ public class DungeonGenerator {
    */
   @Nonnull
   public GenerationConfig getConfig() {
-    return config;
+    return Objects.requireNonNull(config, "config");
   }
 
   /**
@@ -348,7 +352,7 @@ public class DungeonGenerator {
     GenerationResult(boolean success, Map<TilePosition, DungeonTile> tiles,
         long durationMs, @Nullable Throwable error) {
       this.success = success;
-      this.tiles = Collections.unmodifiableMap(tiles);
+      this.tiles = Objects.requireNonNull(Collections.unmodifiableMap(tiles), "tiles");
       this.durationMs = durationMs;
       this.error = error;
     }
@@ -359,7 +363,7 @@ public class DungeonGenerator {
 
     @Nonnull
     public Map<TilePosition, DungeonTile> getTiles() {
-      return tiles;
+      return Objects.requireNonNull(tiles, "tiles");
     }
 
     public long getDurationMs() {

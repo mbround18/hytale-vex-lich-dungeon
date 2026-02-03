@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.loot;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,7 +12,7 @@ import java.util.Map;
 public final class LootCatalog {
   private final Map<String, List<String>> categoryItems = new HashMap<>();
 
-  public void load(Path itemsRoot, LootTableConfig config, EngineLog log) {
+  public void load(Path itemsRoot, LootTableConfig config, LoggingHelper log) {
     if (itemsRoot == null || config == null || config.getCategories() == null) {
       return;
     }
@@ -30,7 +30,7 @@ public final class LootCatalog {
     return categoryItems.getOrDefault(categoryId, List.of());
   }
 
-  private List<String> scanCategory(Path path, EngineLog log) {
+  private List<String> scanCategory(Path path, LoggingHelper log) {
     List<String> items = new ArrayList<>();
     if (path == null || !Files.exists(path)) {
       if (log != null) {

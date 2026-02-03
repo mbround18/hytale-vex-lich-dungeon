@@ -7,8 +7,8 @@ import MBRound18.hytale.vexlichdungeon.dungeon.DungeonGenerator;
 import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
 import MBRound18.hytale.vexlichdungeon.commands.VexChallengeCommand;
-import MBRound18.ImmortalEngine.api.logging.InternalLogger;
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.ui.VexHudSequenceSupport;
 import com.hypixel.hytale.component.Ref;
@@ -46,13 +46,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings({ "removal", "unused" })
 public class DungeonGenerationEventHandler {
 
-  private final EngineLog log;
+  private final LoggingHelper log;
   private final DungeonGenerator dungeonGenerator;
   private final PrefabSpawner prefabSpawner;
   private final DataStore dataStore;
   private final RoguelikeDungeonController roguelikeController;
   private final PortalEngineAdapter engineAdapter;
-  private final InternalLogger eventsLogger;
+  private final LoggingHelper eventsLogger;
   private final PlayerSpawnTracker spawnTracker;
   private final Set<String> currentlyGenerating = ConcurrentHashMap.newKeySet();
   private final Set<String> shuttingDownWorlds = ConcurrentHashMap.newKeySet();
@@ -69,13 +69,13 @@ public class DungeonGenerationEventHandler {
    * @param dataStore        Persistent storage for tracking generated worlds
    */
   public DungeonGenerationEventHandler(
-      @Nonnull EngineLog log,
+      @Nonnull LoggingHelper log,
       @Nonnull DungeonGenerator dungeonGenerator,
       @Nonnull PrefabSpawner prefabSpawner,
       @Nonnull DataStore dataStore,
       @Nonnull RoguelikeDungeonController roguelikeController,
       @Nonnull PortalEngineAdapter engineAdapter,
-      @Nonnull InternalLogger eventsLogger) {
+      @Nonnull LoggingHelper eventsLogger) {
     this.log = log;
     this.dungeonGenerator = dungeonGenerator;
     this.prefabSpawner = prefabSpawner;
@@ -226,7 +226,8 @@ public class DungeonGenerationEventHandler {
 
         if (!playerRefs.isEmpty()) {
           PlayerRef playerRef = playerRefs.iterator().next();
-          com.hypixel.hytale.server.core.entity.entities.Player player = resolvePlayer(playerRef);
+          com.hypixel.hytale.server.core.entity.entities.Player player = resolvePlayer(
+              java.util.Objects.requireNonNull(playerRef, "playerRef"));
           if (player == null) {
             log.info("[SPAWN] Unable to resolve player entity for spawn capture.");
             return;
@@ -328,7 +329,8 @@ public class DungeonGenerationEventHandler {
 
   private void onEntityRemoved(EntityRemoveEvent event) {
     try {
-      roguelikeController.handleEntityRemoved(event.getEntity());
+      roguelikeController.handleEntityRemoved(
+          java.util.Objects.requireNonNull(event.getEntity(), "entity"));
     } catch (Exception e) {
       log.error("Exception in onEntityRemoved: %s", e.getMessage());
       if (eventsLogger != null) {
@@ -440,11 +442,12 @@ public class DungeonGenerationEventHandler {
     for (MBRound18.ImmortalEngine.api.RunSummary.PlayerSummary player : players) {
       try {
         UUID uuid = UUID.fromString(player.getPlayerId());
-        PlayerRef ref = Universe.get().getPlayer(uuid);
+        PlayerRef ref = Universe.get().getPlayer(
+            java.util.Objects.requireNonNull(uuid, "uuid"));
         if (ref == null) {
           continue;
         }
-        ref.sendMessage(Message.raw(header));
+        ref.sendMessage(Message.raw(java.util.Objects.requireNonNull(header, "header")));
         StringBuilder bodyBuilder = new StringBuilder();
         for (MBRound18.ImmortalEngine.api.RunSummary.PlayerSummary progress : players) {
           String name = progress.getDisplayName() != null ? progress.getDisplayName() : progress.getPlayerId();
@@ -454,11 +457,14 @@ public class DungeonGenerationEventHandler {
               progress.getScore(),
               progress.getKills());
           bodyBuilder.append(line).append("\n");
-          ref.sendMessage(Message.raw(line));
+          ref.sendMessage(Message.raw(java.util.Objects.requireNonNull(line, "line")));
         }
 
         String leaderboardBody = bodyBuilder.toString();
-        VexHudSequenceSupport.showSummarySequence(ref, statsLine, bodyBuilder.toString(), leaderboardBody);
+        VexHudSequenceSupport.showSummarySequence(ref,
+            java.util.Objects.requireNonNull(statsLine, "statsLine"),
+            java.util.Objects.requireNonNull(bodyBuilder.toString(), "body"),
+            java.util.Objects.requireNonNull(leaderboardBody, "leaderboard"));
       } catch (IllegalArgumentException ignored) {
         // Ignore malformed UUIDs
       }
@@ -498,21 +504,21 @@ public class DungeonGenerationEventHandler {
       String teamNames = names.isEmpty()
           ? EngineLang.t("common.unknown")
           : String.join(", ", names);
-      Universe.get().sendMessage(Message.raw(EngineLang.t(
+      Universe.get().sendMessage(Message.raw(java.util.Objects.requireNonNull(EngineLang.t(
           "event.vex.record.group",
           current.getTotalScore(),
           current.getRoundsCleared(),
-          teamNames)));
+          teamNames), "message")));
     }
 
     for (MBRound18.hytale.vexlichdungeon.data.DungeonInstanceData.PlayerProgress progress : current.getPlayerProgress()
         .values()) {
       if (progress.getScore() > bestPlayerScore) {
         String name = progress.getPlayerName() != null ? progress.getPlayerName() : progress.getPlayerUuid();
-        Universe.get().sendMessage(Message.raw(EngineLang.t(
+        Universe.get().sendMessage(Message.raw(java.util.Objects.requireNonNull(EngineLang.t(
             "event.vex.record.player",
             name,
-            progress.getScore())));
+            progress.getScore()), "message")));
         bestPlayerScore = progress.getScore();
       }
     }

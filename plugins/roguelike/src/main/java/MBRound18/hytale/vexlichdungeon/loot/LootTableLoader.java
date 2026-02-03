@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.loot;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.BufferedReader;
@@ -12,7 +12,7 @@ public final class LootTableLoader {
   private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
   @Nullable
-  public LootTableConfig load(Path path, EngineLog log) {
+  public LootTableConfig load(Path path, LoggingHelper log) {
     if (path == null || !Files.exists(path)) {
       if (log != null) {
         log.warn("Loot table not found at %s", path);

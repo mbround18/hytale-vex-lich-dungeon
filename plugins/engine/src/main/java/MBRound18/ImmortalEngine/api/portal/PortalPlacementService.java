@@ -1,6 +1,6 @@
 package MBRound18.ImmortalEngine.api.portal;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -37,17 +37,17 @@ public final class PortalPlacementService {
    * command/UI callers to choose appropriate messages.</p>
    */
   public PortalPlacementResult placePortal(@Nullable World world, @Nullable Vector3d position,
-      @Nullable Vector3f rotation, @Nullable EngineLog log) {
+      @Nullable Vector3f rotation, @Nullable LoggingHelper log) {
     return placePortal(world, position, rotation, log, null);
   }
 
   public PortalPlacementResult placePortal(@Nullable World world, @Nullable Vector3d position,
-      @Nullable Vector3f rotation, @Nullable EngineLog log, @Nullable PortalPlacementRules rules) {
+      @Nullable Vector3f rotation, @Nullable LoggingHelper log, @Nullable PortalPlacementRules rules) {
     return placePortal(world, position, rotation, log, rules, false);
   }
 
   public PortalPlacementResult placePortal(@Nullable World world, @Nullable Vector3d position,
-      @Nullable Vector3f rotation, @Nullable EngineLog log, @Nullable PortalPlacementRules rules,
+      @Nullable Vector3f rotation, @Nullable LoggingHelper log, @Nullable PortalPlacementRules rules,
       boolean scanAllDirections) {
     if (world == null || position == null || rotation == null) {
       return PortalPlacementResult.failure(PortalPlacementFailure.INVALID_INPUT, null,
@@ -196,7 +196,7 @@ public final class PortalPlacementService {
   }
 
   private PlacementAttempt placePortalBlock(World world, Vector3i pos, @Nullable BlockType block,
-      @Nullable EngineLog log) {
+      @Nullable LoggingHelper log) {
     BlockAccessor chunk = getChunkIfLoaded(world, pos.x, pos.z);
     if (chunk == null) {
       if (log != null) {

@@ -4,8 +4,8 @@ import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.data.SpawnPool;
 import MBRound18.hytale.vexlichdungeon.data.SpawnPoolEntry;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
-import MBRound18.ImmortalEngine.api.logging.InternalLogger;
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.ImmortalEngine.api.prefab.StitchIndex;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
@@ -13,7 +13,7 @@ import MBRound18.hytale.vexlichdungeon.prefab.PrefabInspector;
 import MBRound18.hytale.vexlichdungeon.loot.LootService;
 import MBRound18.ImmortalEngine.api.i18n.EngineLang;
 import MBRound18.ImmortalEngine.api.portal.PortalPlacementRegistry;
-import MBRound18.hytale.vexlichdungeon.ui.HudController;
+import MBRound18.hytale.vexlichdungeon.ui.VexScoreHud;
 import MBRound18.hytale.vexlichdungeon.ui.VexHudSequenceSupport;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
@@ -50,26 +50,26 @@ public class RoguelikeDungeonController {
   private static final int ROOM_Y_OFFSET = 14;
   private static final int RETURN_PORTAL_LOCAL_Y = 2;
 
-  private final EngineLog log;
+  private final LoggingHelper log;
   private final DungeonGenerator generator;
   private final PrefabSpawner prefabSpawner;
   private final PrefabSelector selector;
   private final DataStore dataStore;
   private final PortalEngineAdapter engineAdapter;
   private final EnemySpawnPlanner spawnPlanner;
-  private final InternalLogger eventsLogger;
+  private final LoggingHelper eventsLogger;
   private final StitchIndex stitchIndex;
   private final LootService lootService;
   private final Map<String, RoguelikeWorldState> worldStates = new HashMap<>();
 
   public RoguelikeDungeonController(
-      @Nonnull EngineLog log,
+      @Nonnull LoggingHelper log,
       @Nonnull DungeonGenerator generator,
       @Nonnull PrefabDiscovery discovery,
       @Nonnull PrefabSpawner prefabSpawner,
       @Nonnull DataStore dataStore,
       @Nonnull PortalEngineAdapter engineAdapter,
-      @Nonnull InternalLogger eventsLogger,
+      @Nonnull LoggingHelper eventsLogger,
       StitchIndex stitchIndex,
       LootService lootService) {
     this.log = log;
@@ -133,6 +133,11 @@ public class RoguelikeDungeonController {
     if (state == null) {
       return;
     }
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return;
+    }
+    Store<EntityStore> store = ref.getStore();
     UUID uuid = playerRef.getUuid();
     state.playerScores.putIfAbsent(uuid, 0);
     state.playerNames.put(uuid, resolveDisplayName(playerRef));
@@ -141,7 +146,7 @@ public class RoguelikeDungeonController {
       VexHudSequenceSupport.showWelcomeThenScore(playerRef, state.totalScore,
           state.playerScores.getOrDefault(uuid, 0), 0, partyList);
     } else {
-      HudController.openScoreHud(playerRef, state.totalScore,
+      VexScoreHud.open(store, ref, playerRef, state.totalScore,
           state.playerScores.getOrDefault(uuid, 0), 0, partyList);
     }
   }
@@ -571,10 +576,15 @@ public class RoguelikeDungeonController {
     String partyList = buildPartyList(world);
     for (PlayerRef playerRef : world.getPlayerRefs()) {
       UUID uuid = playerRef.getUuid();
+      Ref<EntityStore> ref = playerRef.getReference();
+      if (ref == null || !ref.isValid()) {
+        continue;
+      }
+      Store<EntityStore> store = ref.getStore();
       state.playerNames.put(uuid, resolveDisplayName(playerRef));
       int playerScore = state.playerScores.getOrDefault(uuid, 0);
       int playerDelta = (killerUuid != null && killerUuid.equals(uuid)) ? delta : 0;
-      HudController.openScoreHud(playerRef, instanceScore, playerScore, playerDelta, partyList);
+      VexScoreHud.open(store, ref, playerRef, instanceScore, playerScore, playerDelta, partyList);
     }
   }
 

@@ -1,21 +1,20 @@
 package MBRound18.hytale.vexlichdungeon.commands;
 
-import MBRound18.hytale.vexlichdungeon.data.DataStore;
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.command.system.AbstractCommand;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
 
-public final class VexCommand extends AbstractCommandCollection {
-  public VexCommand(@Nonnull DataStore dataStore, @Nonnull EngineLog log) {
-    super("vex", "Vex The Lich command base");
-    addAliases("vexlich", "vexdungeon");
+public class VexCommand extends AbstractCommand {
+  public VexCommand() {
+    super("vex", "Vex dungeon utilities");
+    addSubCommand(new VexUiCommand());
+  }
 
-    addSubCommand(new VexChallengeCommand(log, dataStore));
-    addSubCommand(new VexUiCommand(dataStore));
-    addSubCommand(new VexScoreCommand(dataStore));
-    addSubCommand(new VexStartCommand());
-    addSubCommand(new VexStopCommand());
-    addSubCommand(new VexRemoveInstancesCommand(dataStore));
-    addSubCommand(new VexPurgeCommand(dataStore));
+  @Override
+  protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+    context.sendMessage(Message.raw("Usage: /vex ui <list|test>"));
+    return CompletableFuture.completedFuture(null);
   }
 }

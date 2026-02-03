@@ -1,6 +1,6 @@
 package MBRound18.ImmortalEngine.api.prefab;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -20,7 +20,7 @@ public final class PrefabBoundsReader {
   }
 
   @Nullable
-  public static PrefabBounds read(ZipFile zipFile, ZipEntry entry, EngineLog log) {
+  public static PrefabBounds read(ZipFile zipFile, ZipEntry entry, LoggingHelper log) {
     if (zipFile == null || entry == null) {
       return null;
     }

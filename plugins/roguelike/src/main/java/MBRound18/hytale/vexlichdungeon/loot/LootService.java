@@ -1,6 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.loot;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,9 +10,9 @@ public final class LootService {
   private final LootTableConfig config;
   private final LootCatalog catalog;
   private final Random random;
-  private final EngineLog log;
+  private final LoggingHelper log;
 
-  public LootService(LootTableConfig config, LootCatalog catalog, long seed, EngineLog log) {
+  public LootService(LootTableConfig config, LootCatalog catalog, long seed, LoggingHelper log) {
     this.config = config;
     this.catalog = catalog;
     this.random = new Random(seed);

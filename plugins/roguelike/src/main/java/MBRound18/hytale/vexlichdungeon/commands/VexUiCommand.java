@@ -1,227 +1,183 @@
 package MBRound18.hytale.vexlichdungeon.commands;
 
-import MBRound18.ImmortalEngine.api.i18n.EngineLang;
-import MBRound18.ImmortalEngine.api.ui.HudRegistry;
-import MBRound18.ImmortalEngine.api.ui.UiRegistry;
-import MBRound18.ImmortalEngine.api.ui.UiTemplate;
-import MBRound18.ImmortalEngine.api.ui.UiTemplateLoader;
-import MBRound18.hytale.vexlichdungeon.data.DataStore;
-import MBRound18.hytale.vexlichdungeon.ui.HudController;
-import MBRound18.hytale.vexlichdungeon.ui.UIController;
+import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIPage;
+import MBRound18.hytale.shared.interfaces.ui.CustomHudController;
+import MBRound18.hytale.shared.interfaces.ui.DebugUiPage;
+import MBRound18.hytale.shared.utilities.UiThread;
+import MBRound18.hytale.vexlichdungeon.ui.VexUiCatalog;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
+import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Locale;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class VexUiCommand extends AbstractCommand {
-  private static final String PERMISSION_LIST = "vex.ui.list";
-  private static final String PERMISSION_SHOW = "vex.ui.show";
-  private static final String PERMISSION_RELOAD = "vex.ui.reload";
-  private static final Logger LOGGER = Logger.getLogger(VexUiCommand.class.getName());
-  private final DataStore dataStore;
-
-  public VexUiCommand(@Nonnull DataStore dataStore) {
-    super("ui", "Debug Vex UI pages");
-    this.dataStore = dataStore;
-    setAllowsExtraArguments(true);
+  public VexUiCommand() {
+    super("ui", "Vex UI utilities");
+    addSubCommand(new ListSubCommand());
+    addSubCommand(new TestSubCommand());
   }
 
-  @Nullable
   @Override
   protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-    String[] tokens = tokenize(context.getInputString());
-    int index = skipCommandTokens(tokens, "ui");
-
-    if (index >= tokens.length) {
-      sendUsage(context);
-      return CompletableFuture.completedFuture(null);
-    }
-
-    String action = tokens[index].toLowerCase(Locale.ROOT);
-    if ("list".equals(action)) {
-      if (!context.sender().hasPermission(PERMISSION_LIST)) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.list.permission")));
-        return CompletableFuture.completedFuture(null);
-      }
-      sendList(context);
-      return CompletableFuture.completedFuture(null);
-    }
-
-    if ("reload".equals(action)) {
-      if (!context.sender().hasPermission(PERMISSION_RELOAD)) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.reload.permission")));
-        return CompletableFuture.completedFuture(null);
-      }
-      if (reloadTemplates(context)) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.reload.success")));
-      } else {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.reload.failed")));
-      }
-      return CompletableFuture.completedFuture(null);
-    }
-
-    if ("show".equals(action)) {
-      if (!context.sender().hasPermission(PERMISSION_SHOW)) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.permission")));
-        return CompletableFuture.completedFuture(null);
-      }
-      if (!context.isPlayer()) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.onlyPlayers")));
-        return CompletableFuture.completedFuture(null);
-      }
-      if (index + 1 >= tokens.length) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.usage")));
-        return CompletableFuture.completedFuture(null);
-      }
-
-      String uiId = tokens[index + 1].toLowerCase(Locale.ROOT);
-      UiTemplate template = UIController.getTemplate(uiId);
-      UiTemplate hudTemplate = null;
-      if (template == null) {
-        hudTemplate = HudController.getTemplate(uiId);
-      }
-      if (template == null && hudTemplate == null) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.unknown", uiId)));
-        sendList(context);
-        return CompletableFuture.completedFuture(null);
-      }
-
-      Map<String, String> vars = parseVars(tokens, index + 2);
-      PlayerRef playerRef = com.hypixel.hytale.server.core.universe.Universe.get()
-          .getPlayer(context.sender().getUuid());
-      boolean opened = template != null
-          ? UIController.openTemplate(playerRef, template, vars)
-          : HudController.openTemplate(playerRef, hudTemplate, vars);
-      if (!opened) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.failed")));
-      }
-      return CompletableFuture.completedFuture(null);
-    }
-
-    if ("demo".equals(action)) {
-      if (!context.sender().hasPermission(PERMISSION_SHOW)) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.permission")));
-        return CompletableFuture.completedFuture(null);
-      }
-      if (!context.isPlayer()) {
-        context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.show.onlyPlayers")));
-        return CompletableFuture.completedFuture(null);
-      }
-      int seconds = 30;
-      int score = 0;
-      PlayerRef playerRef = Universe.get().getPlayer(context.sender().getUuid());
-      LOGGER.info(String.format("[VexUiDemo] start sender=%s ref=%s thread=%s",
-          context.sender().getUuid(),
-          describe(playerRef),
-          Thread.currentThread().getName()));
-      if (playerRef == null || !playerRef.isValid()) {
-        context.sendMessage(Message.raw("Failed to open demo HUD (invalid player)."));
-        return CompletableFuture.completedFuture(null);
-      }
-      boolean opened = MBRound18.hytale.vexlichdungeon.ui.VexDemoHudController.openDemo(playerRef, score, seconds);
-      LOGGER.info(String.format("[VexUiDemo] openDemo controller=%s ref=%s",
-          opened,
-          describe(playerRef)));
-      if (!opened) {
-        context.sendMessage(Message.raw("Failed to open demo HUD (controller)."));
-      }
-      return CompletableFuture.completedFuture(null);
-    }
-
-    sendUsage(context);
+    context.sendMessage(Message.raw("Usage: /vex ui <list|test>"));
     return CompletableFuture.completedFuture(null);
   }
 
-  private void sendUsage(@Nonnull CommandContext context) {
-    context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.usage.list")));
-    context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.usage.reload")));
-    context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.usage.show")));
-    context.sendMessage(Message.raw("/vex ui demo"));
+  private static final class ListSubCommand extends AbstractCommand {
+    private ListSubCommand() {
+      super("list", "List Vex UI and HUD templates");
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      VexUiCatalog.registerDefaults();
+      context.sendMessage(Message.raw("Vex UI pages: " + String.join(", ", VexUiCatalog.listUiIds())));
+      context.sendMessage(Message.raw("Vex HUDs: " + String.join(", ", VexUiCatalog.listHudIds())));
+      return CompletableFuture.completedFuture(null);
+    }
   }
 
-  private boolean reloadTemplates(@Nonnull CommandContext context) {
-    Path templatesPath = dataStore.getDataDirectory().resolve("ui-templates.json");
-    try {
-      if (Files.exists(templatesPath)) {
-        UiTemplateLoader.loadFromPath(templatesPath);
-        return true;
+  private static final class TestSubCommand extends AbstractCommand {
+    private TestSubCommand() {
+      super("test", "Open a Vex UI or HUD by name");
+      setAllowsExtraArguments(true);
+    }
+
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+      if (!context.isPlayer()) {
+        context.sendMessage(Message.raw("This command can only be used by players."));
+        return CompletableFuture.completedFuture(null);
       }
-      return UiTemplateLoader.loadFromResource(getClass().getClassLoader(), "ui-templates.json");
-    } catch (Exception e) {
-      context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.reload.error", e.getMessage())));
-      return false;
-    }
-  }
-
-  private void sendList(@Nonnull CommandContext context) {
-    context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.list.header")));
-    for (UiTemplate template : UiRegistry.getTemplates().values()) {
-      String vars = template.getVars().isEmpty()
-          ? EngineLang.t("command.vex.ui.list.noVars")
-          : String.join(", ", template.getVars());
-      context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.list.entry", template.getId(), vars)));
-    }
-    for (UiTemplate template : HudRegistry.getTemplates().values()) {
-      String vars = template.getVars().isEmpty()
-          ? EngineLang.t("command.vex.ui.list.noVars")
-          : String.join(", ", template.getVars());
-      context.sendMessage(Message.raw(EngineLang.t("command.vex.ui.list.entry", template.getId(), vars)));
-    }
-  }
-
-  private static String[] tokenize(String input) {
-    String trimmed = input == null ? "" : input.trim();
-    if (trimmed.isEmpty()) {
-      return new String[0];
-    }
-    return trimmed.split("\\s+");
-  }
-
-  private static int skipCommandTokens(String[] tokens, String commandName) {
-    int index = 0;
-    if (index < tokens.length && "vex".equalsIgnoreCase(tokens[index])) {
-      index++;
-    }
-    if (index < tokens.length && commandName.equalsIgnoreCase(tokens[index])) {
-      index++;
-    }
-    return index;
-  }
-
-  private static Map<String, String> parseVars(String[] tokens, int startIndex) {
-    Map<String, String> vars = new LinkedHashMap<>();
-    for (int i = startIndex; i < tokens.length; i++) {
-      String token = tokens[i];
-      if (!token.startsWith("--var-")) {
-        continue;
+      @Nonnull
+      String[] tokens = tokenize(context.getInputString());
+      int index = skipCommandTokens(tokens, "vex", "ui", "test");
+      if (index >= tokens.length) {
+        context.sendMessage(Message.raw("Usage: /vex ui test <name>"));
+        context.sendMessage(Message.raw("Use /vex ui list to see available templates."));
+        return CompletableFuture.completedFuture(null);
       }
-      String assignment = token.substring("--var-".length());
-      int eq = assignment.indexOf('=');
-      if (eq <= 0) {
-        continue;
+
+      String name = tokens[index];
+      VexUiCatalog.ResolvedTemplate resolved = VexUiCatalog.resolve(name);
+      if (resolved == null) {
+        context.sendMessage(Message.raw("Unknown Vex UI '" + name + "'. Use /vex ui list."));
+        return CompletableFuture.completedFuture(null);
       }
-      String key = assignment.substring(0, eq);
-      String value = assignment.substring(eq + 1);
-      vars.put(key, value);
-    }
-    return vars;
-  }
 
-  private static String describe(@Nullable PlayerRef ref) {
-    if (ref == null) {
-      return "null";
-    }
-    return "PlayerRef{uuid=" + ref.getUuid() + ",world=" + ref.getWorldUuid() + ",valid=" + ref.isValid() + "}";
-  }
+      PlayerRef playerRef = requirePlayer(context);
+      if (playerRef == null) {
+        return CompletableFuture.completedFuture(null);
+      }
 
+      Map<String, String> vars = VexUiCatalog.defaultVars(resolved.getPrimaryId());
+      boolean scheduled = UiThread.runOnPlayerWorld(playerRef, () -> {
+        if (resolved.isHud()) {
+          openHud(playerRef, resolved.getPath(), vars);
+        } else {
+          openUi(playerRef, resolved.getPath(), vars);
+        }
+      });
+
+      if (!scheduled) {
+        context.sendMessage(Message.raw("Unable to open Vex UI."));
+      }
+      return CompletableFuture.completedFuture(null);
+    }
+
+    private static void openUi(@Nonnull PlayerRef playerRef, @Nonnull String uiPath,
+        @Nonnull Map<String, String> vars) {
+      Ref<EntityStore> ref = playerRef.getReference();
+      if (ref == null || !ref.isValid()) {
+        return;
+      }
+      Store<EntityStore> store = ref.getStore();
+      Player player = store.getComponent(ref, Player.getComponentType());
+      if (player == null) {
+        return;
+      }
+      DebugUiPage page = new DebugUiPage(playerRef, uiPath, vars);
+      player.getPageManager().openCustomPage(ref, store, page);
+      page.applyInitialState();
+    }
+
+    private static void openHud(@Nonnull PlayerRef playerRef, @Nonnull String hudPath,
+        @Nonnull Map<String, String> vars) {
+      Ref<EntityStore> ref = playerRef.getReference();
+      if (ref == null || !ref.isValid()) {
+        return;
+      }
+      Store<EntityStore> store = ref.getStore();
+      Player player = store.getComponent(ref, Player.getComponentType());
+      if (player == null) {
+        return;
+      }
+      HudManager hudManager = Objects.requireNonNull(player.getHudManager(), "hudManager");
+      CustomHudController hud = new CustomHudController(hudPath, playerRef);
+      if (!hud.isActiveHud(playerRef)) {
+        hudManager.setCustomHud(playerRef, hud);
+      }
+      if (!vars.isEmpty()) {
+        for (Map.Entry<String, String> entry : vars.entrySet()) {
+          String key = entry.getKey();
+          String value = entry.getValue();
+          if (key == null || value == null) {
+            continue;
+          }
+          hud.set(playerRef, key, Message.raw(value));
+        }
+      }
+
+    }
+
+    @Nonnull
+    private static String[] tokenize(@Nonnull String input) {
+      String trimmed = input == null ? "" : input.trim();
+      if (trimmed.isEmpty()) {
+        return new String[0];
+      }
+      return trimmed.split("\\s+");
+    }
+
+    private static int skipCommandTokens(@Nonnull String[] tokens, @Nonnull String... commandPath) {
+      int index = 0;
+      for (String command : commandPath) {
+        if (index < tokens.length && command.equalsIgnoreCase(tokens[index])) {
+          index++;
+        }
+      }
+      return index;
+    }
+
+    @Nullable
+    private static PlayerRef requirePlayer(@Nonnull CommandContext context) {
+      if (!context.isPlayer()) {
+        context.sendMessage(Message.raw("This command can only be used by players."));
+        return null;
+      }
+      java.util.UUID uuid = context.sender().getUuid();
+      if (uuid == null) {
+        context.sendMessage(Message.raw("Unable to resolve player."));
+        return null;
+      }
+      PlayerRef ref = Universe.get().getPlayer(uuid);
+      if (ref == null || !ref.isValid()) {
+        context.sendMessage(Message.raw("Unable to resolve player."));
+        return null;
+      }
+      return ref;
+    }
+  }
 }

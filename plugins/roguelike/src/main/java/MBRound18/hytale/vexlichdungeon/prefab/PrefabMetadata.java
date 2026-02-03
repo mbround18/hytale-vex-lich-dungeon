@@ -2,7 +2,7 @@ package MBRound18.hytale.vexlichdungeon.prefab;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.FileReader;
@@ -40,7 +40,7 @@ public class PrefabMetadata {
    * @return PrefabMetadata object or null if reading fails
    */
   @Nullable
-  public static PrefabMetadata fromPrefabFile(@Nonnull Path prefabPath, @Nonnull EngineLog log) {
+  public static PrefabMetadata fromPrefabFile(@Nonnull Path prefabPath, @Nonnull LoggingHelper log) {
     try (FileReader reader = new FileReader(prefabPath.toFile())) {
       JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
 

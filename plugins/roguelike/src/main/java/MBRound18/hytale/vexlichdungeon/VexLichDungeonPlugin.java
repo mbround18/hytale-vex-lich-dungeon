@@ -8,30 +8,17 @@ import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
 import MBRound18.hytale.vexlichdungeon.events.DungeonGenerationEventHandler;
 import MBRound18.hytale.vexlichdungeon.events.UniversalEventLogger;
-import MBRound18.ImmortalEngine.api.logging.InternalLogger;
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
-import MBRound18.ImmortalEngine.api.logging.LoggingController;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.loot.LootCatalog;
 import MBRound18.hytale.vexlichdungeon.loot.LootService;
 import MBRound18.hytale.vexlichdungeon.loot.LootTableConfig;
 import MBRound18.hytale.vexlichdungeon.loot.LootTableLoader;
-import MBRound18.ImmortalEngine.api.ui.HudRegistry;
-import MBRound18.ImmortalEngine.api.ui.UiRegistry;
-import MBRound18.ImmortalEngine.api.ui.UiTemplate;
-import MBRound18.ImmortalEngine.api.ui.UiTemplateLoader;
 import MBRound18.ImmortalEngine.api.prefab.StitchIndex;
-import MBRound18.ImmortalEngine.api.prefab.StitchIndexBuilder;
-import MBRound18.ImmortalEngine.api.prefab.StitchIndexStore;
-import MBRound18.ImmortalEngine.api.ui.EngineHud;
-import MBRound18.hytale.vexlichdungeon.ui.HudController;
-import MBRound18.hytale.vexlichdungeon.ui.UIController;
-import MBRound18.hytale.vexlichdungeon.ui.UiAssetResolver;
+
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.server.core.HytaleServer;
-import com.hypixel.hytale.server.core.asset.AssetModule;
-import com.hypixel.hytale.assetstore.AssetPack;
 import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -40,10 +27,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
@@ -51,19 +35,19 @@ import javax.annotation.Nonnull;
  * commands and event handlers for dungeon generation.
  */
 public class VexLichDungeonPlugin extends JavaPlugin {
-  private final EngineLog log;
+  private final LoggingHelper log;
   private DataStore dataStore;
   private DungeonGenerationEventHandler dungeonEventHandler;
   @SuppressWarnings("unused")
   private UniversalEventLogger eventLogger;
   private TickingThread watchdog;
-  private InternalLogger internalLogger;
-  private InternalLogger eventsLogger;
+  private LoggingHelper internalLogger;
+  private LoggingHelper eventsLogger;
   private PrefabSpawner prefabSpawner;
 
   public VexLichDungeonPlugin(@Nonnull JavaPluginInit init) {
     super(init);
-    this.log = LoggingController.forPlugin(this, "VexLichDungeon");
+    this.log = Objects.requireNonNull(new LoggingHelper("VexLichDungeon"), "log");
   }
 
   @Override
@@ -80,75 +64,16 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     }
 
     Path dataDirectory = modsDirectory.resolve("VexLichDungeon");
-    dataStore = new DataStore(log, dataDirectory);
+    dataStore = new DataStore(Objects.requireNonNull(log, "log"),
+        Objects.requireNonNull(dataDirectory, "dataDirectory"));
     dataStore.initialize();
-    log.lifecycle().atInfo().log("Initialized data store at: %s", dataDirectory);
-
-    Path templatesPath = dataDirectory.resolve("ui-templates.json");
-    Path lootTablePath = dataDirectory.resolve("loottable.json");
-    Path assetsZipPath = resolveAssetsZipPath(pluginJarPath, modsDirectory);
-    UiAssetResolver.setAssetsZipPath(assetsZipPath);
-    MBRound18.ImmortalEngine.api.i18n.EngineLang.setAssetsZipPath(assetsZipPath);
-    EngineHud.setCustomUiAdapter(new EngineHud.CustomUiAdapter() {
-      @Override
-      public void show(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef,
-          @Nonnull String uiPath, @Nonnull java.util.Map<String, String> vars) {
-        HudController.openHud(playerRef, uiPath, vars);
-      }
-
-      @Override
-      public void clear(@Nonnull com.hypixel.hytale.server.core.universe.PlayerRef playerRef) {
-        HudController.clearHud(playerRef);
-      }
-    });
-    // Temporary: force Custom UI HUDs for testing (known to crash on current client
-    // build).
-    // EngineHud.setMode(EngineHud.Mode.CUSTOM_UI);
-    Path stitchIndexPath = dataDirectory.resolve("index.db");
-    StitchIndex stitchIndex = StitchIndexBuilder.build(assetsZipPath, log);
-    if (stitchIndex != null) {
-      try {
-        long size = assetsZipPath.toFile().length();
-        long modified = assetsZipPath.toFile().lastModified();
-        StitchIndexStore.save(stitchIndexPath, size, modified, stitchIndex, log);
-      } catch (Exception e) {
-        log.warn("Failed to save stitch index: %s", e.getMessage());
-      }
-    }
-    boolean loadedTemplates = false;
-    try {
-      syncTemplatesFile(templatesPath, "ui-templates.json");
-      if (Files.exists(templatesPath)) {
-        UiTemplateLoader.loadFromPath(templatesPath);
-        loadedTemplates = true;
-      } else {
-        loadedTemplates = UiTemplateLoader.loadFromResource(getClass().getClassLoader(),
-            "ui-templates.json");
-      }
-    } catch (Exception e) {
-      log.error("Failed to load ui-templates.json: %s", e.getMessage());
-    }
-    if (!loadedTemplates) {
-      UIController.registerDefaults();
-      HudController.registerDefaults();
-      log.lifecycle().atInfo().log("Registered Vex UI and HUD templates (defaults)");
-    } else {
-      log.lifecycle().atInfo().log("Registered Vex UI and HUD templates (data-driven)");
-    }
-
-    preflightUiAssets(pluginJarPath, modsDirectory);
-    syncDataFile(lootTablePath, "loottable.json");
-
-    // Register commands
-    CommandManager.get().register(new VexCommand(dataStore, log));
-    log.lifecycle().atInfo().log("Registered /vex command");
-
-    internalLogger = new InternalLogger(dataDirectory);
-    internalLogger.start("Internal logger started");
-    internalLogger.info("Plugin setup complete");
-
-    eventsLogger = new InternalLogger(dataDirectory, "events");
-    eventsLogger.start("Event logger started");
+    log.fine("[HUD-BOOT] EngineHud adapter setup complete");
+    MBRound18.hytale.vexlichdungeon.ui.VexUiCatalog.registerDefaults();
+    CommandManager.get().register(new VexCommand());
+    StitchIndex stitchIndex = null;
+    log.info("Registered Vex UI and HUD templates (code-driven)");
+    internalLogger = new LoggingHelper("VexLichDungeon-Internal");
+    eventsLogger = new LoggingHelper("VexLichDungeon-Events");
 
     // Initialize prefab discovery - loads from ZIP asset bundle
     // The ZIP should be in the same directory as the JAR with the same base name
@@ -159,26 +84,45 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     // Initialize dungeon generation components using config
     GenerationConfig config = new GenerationConfig();
     DungeonGenerator dungeonGenerator = new DungeonGenerator(config, log, prefabDiscovery);
-    prefabSpawner = new PrefabSpawner(log, prefabDiscovery.getZipFile(), config);
-    LootService lootService = buildLootService(lootTablePath, log, generatorSeed(config), dataDirectory);
+    prefabSpawner = new PrefabSpawner(
+        Objects.requireNonNull(log, "log"),
+        prefabDiscovery.getZipFile(),
+        config);
+    Path lootTablePath = dataDirectory.resolve("loot_tables.json");
+    LootService lootService = buildLootService(
+        Objects.requireNonNull(lootTablePath, "lootTablePath"),
+        Objects.requireNonNull(log, "log"),
+        generatorSeed(config),
+        Objects.requireNonNull(dataDirectory, "dataDirectory"));
     RoguelikeDungeonController roguelikeController = new RoguelikeDungeonController(
-        log, dungeonGenerator, prefabDiscovery, prefabSpawner, dataStore, engineAdapter, eventsLogger, stitchIndex,
+        Objects.requireNonNull(log, "log"),
+        dungeonGenerator,
+        prefabDiscovery,
+        Objects.requireNonNull(prefabSpawner, "prefabSpawner"),
+        Objects.requireNonNull(dataStore, "dataStore"),
+        engineAdapter,
+        Objects.requireNonNull(eventsLogger, "eventsLogger"),
+        stitchIndex,
         lootService);
 
     // Create and register event handler with data store for concurrency control
     dungeonEventHandler = new DungeonGenerationEventHandler(
-        log, dungeonGenerator, prefabSpawner, dataStore, roguelikeController, engineAdapter, eventsLogger);
-    eventLogger = new UniversalEventLogger(log);
+        Objects.requireNonNull(log, "log"),
+        dungeonGenerator,
+        Objects.requireNonNull(prefabSpawner, "prefabSpawner"),
+        Objects.requireNonNull(dataStore, "dataStore"),
+        roguelikeController,
+        engineAdapter,
+        Objects.requireNonNull(eventsLogger, "eventsLogger"));
+    eventLogger = new UniversalEventLogger(Objects.requireNonNull(log, "log"));
     watchdog = createWatchdog();
-    log.lifecycle().atInfo().log("Initialized dungeon generation components");
+    log.info("Initialized dungeon generation components");
   }
 
   @Override
   protected void start() {
-    log.lifecycle().atInfo().log("Plugin starting up");
+    log.info("Plugin starting up");
     log.info("\u001B[35mVex the Lich awakens... The dungeon trials await brave adventurers!\u001B[0m");
-
-    logAssetPacks();
 
     // Register event handler with the global event bus
     try {
@@ -208,42 +152,6 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     }
   }
 
-  private void logAssetPacks() {
-    try {
-      AssetModule assetModule = AssetModule.get();
-      if (assetModule == null) {
-        log.warn("AssetModule not available yet; cannot list asset packs.");
-        return;
-      }
-      List<AssetPack> packs = assetModule.getAssetPacks();
-      log.info("Loaded asset packs: %d", packs.size());
-      for (AssetPack pack : packs) {
-        log.info("- Pack: %s (root=%s)", pack.getName(), pack.getRoot());
-      }
-    } catch (Exception e) {
-      log.warn("Failed to log asset packs: %s", e.getMessage());
-    }
-  }
-
-  private void syncTemplatesFile(@Nonnull Path templatesPath, @Nonnull String resourcePath) {
-    try (InputStream stream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
-      if (stream == null) {
-        return;
-      }
-      byte[] resourceBytes = stream.readAllBytes();
-      if (Files.exists(templatesPath)) {
-        byte[] existingBytes = Files.readAllBytes(templatesPath);
-        if (Arrays.equals(existingBytes, resourceBytes)) {
-          return;
-        }
-      }
-      Files.write(templatesPath, resourceBytes);
-      log.lifecycle().atInfo().log("Updated %s from bundled defaults", templatesPath.getFileName());
-    } catch (Exception e) {
-      log.warn("Failed to sync %s: %s", templatesPath.getFileName(), e.getMessage());
-    }
-  }
-
   private void syncDataFile(@Nonnull Path targetPath, @Nonnull String resourcePath) {
     try (InputStream stream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
       if (stream == null) {
@@ -263,7 +171,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     }
   }
 
-  private LootService buildLootService(@Nonnull Path lootTablePath, @Nonnull EngineLog log,
+  private LootService buildLootService(@Nonnull Path lootTablePath, @Nonnull LoggingHelper log,
       long seed, @Nonnull Path dataDirectory) {
     LootTableLoader loader = new LootTableLoader();
     LootTableConfig table = loader.load(lootTablePath, log);
@@ -282,7 +190,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
 
   @Override
   protected void shutdown() {
-    log.lifecycle().atInfo().log("Plugin shutting down");
+    log.info("Plugin shutting down");
     if (watchdog != null) {
       watchdog.stop();
     }
@@ -290,14 +198,6 @@ public class VexLichDungeonPlugin extends JavaPlugin {
       dataStore.saveInstances();
       dataStore.saveConfig();
       log.info("Saved all data before shutdown");
-    }
-    if (internalLogger != null) {
-      internalLogger.info("Plugin shutting down");
-      internalLogger.close();
-    }
-    if (eventsLogger != null) {
-      eventsLogger.info("Plugin shutting down");
-      eventsLogger.close();
     }
     if (prefabSpawner != null) {
       prefabSpawner.clearCaches();
@@ -321,66 +221,4 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     };
   }
 
-  private void preflightUiAssets(@Nonnull Path pluginJarPath, @Nonnull Path modsDirectory) {
-    Path zipPath = resolveAssetsZipPath(pluginJarPath, modsDirectory);
-
-    List<UiTemplate> templates = new ArrayList<>();
-    templates.addAll(UiRegistry.getTemplates().values());
-    templates.addAll(HudRegistry.getTemplates().values());
-
-    if (templates.isEmpty()) {
-      log.warn("UI preflight skipped: no templates registered.");
-      return;
-    }
-
-    if (!Files.exists(zipPath)) {
-      log.error("UI preflight failed: assets zip not found at %s", zipPath);
-      return;
-    }
-
-    List<String> missing = new ArrayList<>();
-    try (ZipFile zipFile = new ZipFile(zipPath.toFile())) {
-      for (UiTemplate template : templates) {
-        String entryPath = "Common/UI/" + template.getPath();
-        ZipEntry entry = zipFile.getEntry(entryPath);
-        if (entry == null) {
-          missing.add(entryPath);
-        }
-      }
-    } catch (Exception e) {
-      log.error("UI preflight failed reading %s: %s", zipPath, e.getMessage());
-      return;
-    }
-
-    if (missing.isEmpty()) {
-      log.lifecycle().atInfo().log("UI preflight OK: all UI documents found in %s", zipPath.getFileName());
-      return;
-    }
-
-    log.error("UI preflight failed: missing %d UI document(s) in %s", missing.size(), zipPath.getFileName());
-    for (String path : missing) {
-      log.error("- Missing UI: %s", path);
-    }
-  }
-
-  private Path resolveAssetsZipPath(@Nonnull Path pluginJarPath, @Nonnull Path modsDirectory) {
-    String jarName = pluginJarPath.getFileName().toString();
-    String baseFull = jarName.endsWith(".jar")
-        ? jarName.substring(0, jarName.length() - 4)
-        : jarName;
-    String versionedZip = baseFull + ".zip";
-    Path zipPath = modsDirectory.resolve(versionedZip);
-    if (Files.exists(zipPath)) {
-      return zipPath;
-    }
-
-    String legacyBase = baseFull.split("-")[0];
-    String legacyZip = legacyBase + ".zip";
-    Path legacyPath = modsDirectory.resolve(legacyZip);
-    if (Files.exists(legacyPath)) {
-      return legacyPath;
-    }
-
-    return zipPath;
-  }
 }

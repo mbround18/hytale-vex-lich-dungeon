@@ -1,6 +1,6 @@
 package MBRound18.ImmortalEngine.api.prefab;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public final class StitchIndexBuilder {
   }
 
   @Nullable
-  public static StitchIndex loadOrBuild(Path assetsZipPath, Path indexPath, EngineLog log) {
+  public static StitchIndex loadOrBuild(Path assetsZipPath, Path indexPath, LoggingHelper log) {
     if (assetsZipPath == null || !Files.exists(assetsZipPath)) {
       if (log != null) {
         log.warn("Assets ZIP missing; cannot build stitch index.");
@@ -45,7 +45,7 @@ public final class StitchIndexBuilder {
   }
 
   @Nullable
-  public static StitchIndex build(Path assetsZipPath, EngineLog log) {
+  public static StitchIndex build(Path assetsZipPath, LoggingHelper log) {
     if (assetsZipPath == null || !Files.exists(assetsZipPath)) {
       return null;
     }
@@ -86,7 +86,7 @@ public final class StitchIndexBuilder {
     }
   }
 
-  private static List<PrefabEntry> collectPrefabs(ZipFile zipFile, String root, EngineLog log) {
+  private static List<PrefabEntry> collectPrefabs(ZipFile zipFile, String root, LoggingHelper log) {
     List<PrefabEntry> results = new ArrayList<>();
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
     while (entries.hasMoreElements()) {

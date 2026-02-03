@@ -1,12 +1,13 @@
 package MBRound18.hytale.vexlichdungeon.prefab;
 
 import MBRound18.hytale.vexlichdungeon.dungeon.CardinalDirection;
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import javax.annotation.Nonnull;
+import java.util.Objects;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -22,8 +23,8 @@ import java.util.zip.ZipFile;
  */
 public class PrefabInspector {
 
-  private final EngineLog log;
-  private final ZipFile zipFile;
+  private final @Nonnull LoggingHelper log;
+  private final @Nonnull ZipFile zipFile;
   private final int tileSize;
   private final int gateGap;
   private final Map<String, PrefabDimensions> dimensionsCache;
@@ -33,9 +34,9 @@ public class PrefabInspector {
    * 
    * @param log Logger for inspection events
    */
-  public PrefabInspector(@Nonnull EngineLog log, @Nonnull ZipFile zipFile, int tileSize, int gateGap) {
-    this.log = log;
-    this.zipFile = zipFile;
+  public PrefabInspector(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, int tileSize, int gateGap) {
+    this.log = Objects.requireNonNull(log, "log");
+    this.zipFile = Objects.requireNonNull(zipFile, "zipFile");
     this.tileSize = Math.max(1, tileSize);
     this.gateGap = Math.max(0, gateGap);
     this.dimensionsCache = Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
@@ -255,7 +256,7 @@ public class PrefabInspector {
   /**
    * Creates default dimensions (9 wide x 6 deep - a common door size).
    */
-  private PrefabDimensions createDefaultDimensions() {
+  private @Nonnull PrefabDimensions createDefaultDimensions() {
     PrefabDimensions dims = new PrefabDimensions();
     dims.minX = 0;
     dims.maxX = 8;

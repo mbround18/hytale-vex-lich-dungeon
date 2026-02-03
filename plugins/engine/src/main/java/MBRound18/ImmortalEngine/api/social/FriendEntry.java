@@ -1,6 +1,7 @@
 package MBRound18.ImmortalEngine.api.social;
 
 import java.util.UUID;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
@@ -12,19 +13,19 @@ public final class FriendEntry {
   private final long sinceEpochMs;
 
   public FriendEntry(@Nonnull UUID uuid, @Nonnull String name, long sinceEpochMs) {
-    this.uuid = uuid;
-    this.name = name;
+    this.uuid = Objects.requireNonNull(uuid, "uuid");
+    this.name = Objects.requireNonNull(name, "name");
     this.sinceEpochMs = sinceEpochMs;
   }
 
   @Nonnull
   public UUID getUuid() {
-    return uuid;
+    return Objects.requireNonNull(uuid, "uuid");
   }
 
   @Nonnull
   public String getName() {
-    return name;
+    return Objects.requireNonNull(name, "name");
   }
 
   public long getSinceEpochMs() {

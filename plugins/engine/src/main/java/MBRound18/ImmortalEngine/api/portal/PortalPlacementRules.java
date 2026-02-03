@@ -3,6 +3,7 @@ package MBRound18.ImmortalEngine.api.portal;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 public final class PortalPlacementRules {
@@ -21,12 +22,12 @@ public final class PortalPlacementRules {
 
   @Nonnull
   public Set<String> getRequiredGroundIds() {
-    return requiredGroundIds;
+    return Objects.requireNonNull(requiredGroundIds, "requiredGroundIds");
   }
 
   @Nonnull
   public Set<String> getClearableIds() {
-    return clearableIds;
+    return Objects.requireNonNull(clearableIds, "clearableIds");
   }
 
   public int getClearRadius() {

@@ -5,6 +5,7 @@ import MBRound18.hytale.vexlichdungeon.data.SpawnPoolEntry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
@@ -37,7 +38,7 @@ public class EnemySpawnPlanner {
       if (entry == null) {
         break;
       }
-      result.add(new SpawnPoolEntry(entry.getEnemy(), entry.getPoints()));
+      result.add(new SpawnPoolEntry(Objects.requireNonNull(entry.getEnemy(), "enemy"), entry.getPoints()));
       remaining -= Math.max(1, entry.getPoints());
       safety++;
     }

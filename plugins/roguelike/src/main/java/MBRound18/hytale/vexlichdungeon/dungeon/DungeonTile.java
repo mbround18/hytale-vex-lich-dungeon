@@ -14,9 +14,12 @@ public class DungeonTile {
 
   private final int gridX;
   private final int gridZ;
+  @Nonnull
   private final String prefabPath;
   private final int rotation; // 0, 90, 180, 270 degrees
+  @Nonnull
   private final Map<CardinalDirection, String> gates;
+  @Nonnull
   private final TileType type;
   private boolean eventRoom;
 
@@ -64,7 +67,7 @@ public class DungeonTile {
    */
   @Nonnull
   public String getPrefabPath() {
-    return prefabPath;
+    return Objects.requireNonNull(prefabPath, "prefabPath");
   }
 
   /**
@@ -83,7 +86,7 @@ public class DungeonTile {
    */
   @Nonnull
   public TileType getType() {
-    return type;
+    return Objects.requireNonNull(type, "type");
   }
 
   public boolean isEventRoom() {
@@ -132,7 +135,7 @@ public class DungeonTile {
    */
   @Nonnull
   public Map<CardinalDirection, String> getGates() {
-    return Map.copyOf(gates);
+    return Objects.requireNonNull(Map.copyOf(gates), "gates");
   }
 
   /**

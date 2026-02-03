@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
  * Example:
  * 
  * <pre>
- * // Asset path: plugins/roguelike/assets/Server/Prefabs/Base/Vex_Courtyard_Base.prefab.json
+ * // Asset path: plugins/roguelike/src/main/resources/Server/Prefabs/Base/Vex_Courtyard_Base.prefab.json
  * // Mod path: Mods/VexLichDungeon/Base/Vex_Courtyard_Base.prefab.json
  * String modPath = PrefabPathHelper.toModPath("Base/Vex_Courtyard_Base.prefab.json");
  * </pre>
@@ -30,7 +30,7 @@ public final class PrefabPathHelper {
   /**
    * Converts an asset-relative prefab path to a mod-relative path.
    * 
-   * @param assetRelativePath Path relative to plugins/roguelike/assets/Server/Prefabs/
+   * @param assetRelativePath Path relative to Server/Prefabs/
    *                          (e.g., "Base/Vex_Courtyard_Base.prefab.json")
    * @return Full mod-relative path (e.g.,
    *         "Mods/VexLichDungeon/Base/Vex_Courtyard_Base.prefab.json")

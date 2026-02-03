@@ -2,7 +2,7 @@ package MBRound18.hytale.vexlichdungeon.ui;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIPage;
-import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexdemohudUi;
+import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexportalcountdownhudMinUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
 import com.hypixel.hytale.component.Ref;
@@ -16,23 +16,22 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
-public final class VexDemoHud extends AbstractCustomUIHud<VexHudVexdemohudUi> {
-  private VexDemoHud(@Nonnull PlayerRef playerRef) {
-    super(VexHudVexdemohudUi.class, playerRef);
+public final class VexPortalCountdownHudMin extends AbstractCustomUIHud<VexHudVexportalcountdownhudMinUi> {
+  private VexPortalCountdownHudMin(@Nonnull PlayerRef playerRef) {
+    super(VexHudVexportalcountdownhudMinUi.class, playerRef);
   }
 
-  public static void open(@Nonnull PlayerRef playerRef, @Nonnull String scoreText,
-      @Nonnull String timerText, @Nonnull String debugStat) {
-    VexDemoHud hud = new VexDemoHud(playerRef);
+  public static void open(@Nonnull PlayerRef playerRef, @Nonnull String countdown,
+      @Nonnull String locationText) {
+    VexPortalCountdownHudMin hud = new VexPortalCountdownHudMin(playerRef);
     Map<String, String> vars = new HashMap<>();
-    VexHudVexdemohudUi ui = hud.getUiModel();
-    vars.put(ui.demoScore, scoreText);
-    vars.put(ui.demoTimer, timerText);
-    vars.put(ui.vexDebugStat, debugStat);
+    VexHudVexportalcountdownhudMinUi ui = hud.getUiModel();
+    vars.put(ui.vexPortalCountdown, countdown);
+    vars.put(ui.vexPortalLocation, locationText);
     openHud(playerRef, hud, vars);
   }
 
-  private static void openHud(@Nonnull PlayerRef playerRef, @Nonnull VexDemoHud hud,
+  private static void openHud(@Nonnull PlayerRef playerRef, @Nonnull VexPortalCountdownHudMin hud,
       @Nonnull Map<String, String> vars) {
     UiThread.runOnPlayerWorld(playerRef, () -> {
       Ref<EntityStore> ref = playerRef.getReference();

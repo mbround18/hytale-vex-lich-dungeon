@@ -1,6 +1,6 @@
 package MBRound18.ImmortalEngine.api.prefab;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -24,7 +24,7 @@ public final class StitchIndexStore {
   }
 
   @Nullable
-  public static StitchIndex load(Path indexPath, long assetsSize, long assetsModified, EngineLog log) {
+  public static StitchIndex load(Path indexPath, long assetsSize, long assetsModified, LoggingHelper log) {
     if (indexPath == null || !Files.exists(indexPath)) {
       return null;
     }
@@ -67,7 +67,7 @@ public final class StitchIndexStore {
   }
 
   public static void save(Path indexPath, long assetsSize, long assetsModified,
-      StitchIndex index, EngineLog log) {
+      StitchIndex index, LoggingHelper log) {
     if (indexPath == null || index == null) {
       return;
     }

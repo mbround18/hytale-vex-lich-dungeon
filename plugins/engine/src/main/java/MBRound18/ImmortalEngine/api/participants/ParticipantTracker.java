@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
@@ -35,7 +36,7 @@ public final class ParticipantTracker {
 
   @Nonnull
   public static ParticipantTracker get() {
-    return INSTANCE;
+    return Objects.requireNonNull(INSTANCE, "INSTANCE");
   }
 
   public void updateFromWorld(@Nullable World world) {
@@ -58,7 +59,9 @@ public final class ParticipantTracker {
       UUID uuid = playerRef.getUuid();
       String name = resolveDisplayName(playerRef);
       Ref<EntityStore> ref = playerRef.getReference();
-      EntityStatMap statMap = ref != null ? store.getComponent(ref, componentType) : null;
+      EntityStatMap statMap = ref != null
+          ? store.getComponent(ref, Objects.requireNonNull(componentType, "componentType"))
+          : null;
       StatSnapshot health = readStat(statMap, "Health");
       StatSnapshot stamina = readStat(statMap, "Stamina");
       participants.put(uuid, new ParticipantSnapshot(uuid, name, health.current, health.max,
@@ -73,7 +76,7 @@ public final class ParticipantTracker {
   public Collection<ParticipantSnapshot> getParticipants(@Nonnull String worldName) {
     Map<UUID, ParticipantSnapshot> participants = worlds.get(worldName);
     if (participants == null) {
-      return List.of();
+      return Objects.requireNonNull(List.<ParticipantSnapshot>of(), "participants");
     }
     List<ParticipantSnapshot> list = new ArrayList<>(participants.values());
     list.sort(Comparator.comparing(ParticipantSnapshot::getName, String.CASE_INSENSITIVE_ORDER));
@@ -94,6 +97,7 @@ public final class ParticipantTracker {
     if (statMap == null) {
       return StatSnapshot.EMPTY;
     }
+    @SuppressWarnings("deprecation")
     EntityStatValue stat = statMap.get(statId);
     if (stat == null) {
       return StatSnapshot.EMPTY;

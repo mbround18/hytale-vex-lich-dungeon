@@ -1,10 +1,11 @@
 package MBRound18.hytale.vexlichdungeon.prefab;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.stream.Collectors;
@@ -15,13 +16,13 @@ import java.util.stream.Collectors;
  */
 public class PrefabDiscovery {
 
-  private final EngineLog log;
+  private final @Nonnull LoggingHelper log;
   private final List<String> rooms = new ArrayList<>();
   private final List<String> hallways = new ArrayList<>();
   private final List<String> gates = new ArrayList<>();
   private final List<String> dungeonPrefabs = new ArrayList<>();
   private final List<String> eventPrefabs = new ArrayList<>();
-  private final ZipFile zipFile;
+  private final @Nonnull ZipFile zipFile;
 
   /**
    * Creates a new prefab discovery system that loads from a ZIP file.
@@ -29,9 +30,9 @@ public class PrefabDiscovery {
    * @param log     Logger for discovery events
    * @param jarPath Path to the plugin JAR file (e.g., VexLichDungeon-0.1.0.jar)
    */
-  public PrefabDiscovery(@Nonnull EngineLog log, @Nonnull Path jarPath) {
-    this.log = log;
-    this.zipFile = openAssetsZip(jarPath);
+  public PrefabDiscovery(@Nonnull LoggingHelper log, @Nonnull Path jarPath) {
+    this.log = Objects.requireNonNull(log, "log");
+    this.zipFile = Objects.requireNonNull(openAssetsZip(jarPath), "zipFile");
     discoverPrefabs();
   }
 
@@ -60,10 +61,8 @@ public class PrefabDiscovery {
           log.warn("Assets ZIP not found at %s, falling back to %s", versionedZip, legacyZip);
           zipFile = legacyFile;
         } else {
-          throw new RuntimeException(
-              String.format(
-                  "Assets ZIP not found! Expected: %s (in directory: %s)",
-                  versionedZip, jarDir.getAbsolutePath()));
+          log.warn("Assets ZIP not found at %s; falling back to plugin JAR", versionedZip);
+          zipFile = jarFile;
         }
       }
 
@@ -81,11 +80,6 @@ public class PrefabDiscovery {
    */
   private void discoverPrefabs() {
     try {
-      if (zipFile == null) {
-        log.error("ZIP file is null, cannot discover prefabs");
-        return;
-      }
-
       // Enumerate all entries in the ZIP
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
       while (entries.hasMoreElements()) {
@@ -267,6 +261,6 @@ public class PrefabDiscovery {
    */
   @Nonnull
   public ZipFile getZipFile() {
-    return zipFile;
+    return Objects.requireNonNull(zipFile, "zipFile");
   }
 }

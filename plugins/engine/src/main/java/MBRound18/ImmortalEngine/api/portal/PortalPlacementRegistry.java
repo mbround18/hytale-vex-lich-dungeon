@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.annotation.Nonnull;
@@ -15,9 +16,10 @@ import javax.annotation.Nonnull;
  * <p>
  * Typical usage:
  * <ul>
- *   <li>{@link #register(String, String, Vector3i, long, int)} when spawning a portal block</li>
- *   <li>{@link #tick()} from a server loop to close expired/overfull portals</li>
- *   <li>{@link #closePortals(String)} to force-close for a specific instance</li>
+ * <li>{@link #register(String, String, Vector3i, long, int)} when spawning a
+ * portal block</li>
+ * <li>{@link #tick()} from a server loop to close expired/overfull portals</li>
+ * <li>{@link #closePortals(String)} to force-close for a specific instance</li>
  * </ul>
  */
 public final class PortalPlacementRegistry {
@@ -38,8 +40,10 @@ public final class PortalPlacementRegistry {
   /**
    * Registers a portal placement with optional expiry and max-player limits.
    *
-   * @param expiresAtMs epoch millis after which the portal should be closed (0 to ignore)
-   * @param maxPlayers  max players allowed in the instance before closing (<=0 to ignore)
+   * @param expiresAtMs epoch millis after which the portal should be closed (0 to
+   *                    ignore)
+   * @param maxPlayers  max players allowed in the instance before closing (<=0 to
+   *                    ignore)
    */
   public static void register(@Nonnull String instanceId, @Nonnull String worldName,
       @Nonnull Vector3i position, long expiresAtMs, int maxPlayers) {
@@ -56,13 +60,14 @@ public final class PortalPlacementRegistry {
       return;
     }
     for (PortalPlacement placement : placements) {
-      removePortalPlacement(placement);
+      removePortalPlacement(Objects.requireNonNull(placement, "placement"));
     }
     placements.clear();
   }
 
   /**
-   * Ticks the registry, closing any portals that are expired or over player limit.
+   * Ticks the registry, closing any portals that are expired or over player
+   * limit.
    * This should be called periodically (e.g., once per server tick).
    */
   public static void tick() {
@@ -103,11 +108,12 @@ public final class PortalPlacementRegistry {
   }
 
   private static void removePortalPlacement(@Nonnull PortalPlacement placement) {
-    World world = Universe.get().getWorld(placement.worldName);
+    World world = Universe.get().getWorld(Objects.requireNonNull(placement.worldName, "worldName"));
     if (world == null) {
       return;
     }
-    world.execute(() -> removePortal(world, placement.position));
+    world.execute(() -> removePortal(world,
+        Objects.requireNonNull(placement.position, "position")));
   }
 
   private static void removePortal(@Nonnull World world, @Nonnull Vector3i pos) {

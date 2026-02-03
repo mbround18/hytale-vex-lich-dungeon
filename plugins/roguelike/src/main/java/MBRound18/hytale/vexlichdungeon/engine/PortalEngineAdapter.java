@@ -15,7 +15,6 @@ import java.util.Objects;
 /**
  * Adapter that bridges Hytale events to the portal engine runtime.
  */
-@SuppressWarnings("removal")
 public class PortalEngineAdapter {
 
   private final PortalEngineRuntime runtime;

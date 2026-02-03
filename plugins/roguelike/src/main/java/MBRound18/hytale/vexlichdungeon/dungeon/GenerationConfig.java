@@ -228,7 +228,7 @@ public class GenerationConfig {
    */
   @Nonnull
   public String getStitchPatternPrefab() {
-    return stitchPatternPrefab;
+    return java.util.Objects.requireNonNull(stitchPatternPrefab, "stitchPatternPrefab");
   }
 
   /**
@@ -239,7 +239,7 @@ public class GenerationConfig {
     if (stitchPatternPrefab.isBlank()) {
       throw new IllegalArgumentException("Stitch pattern prefab path cannot be blank");
     }
-    this.stitchPatternPrefab = stitchPatternPrefab;
+    this.stitchPatternPrefab = java.util.Objects.requireNonNull(stitchPatternPrefab, "stitchPatternPrefab");
     return this;
   }
 
@@ -311,7 +311,7 @@ public class GenerationConfig {
         .setBatchSize(batchSize)
         .setSeed(seed)
         .setUseStitchPattern(useStitchPattern)
-        .setStitchPatternPrefab(stitchPatternPrefab)
+        .setStitchPatternPrefab(java.util.Objects.requireNonNull(stitchPatternPrefab, "stitchPatternPrefab"))
         .setWorldMinY(worldMinY)
         .setWorldMaxY(worldMaxY);
   }

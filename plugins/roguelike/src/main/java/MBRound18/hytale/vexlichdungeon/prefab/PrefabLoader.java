@@ -1,8 +1,9 @@
 package MBRound18.hytale.vexlichdungeon.prefab;
 
-import MBRound18.ImmortalEngine.api.logging.EngineLog;
+import MBRound18.hytale.shared.utilities.LoggingHelper;
 import com.hypixel.hytale.server.core.prefab.selection.standard.BlockSelection;
 import javax.annotation.Nonnull;
+import java.util.Objects;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,10 +17,10 @@ import java.util.zip.ZipFile;
  */
 public class PrefabLoader {
 
-  private final EngineLog log;
+  private final LoggingHelper log;
   private final ZipFile zipFile;
 
-  public PrefabLoader(@Nonnull EngineLog log, @Nonnull ZipFile zipFile) {
+  public PrefabLoader(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile) {
     this.log = log;
     this.zipFile = zipFile;
   }
@@ -57,13 +58,12 @@ public class PrefabLoader {
     // Attempt to deserialize using Hytale's built-in JSON utilities
     // BlockSelection should have a static fromJson method or similar
     try {
-      // This is a placeholder - actual deserialization depends on Hytale's JSON API
-      // For now, we'll try to use reflection to find the right method
-      return BlockSelection.class.getMethod("fromJson", String.class)
-          .invoke(null, jsonContent) != null
-              ? (BlockSelection) BlockSelection.class.getMethod("fromJson", String.class)
-                  .invoke(null, jsonContent)
-              : null;
+      Object result = BlockSelection.class.getMethod("fromJson", String.class)
+          .invoke(null, jsonContent);
+      if (result instanceof BlockSelection prefab) {
+        return Objects.requireNonNull(prefab, "prefab");
+      }
+      throw new IOException("Prefab deserialization returned null for: " + zipEntryPath);
     } catch (Exception e) {
       // Fallback: log and rethrow
       log.error("Failed to deserialize prefab JSON: %s", e.getMessage());
