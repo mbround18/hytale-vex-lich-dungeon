@@ -1,0 +1,15 @@
+{
+  "InstanceId": "Vex_The_Lich_Dungeon",
+  "Description": {
+    "DisplayName": "server.portals.vex_lich",
+    "FlavorText": "server.portals.vex_lich.description",
+    "ThemeColor": "#8a4bff",
+    "SplashImage": "DefaultArtwork.png"
+  },
+  "PlayerSpawn": {
+    "Y": 120,
+    "ScanHeight": 20,
+    "MinRadius": 10,
+    "MaxRadius": 25
+  }
+}

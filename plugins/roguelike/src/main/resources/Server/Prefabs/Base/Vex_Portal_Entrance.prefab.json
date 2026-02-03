@@ -1,0 +1,830 @@
+{
+  "version": 8,
+  "blockIdVersion": 11,
+  "anchorX": 0,
+  "anchorY": 0,
+  "anchorZ": 0,
+  "blocks": [
+    {
+      "x": -1,
+      "y": 0,
+      "z": -2,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 2,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 3,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 4,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 5,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 6,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Roof",
+      "rotation": 2
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": -1,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": -1,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 1023,
+      "rotation": 1
+    },
+    {
+      "x": -1,
+      "y": 7,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Roof_Hollow",
+      "rotation": 2
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 0,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": 0,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 31,
+      "rotation": 1
+    },
+    {
+      "x": -1,
+      "y": 8,
+      "z": 0,
+      "name": "Rock_Slate_Cobble_Roof_Flat",
+      "rotation": 2
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 1,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": 1,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 63,
+      "rotation": 1
+    },
+    {
+      "x": -1,
+      "y": 7,
+      "z": 1,
+      "name": "Rock_Slate_Cobble_Roof_Hollow"
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 2,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 2,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 3,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 4,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 5,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": -1,
+      "y": 6,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Roof"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": -2,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Roof_Hollow",
+      "rotation": 2
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": -1,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": -1,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 992,
+      "rotation": 1
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Roof_Hollow",
+      "rotation": 2
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 0,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "components": {
+        "Components": {
+          "PlacedByInteraction": {
+            "WhoPlacedUuid": {
+              "$binary": "NfcHGzk9RTCRlDNTpjhTLQ==",
+              "$type": "04"
+            }
+          },
+          "BlockMapMarker": {
+            "Name": "server.items.Vex_Dungeon_Challenge_Enter.name",
+            "Icon": "Temple_Gateway.png"
+          }
+        }
+      },
+      "rotation": 1
+    },
+    {
+      "x": 0,
+      "y": 8,
+      "z": 0,
+      "name": "Rock_Slate_Cobble_Roof_Flat"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 1,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 32,
+      "rotation": 1
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "z": 1,
+      "name": "Rock_Slate_Cobble_Roof_Hollow"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Roof_Hollow"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": -2,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": -2,
+      "name": "Rock_Slate_Cobble_Roof",
+      "rotation": 2
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": -1,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": -1,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 993,
+      "rotation": 1
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "z": -1,
+      "name": "Rock_Slate_Cobble_Roof_Hollow",
+      "rotation": 2
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 0,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 1,
+      "rotation": 1
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "z": 0,
+      "name": "Deco_Iron_Chains_Vertical"
+    },
+    {
+      "x": 1,
+      "y": 8,
+      "z": 0,
+      "name": "Rock_Slate_Cobble_Roof_Flat",
+      "rotation": 2
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 1,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 1,
+      "name": "Vex_Dungeon_Challenge_Enter",
+      "filler": 33,
+      "rotation": 1
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "z": 1,
+      "name": "Rock_Slate_Cobble_Roof_Hollow"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "name": "Rock_Slate"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Beam"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 2,
+      "name": "Rock_Slate_Cobble_Roof"
+    }
+  ],
+  "fluids": [
+    {
+      "x": -1,
+      "y": 0,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 2,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 3,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 4,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 5,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 6,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 7,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 8,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 7,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 0,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 1,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 2,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 3,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 4,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 5,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": -1,
+      "y": 6,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 8,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": -2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "z": -1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 8,
+      "z": 0,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "z": 1,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 2,
+      "name": "Empty",
+      "level": 0
+    }
+  ]
+}
