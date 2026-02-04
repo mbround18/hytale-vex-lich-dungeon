@@ -11,7 +11,8 @@ gradle.properties
 dist/
 
 # Generated data directories
-data/
+/data
+!/plugins/**/data
 
 # Hytale Server Unpacked (cloned by fetchUnpacked task)
 Hytale-Server-Unpacked/

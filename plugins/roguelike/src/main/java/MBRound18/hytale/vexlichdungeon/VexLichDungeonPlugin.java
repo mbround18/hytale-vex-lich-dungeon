@@ -1,6 +1,7 @@
 package MBRound18.hytale.vexlichdungeon;
 
 import MBRound18.hytale.vexlichdungeon.commands.VexCommand;
+import MBRound18.hytale.vexlichdungeon.commands.VexChallengeCommand;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.dungeon.DungeonGenerator;
 import MBRound18.hytale.vexlichdungeon.dungeon.GenerationConfig;
@@ -17,37 +18,52 @@ import MBRound18.hytale.vexlichdungeon.loot.LootTableConfig;
 import MBRound18.hytale.vexlichdungeon.loot.LootTableLoader;
 import MBRound18.ImmortalEngine.api.prefab.StitchIndex;
 
+import MBRound18.hytale.vexlichdungeon.portal.PortalManagerSystem;
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.thread.TickingThread;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Objects;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * VexLichDungeon plugin that logs during setup/start and registers /vex
  * commands and event handlers for dungeon generation.
  */
 public class VexLichDungeonPlugin extends JavaPlugin {
+  private static volatile VexLichDungeonPlugin instance;
   private final LoggingHelper log;
   private DataStore dataStore;
   private DungeonGenerationEventHandler dungeonEventHandler;
   @SuppressWarnings("unused")
   private UniversalEventLogger eventLogger;
   private TickingThread watchdog;
-  private LoggingHelper internalLogger;
   private LoggingHelper eventsLogger;
   private PrefabSpawner prefabSpawner;
 
   public VexLichDungeonPlugin(@Nonnull JavaPluginInit init) {
     super(init);
+    instance = this;
     this.log = Objects.requireNonNull(new LoggingHelper("VexLichDungeon"), "log");
+  }
+
+  @Nullable
+  public static VexLichDungeonPlugin getInstance() {
+    return instance;
+  }
+
+  @Nullable
+  public PrefabSpawner getPrefabSpawner() {
+    return prefabSpawner;
+  }
+
+  @Nullable
+  public DataStore getDataStore() {
+    return dataStore;
   }
 
   @Override
@@ -72,18 +88,18 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     CommandManager.get().register(new VexCommand());
     StitchIndex stitchIndex = null;
     log.info("Registered Vex UI and HUD templates (code-driven)");
-    internalLogger = new LoggingHelper("VexLichDungeon-Internal");
     eventsLogger = new LoggingHelper("VexLichDungeon-Events");
 
     // Initialize prefab discovery - loads from ZIP asset bundle
     // The ZIP should be in the same directory as the JAR with the same base name
     // E.g., VexLichDungeon-0.1.0.jar -> VexLichDungeon.zip
-    PrefabDiscovery prefabDiscovery = new PrefabDiscovery(log, pluginJarPath);
+    PrefabDiscovery prefabDiscovery = new PrefabDiscovery(Objects.requireNonNull(log, "log"), pluginJarPath);
     PortalEngineAdapter engineAdapter = new PortalEngineAdapter();
 
     // Initialize dungeon generation components using config
     GenerationConfig config = new GenerationConfig();
-    DungeonGenerator dungeonGenerator = new DungeonGenerator(config, log, prefabDiscovery);
+    DungeonGenerator dungeonGenerator = new DungeonGenerator(config, Objects.requireNonNull(log, "log"),
+        prefabDiscovery);
     prefabSpawner = new PrefabSpawner(
         Objects.requireNonNull(log, "log"),
         prefabDiscovery.getZipFile(),
@@ -115,6 +131,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
         engineAdapter,
         Objects.requireNonNull(eventsLogger, "eventsLogger"));
     eventLogger = new UniversalEventLogger(Objects.requireNonNull(log, "log"));
+    getChunkStoreRegistry().registerSystem(new PortalManagerSystem());
     watchdog = createWatchdog();
     log.info("Initialized dungeon generation components");
   }
@@ -124,9 +141,14 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     log.info("Plugin starting up");
     log.info("\u001B[35mVex the Lich awakens... The dungeon trials await brave adventurers!\u001B[0m");
 
+    if (dataStore != null) {
+      VexChallengeCommand.cleanupPersistedPortals(dataStore);
+    }
+
     // Register event handler with the global event bus
     try {
       EventBus eventBus = HytaleServer.get().getEventBus();
+
       if (eventBus != null) {
         // Register dungeon generation handler
         if (dungeonEventHandler != null) {
@@ -143,31 +165,10 @@ public class VexLichDungeonPlugin extends JavaPlugin {
           watchdog.start();
           log.info("Watchdog thread started for dungeon generation polling");
         }
-      } else {
-        log.error("EventBus is null - cannot register handlers");
       }
     } catch (Exception e) {
       log.error("Failed to register event handlers: %s", e.getMessage());
       e.printStackTrace();
-    }
-  }
-
-  private void syncDataFile(@Nonnull Path targetPath, @Nonnull String resourcePath) {
-    try (InputStream stream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
-      if (stream == null) {
-        return;
-      }
-      byte[] resourceBytes = stream.readAllBytes();
-      if (Files.exists(targetPath)) {
-        byte[] existingBytes = Files.readAllBytes(targetPath);
-        if (Arrays.equals(existingBytes, resourceBytes)) {
-          return;
-        }
-      }
-      Files.createDirectories(targetPath.getParent());
-      Files.write(targetPath, resourceBytes);
-    } catch (Exception e) {
-      log.warn("Failed to sync %s: %s", resourcePath, e.getMessage());
     }
   }
 
@@ -197,6 +198,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     if (dataStore != null) {
       dataStore.saveInstances();
       dataStore.saveConfig();
+      dataStore.savePortalPlacements();
       log.info("Saved all data before shutdown");
     }
     if (prefabSpawner != null) {

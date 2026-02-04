@@ -6,6 +6,8 @@
   "Website": "https://example.com",
   "Main": "MBRound18.hytale.vexlichdungeon.VexLichDungeonPlugin",
   "ServerVersion": "*",
+  "IncludesAssetPack": true,
+  "OptionalDependencies": {},
   "Dependencies": {
     "MBRound18:ImmortalEngine": "*",
     "MBRound18:SharedInterfaces": "*"

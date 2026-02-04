@@ -25,6 +25,7 @@ dependencies {
     compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
     compileOnly 'org.slf4j:slf4j-api:2.0.7'
     testImplementation 'junit:junit:4.13.2'
+    compileOnly 'org.joml:joml:1.10.5'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -109,7 +110,9 @@ tasks.register("generateAuthors") {
 }
 
 processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     dependsOn "generateAuthors"
+    from("src/main/resources")
     def authorsJson = authorsJsonProvider
     filesMatching('plugin.properties') {
         expand(version: project.version)
@@ -120,7 +123,30 @@ processResources {
             line.replace('"GRADLE_INJECT_AUTHORS"', authorsJson.get())
         }
     }
-    from(project(":shared:interfaces").file("src/main/resources/Common/UI/Custom")) {
-        into("Common/UI/Custom")
+    from(project(":shared:interfaces").file("src/main/resources")) {
+        into(".")
+    }
+    doLast {
+        def sharedLang = project(":shared:interfaces").file("src/main/resources/Server/Languages/en-US/server.lang")
+        def localLang = file("src/main/resources/Server/Languages/en-US/server.lang")
+        def outputLang = file("$destinationDir/Server/Languages/en-US/server.lang")
+
+        if (!sharedLang.exists() && !localLang.exists()) {
+            return
+        }
+
+        def sharedText = sharedLang.exists() ? sharedLang.getText("UTF-8").trim() : ""
+        def localText = localLang.exists() ? localLang.getText("UTF-8").trim() : ""
+
+        def merged = []
+        if (sharedText) {
+            merged << sharedText
+        }
+        if (localText) {
+            merged << localText
+        }
+
+        outputLang.parentFile.mkdirs()
+        outputLang.setText(merged.join("\n\n") + "\n", "UTF-8")
     }
 }

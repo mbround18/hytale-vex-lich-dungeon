@@ -300,7 +300,7 @@ public class DungeonGenerationEventHandler {
         if (eventPlayerRef != null) {
           UUID uuid = eventPlayerRef.getUuid();
           if (world.getName().contains("Vex_The_Lich_Dungeon")) {
-            VexChallengeCommand.stopPortalCountdown(uuid);
+            VexChallengeCommand.forceRemovePortal(uuid);
           }
           boolean showWelcome = welcomedPlayers.add(uuid);
           roguelikeController.initializePlayer(world, eventPlayerRef, showWelcome);
