@@ -4,8 +4,14 @@ import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexportalcountdownhudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 
 public final class VexPortalCountdownHud extends AbstractCustomUIHud<VexHudVexportalcountdownhudUi> {
@@ -22,10 +28,23 @@ public final class VexPortalCountdownHud extends AbstractCustomUIHud<VexHudVexpo
   // External how to clear the HUD
   public static void clear(@Nonnull PlayerRef playerRef) {
     UiThread.runOnPlayerWorld(playerRef, () -> {
-      var hud = VexPortalCountdownHud.open(playerRef);
-      if (hud == null)
+      if (playerRef == null || !playerRef.isValid()) {
         return;
-      hud.clear();
+      }
+      Ref<EntityStore> ref = playerRef.getReference();
+      if (ref == null || !ref.isValid()) {
+        return;
+      }
+      Store<EntityStore> store = ref.getStore();
+      Player player = store.getComponent(ref, Player.getComponentType());
+      if (player == null) {
+        return;
+      }
+      HudManager hudManager = player.getHudManager();
+      CustomUIHud current = hudManager.getCustomHud();
+      if (current instanceof VexPortalCountdownHud hud) {
+        hud.clear();
+      }
     });
   }
 

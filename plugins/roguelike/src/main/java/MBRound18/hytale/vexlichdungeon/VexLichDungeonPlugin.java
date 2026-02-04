@@ -66,6 +66,11 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     return dataStore;
   }
 
+  @Nullable
+  public DungeonGenerationEventHandler getDungeonEventHandler() {
+    return dungeonEventHandler;
+  }
+
   @Override
   protected void setup() {
     // Initialize data store (creates directories and loads config)

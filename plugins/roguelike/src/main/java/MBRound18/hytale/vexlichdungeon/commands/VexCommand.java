@@ -11,11 +11,12 @@ public class VexCommand extends AbstractCommand {
     super("vex", "Vex dungeon utilities");
     addSubCommand(new VexUiCommand());
     addSubCommand(new VexChallengeCommand());
+    addSubCommand(new VexPruneCommand());
   }
 
   @Override
   protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-    context.sendMessage(Message.raw("Usage: /vex <ui|challenge>"));
+    context.sendMessage(Message.raw("Usage: /vex <ui|challenge|prune>"));
     return CompletableFuture.completedFuture(null);
   }
 }

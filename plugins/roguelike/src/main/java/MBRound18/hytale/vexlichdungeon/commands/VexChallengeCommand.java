@@ -122,6 +122,13 @@ public class VexChallengeCommand extends AbstractCommand {
     removePortal(playerId);
   }
 
+  public static void clearCountdownHud(@Nullable UUID playerId) {
+    if (playerId == null) {
+      return;
+    }
+    clearCountdownUi(playerId);
+  }
+
   @Nullable
   private static PlayerRef requirePlayer(@Nonnull CommandContext context) {
     if (!context.isPlayer()) {
@@ -305,7 +312,7 @@ public class VexChallengeCommand extends AbstractCommand {
         null,
         entityRef -> {
           if (entityRef != null) {
-            PrefabEntityUtils.unfreezePrefabNpc(entityRef, LOG);
+            PrefabEntityUtils.unfreezePrefabNpc(entityRef, LOG.getLogger());
           }
         });
 
@@ -324,6 +331,18 @@ public class VexChallengeCommand extends AbstractCommand {
 
     PlayerPoller poller = new PlayerPoller();
     poller.start(playerRef, POLL_INTERVAL_MS, () -> {
+      if (!playerRef.isValid()) {
+        stopPortalCountdown(playerRef.getUuid());
+        return;
+      }
+      PortalInstance activePortal = ACTIVE_PORTALS.get(playerRef.getUuid());
+      if (activePortal != null) {
+        UUID currentWorld = playerRef.getWorldUuid();
+        if (currentWorld == null || !currentWorld.equals(activePortal.worldUuid())) {
+          stopPortalCountdown(playerRef.getUuid());
+          return;
+        }
+      }
       int value = remaining.decrementAndGet();
       if (value < 0) {
         stopPortalCountdown(playerRef.getUuid());
@@ -362,6 +381,14 @@ public class VexChallengeCommand extends AbstractCommand {
       return;
     }
     VexPortalCountdownHud.clear(playerRef);
+  }
+
+  private static void clearCountdownUi(@Nonnull UUID playerId) {
+    PlayerPoller existing = ACTIVE_POLLERS.remove(playerId);
+    if (existing != null) {
+      existing.stop();
+    }
+    clearHud(playerId);
   }
 
   private static void recordPortal(@Nonnull UUID playerId, @Nonnull UUID worldUuid,
