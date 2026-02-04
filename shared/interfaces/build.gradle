@@ -65,13 +65,19 @@ def uiMangleJavaRoot = file("src/main/java")
 def uiMangleLangRoot = file("src/main/resources/Server/Languages")
 def uiMangleUiOut = file("$buildDir/generated/ui")
 def uiMangleJavaOut = file("$buildDir/generated/sources/ui")
+def cargoCmd = System.getenv("CARGO")
+if (cargoCmd == null || cargoCmd.trim().isEmpty()) {
+    def cargoCandidate = new File(System.getProperty("user.home"), ".cargo/bin/cargo")
+    cargoCmd = cargoCandidate.exists() ? cargoCandidate.absolutePath : "cargo"
+}
 
 tasks.register("compileUiMangle", Exec) {
     group = "build"
     description = "Flatten .ui macros and generate Java UI ids"
     workingDir(uiMangleDir)
+    environment "PATH", System.getenv("PATH")
     commandLine(
-        "cargo",
+        cargoCmd,
         "run",
         "--quiet",
         "--release",

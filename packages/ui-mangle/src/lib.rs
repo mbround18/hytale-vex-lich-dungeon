@@ -7,17 +7,20 @@ mod parser;
 mod render;
 mod util;
 
+use anyhow::{Context, Result, anyhow};
 pub use args::Args;
-use anyhow::{anyhow, Context, Result};
 use expand::{expand_items, mangle_ids};
-use java::{class_name_from_rel_path, common_alias_path, generate_java_class, package_to_path, path_to_slash_string};
+use java::{
+    class_name_from_rel_path, common_alias_path, generate_java_class, package_to_path,
+    path_to_slash_string,
+};
+use lang::generate_lang_classes;
 use model::{BodyItem, MacroRegistry};
 use parser::parse_ui_file;
 use render::render_items;
-use util::{collect_ui_files, normalize_path, parse_ident_at, relative_path};
-use std::path::Path;
-use lang::generate_lang_classes;
 use std::collections::BTreeSet;
+use std::path::Path;
+use util::{collect_ui_files, normalize_path, parse_ident_at, relative_path};
 
 pub fn run(args: Args) -> Result<()> {
     let resources_root = normalize_path(&args.resources_root)?;
@@ -31,7 +34,8 @@ pub fn run(args: Args) -> Result<()> {
     std::fs::create_dir_all(&ui_out).with_context(|| format!("create {}", ui_out.display()))?;
 
     if java_out.exists() {
-        std::fs::remove_dir_all(&java_out).with_context(|| format!("remove {}", java_out.display()))?;
+        std::fs::remove_dir_all(&java_out)
+            .with_context(|| format!("remove {}", java_out.display()))?;
     }
     std::fs::create_dir_all(&java_out).with_context(|| format!("create {}", java_out.display()))?;
 
@@ -59,14 +63,24 @@ pub fn run(args: Args) -> Result<()> {
             ast.items,
             &ast.imports,
             &mut registry,
-            if file_params.is_empty() { None } else { Some(&file_params) },
+            if file_params.is_empty() {
+                None
+            } else {
+                Some(&file_params)
+            },
         )?;
 
-        let has_entry_nodes = expanded_items.iter().any(|item| matches!(item, BodyItem::Child(_)));
+        let has_entry_nodes = expanded_items
+            .iter()
+            .any(|item| matches!(item, BodyItem::Child(_)));
         if !has_entry_nodes {
-            let rel_to_resources = ui_file
-                .strip_prefix(&resources_root)
-                .with_context(|| format!("{} not under resources root {}", ui_file.display(), resources_root.display()))?;
+            let rel_to_resources = ui_file.strip_prefix(&resources_root).with_context(|| {
+                format!(
+                    "{} not under resources root {}",
+                    ui_file.display(),
+                    resources_root.display()
+                )
+            })?;
             let ui_out_path = ui_out.join(rel_to_resources);
             if let Some(parent) = ui_out_path.parent() {
                 std::fs::create_dir_all(parent)?;
@@ -86,12 +100,20 @@ pub fn run(args: Args) -> Result<()> {
             }
         }
 
-        let rel_to_resources = ui_file
-            .strip_prefix(&resources_root)
-            .with_context(|| format!("{} not under resources root {}", ui_file.display(), resources_root.display()))?;
-        let rel_to_ui_root = ui_file
-            .strip_prefix(&ui_root)
-            .with_context(|| format!("{} not under ui root {}", ui_file.display(), ui_root.display()))?;
+        let rel_to_resources = ui_file.strip_prefix(&resources_root).with_context(|| {
+            format!(
+                "{} not under resources root {}",
+                ui_file.display(),
+                resources_root.display()
+            )
+        })?;
+        let rel_to_ui_root = ui_file.strip_prefix(&ui_root).with_context(|| {
+            format!(
+                "{} not under ui root {}",
+                ui_file.display(),
+                ui_root.display()
+            )
+        })?;
         let ui_out_path = ui_out.join(rel_to_resources);
         if let Some(parent) = ui_out_path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -122,8 +144,11 @@ pub fn run(args: Args) -> Result<()> {
         if has_entry_nodes {
             let class_name = class_name_from_rel_path(rel_to_ui_root);
             let ui_path_string = path_to_slash_string(rel_to_ui_root);
-            let java_source = generate_java_class(&args.java_package, &class_name, &ui_path_string, &ids);
-            let java_out_path = java_out.join(package_to_path(&args.java_package)).join(format!("{}.java", class_name));
+            let java_source =
+                generate_java_class(&args.java_package, &class_name, &ui_path_string, &ids);
+            let java_out_path = java_out
+                .join(package_to_path(&args.java_package))
+                .join(format!("{}.java", class_name));
             if let Some(parent) = java_out_path.parent() {
                 std::fs::create_dir_all(parent)?;
             }

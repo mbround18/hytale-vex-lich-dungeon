@@ -31,10 +31,13 @@ pub fn generate_lang_classes(
         if entry.path().extension().and_then(|s| s.to_str()) != Some("lang") {
             continue;
         }
-        let rel = entry
-            .path()
-            .strip_prefix(&lang_root)
-            .with_context(|| format!("{} not under lang root {}", entry.path().display(), lang_root.display()))?;
+        let rel = entry.path().strip_prefix(&lang_root).with_context(|| {
+            format!(
+                "{} not under lang root {}",
+                entry.path().display(),
+                lang_root.display()
+            )
+        })?;
         let keys = parse_lang_file(entry.path())?;
         let class_name = if override_file
             .as_ref()
@@ -158,7 +161,12 @@ fn field_name_from_key(key: &str) -> String {
             }
         }
     }
-    if name.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+    if name
+        .chars()
+        .next()
+        .map(|c| c.is_ascii_digit())
+        .unwrap_or(false)
+    {
         name = format!("key{}", name);
     }
     name

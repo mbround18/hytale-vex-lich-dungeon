@@ -21,10 +21,7 @@ pub fn expand_items(
                     out.push(BodyItem::Property(text));
                 } else {
                     out.push(BodyItem::Property(replace_params_with_imports(
-                        &text,
-                        params_ref,
-                        imports,
-                        registry,
+                        &text, params_ref, imports, registry,
                     )));
                 }
             }
@@ -67,7 +64,11 @@ fn expand_node(
             param_map.insert("__alias".to_string(), prefix.clone());
             param_map.extend(macro_def.defaults.clone());
             if let Some(parent_params) = params {
-                if parent_params.get("__warn_duplicates").map(|v| v == "true").unwrap_or(false) {
+                if parent_params
+                    .get("__warn_duplicates")
+                    .map(|v| v == "true")
+                    .unwrap_or(false)
+                {
                     param_map.insert("__warn_duplicates".to_string(), "true".to_string());
                 }
             }
@@ -101,7 +102,11 @@ fn expand_node(
     }
 }
 
-fn resolve_macro_def(path: &Path, name: &str, registry: &mut MacroRegistry) -> Result<Option<MacroDef>> {
+fn resolve_macro_def(
+    path: &Path,
+    name: &str,
+    registry: &mut MacroRegistry,
+) -> Result<Option<MacroDef>> {
     if !registry.files.contains_key(path) {
         if path.exists() {
             let _ = crate::parser::parse_ui_file(path, registry)?;
@@ -109,7 +114,10 @@ fn resolve_macro_def(path: &Path, name: &str, registry: &mut MacroRegistry) -> R
             return Ok(None);
         }
     }
-    Ok(registry.files.get(path).and_then(|m| m.macros.get(name).cloned()))
+    Ok(registry
+        .files
+        .get(path)
+        .and_then(|m| m.macros.get(name).cloned()))
 }
 
 fn get_file_constants(path: &Path, registry: &mut MacroRegistry) -> HashMap<String, String> {
@@ -122,8 +130,7 @@ fn get_file_constants(path: &Path, registry: &mut MacroRegistry) -> HashMap<Stri
         .files
         .get(path)
         .map(|m| m.constants.clone())
-        .unwrap_or_default()
-    ;
+        .unwrap_or_default();
     resolve_constants(&raw)
 }
 
@@ -290,7 +297,8 @@ fn replace_params_once(text: &str, params: &HashMap<String, String>) -> String {
     let mut i = 0usize;
     while i < bytes.len() {
         if bytes[i] == b'@' {
-            let spread = i >= 3 && bytes[i - 1] == b'.' && bytes[i - 2] == b'.' && bytes[i - 3] == b'.';
+            let spread =
+                i >= 3 && bytes[i - 1] == b'.' && bytes[i - 2] == b'.' && bytes[i - 3] == b'.';
             if let Some((name, end)) = parse_ident_at(bytes, i + 1) {
                 if spread {
                     if let Some(alias) = params.get("__alias") {
@@ -377,10 +385,8 @@ fn replace_params_with_imports(
             }
         }
         if bytes[i] == b'@' {
-            let spread = i >= 3
-                && bytes[i - 1] == b'.'
-                && bytes[i - 2] == b'.'
-                && bytes[i - 3] == b'.';
+            let spread =
+                i >= 3 && bytes[i - 1] == b'.' && bytes[i - 2] == b'.' && bytes[i - 3] == b'.';
             if spread {
                 out.push('@');
                 i += 1;
@@ -416,7 +422,11 @@ fn is_import_ref(bytes: &[u8], at: usize) -> bool {
     bytes[j - 1] == b'$'
 }
 
-pub fn mangle_ids(node: &mut Node, parent: Option<String>, out: &mut Vec<(String, String)>) -> Result<()> {
+pub fn mangle_ids(
+    node: &mut Node,
+    parent: Option<String>,
+    out: &mut Vec<(String, String)>,
+) -> Result<()> {
     let mut current = None;
     if let Some(id) = node.id.take() {
         let id = camelize_id(&id);
@@ -454,22 +464,27 @@ fn camelize_id(input: &str) -> String {
             upper_next = true;
         }
     }
-    if out.is_empty() { "Id".to_string() } else { out }
+    if out.is_empty() {
+        "Id".to_string()
+    } else {
+        out
+    }
 }
 
 // Expose for tests
 #[cfg(test)]
-pub(crate) fn expand_and_render_for_tests(
-    ui_path: &Path,
-    registry: &mut MacroRegistry,
-) -> String {
+pub(crate) fn expand_and_render_for_tests(ui_path: &Path, registry: &mut MacroRegistry) -> String {
     let ast = crate::parser::parse_ui_file(ui_path, registry).unwrap();
     let file_params = ast.constants.clone();
     let mut expanded_items = expand_items(
         ast.items,
         &ast.imports,
         registry,
-        if file_params.is_empty() { None } else { Some(&file_params) },
+        if file_params.is_empty() {
+            None
+        } else {
+            Some(&file_params)
+        },
     )
     .unwrap();
     let mut ids = Vec::new();

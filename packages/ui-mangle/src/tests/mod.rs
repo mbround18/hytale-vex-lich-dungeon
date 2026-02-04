@@ -1,13 +1,13 @@
 use crate::expand::expand_and_render_for_tests;
+use crate::expand::mangle_ids;
 use crate::java::common_alias_path;
 use crate::model::{BodyItem, MacroRegistry};
 use crate::parser::parse_ui_file;
 use crate::render::render_items;
-use crate::expand::mangle_ids;
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::fs;
 
 fn temp_dir() -> PathBuf {
     let nanos = SystemTime::now()
@@ -129,7 +129,8 @@ Group #Root {
     );
     let mut registry = MacroRegistry::default();
     let ast = parse_ui_file(&ui, &mut registry).unwrap();
-    let mut expanded_items = crate::expand::expand_items(ast.items, &ast.imports, &mut registry, None).unwrap();
+    let mut expanded_items =
+        crate::expand::expand_items(ast.items, &ast.imports, &mut registry, None).unwrap();
     let mut ids = Vec::new();
     for item in &mut expanded_items {
         if let BodyItem::Child(node) = item {

@@ -3,7 +3,9 @@ package MBRound18.hytale.shared.interfaces.abstracts;
 import MBRound18.hytale.shared.interfaces.ui.UiPath;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -15,7 +17,6 @@ import javax.annotation.Nullable;
 
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.shared.utilities.UiThread;
-import MBRound18.hytale.shared.interfaces.helpers.PlayerHelpers;
 
 public abstract class AbstractCustomUIHud<T> extends CustomUIHud {
   private final String hudPath;
@@ -121,8 +122,6 @@ public abstract class AbstractCustomUIHud<T> extends CustomUIHud {
   protected void build(@Nonnull UICommandBuilder builder) {
     String clientPath = UiPath.normalizeForClient(hudPath);
     String path = (clientPath != null) ? clientPath : hudPath;
-
-    logger.info("Building HUD at path: " + path);
     builder.append(path);
   }
 
@@ -164,7 +163,7 @@ public abstract class AbstractCustomUIHud<T> extends CustomUIHud {
     });
   }
 
-  private String sanitizeSetSelector(@Nonnull String selector) {
+  public String sanitizeSetSelector(@Nonnull String selector) {
     String sanitized = Objects.requireNonNull(selector, "selector");
     if (!sanitized.startsWith("#") && !sanitized.startsWith(".")) {
       sanitized = "#" + sanitized;
@@ -208,5 +207,59 @@ public abstract class AbstractCustomUIHud<T> extends CustomUIHud {
     } catch (Exception e) {
       throw new IllegalStateException("Failed to instantiate UI model " + uiClass.getName(), e);
     }
+  }
+
+  /**
+   * Ensures the specified HUD class is active for the player.
+   * If a different HUD is open, or none is open, it creates and opens the new
+   * one.
+   *
+   * @param playerRef The player.
+   * @param hudClass  The class of the HUD you want (e.g. DemoHudStatsHud.class).
+   * @param factory   A lambda to create the HUD if it's missing.
+   * @return The active HUD instance (guaranteed to be of type T).
+   */
+  public static <T extends AbstractCustomUIHud<?>> T ensureActive(
+      PlayerRef playerRef,
+      Class<T> hudClass) {
+    if (!playerRef.isValid()) {
+      return null;
+    }
+    Ref<EntityStore> ref = playerRef.getReference();
+    if (ref == null || !ref.isValid()) {
+      return null;
+    }
+    Store<EntityStore> store = ref.getStore();
+    Player playerComp = store.getComponent(ref, Player.getComponentType());
+    if (playerComp == null)
+      return null;
+    HudManager hudManager = playerComp.getHudManager();
+    var currentHud = hudManager.getCustomHud();
+
+    try {
+      Class<T> clazz = hudClass;
+      T instance = clazz.getDeclaredConstructor(PlayerRef.class).newInstance(playerRef);
+
+      if (!instance.isActiveHud(playerRef)) {
+        hudManager.setCustomHud(playerRef, instance);
+      }
+      return instance;
+
+      // if (currentHud == null || !hudClass.isInstance(currentHud)) {
+      // hudManager.setCustomHud(playerRef, instance);
+
+      // instance.show();
+
+      // return instance;
+      // }
+
+      // instance.show()
+
+      // return instance;
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return null;
   }
 }

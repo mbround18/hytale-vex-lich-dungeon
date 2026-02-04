@@ -1,13 +1,13 @@
 use crate::model::{BodyItem, FileAst, MacroDef, MacroRegistry, Node, NodeKind};
 use crate::util::{is_ident_char, is_ident_start};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use regex::Regex;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub fn parse_ui_file(path: &Path, registry: &mut MacroRegistry) -> Result<FileAst> {
-    let content = std::fs::read_to_string(path)
-        .with_context(|| format!("read {}", path.display()))?;
+    let content =
+        std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
     let mut parser = ParserState::new(path.to_path_buf(), content);
     let mut items = Vec::new();
     let mut imports = HashMap::new();
@@ -55,7 +55,11 @@ pub fn parse_ui_file(path: &Path, registry: &mut MacroRegistry) -> Result<FileAs
         .constants
         .extend(constants.clone());
 
-    Ok(FileAst { items, imports, constants })
+    Ok(FileAst {
+        items,
+        imports,
+        constants,
+    })
 }
 
 fn resolve_import_path(current_file: &Path, rel: &str) -> PathBuf {
@@ -66,7 +70,10 @@ fn resolve_import_path(current_file: &Path, rel: &str) -> PathBuf {
 fn parse_import_statement(stmt: &str) -> Option<(String, String)> {
     let re = Regex::new(r#"^\s*\$(\w+)\s*=\s*\"([^\"]+)\"\s*;\s*$"#).ok()?;
     let caps = re.captures(stmt)?;
-    Some((caps.get(1)?.as_str().to_string(), caps.get(2)?.as_str().to_string()))
+    Some((
+        caps.get(1)?.as_str().to_string(),
+        caps.get(2)?.as_str().to_string(),
+    ))
 }
 
 pub fn parse_param_assignment(text: &str) -> Option<(String, String)> {
@@ -398,7 +405,11 @@ impl ParserState {
     fn expect_char(&mut self, expected: char) -> Result<()> {
         self.skip_ws_and_comments();
         if self.peek_char() != Some(expected) {
-            return Err(anyhow!("Expected '{}' in {}", expected, self.path.display()));
+            return Err(anyhow!(
+                "Expected '{}' in {}",
+                expected,
+                self.path.display()
+            ));
         }
         self.idx += expected.len_utf8();
         Ok(())

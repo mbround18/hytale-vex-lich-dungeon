@@ -23,7 +23,12 @@ pub fn class_name_from_rel_path(rel: &Path) -> String {
         return "Ui".to_string();
     }
     let mut name = parts.join("");
-    if name.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+    if name
+        .chars()
+        .next()
+        .map(|c| c.is_ascii_digit())
+        .unwrap_or(false)
+    {
         name = format!("Ui{}", name);
     }
     name.push_str("Ui");
@@ -122,7 +127,12 @@ fn field_name_from_id(id: &str) -> String {
             }
         }
     }
-    if name.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+    if name
+        .chars()
+        .next()
+        .map(|c| c.is_ascii_digit())
+        .unwrap_or(false)
+    {
         name = format!("id{}", name);
     }
     if is_java_keyword(&name) {
@@ -134,18 +144,64 @@ fn field_name_from_id(id: &str) -> String {
 fn is_java_keyword(name: &str) -> bool {
     matches!(
         name,
-        "abstract" | "assert" | "boolean" | "break" | "byte" | "case" | "catch" | "char" |
-        "class" | "const" | "continue" | "default" | "do" | "double" | "else" | "enum" |
-        "extends" | "final" | "finally" | "float" | "for" | "goto" | "if" | "implements" |
-        "import" | "instanceof" | "int" | "interface" | "long" | "native" | "new" |
-        "package" | "private" | "protected" | "public" | "return" | "short" | "static" |
-        "strictfp" | "super" | "switch" | "synchronized" | "this" | "throw" | "throws" |
-        "transient" | "try" | "void" | "volatile" | "while"
+        "abstract"
+            | "assert"
+            | "boolean"
+            | "break"
+            | "byte"
+            | "case"
+            | "catch"
+            | "char"
+            | "class"
+            | "const"
+            | "continue"
+            | "default"
+            | "do"
+            | "double"
+            | "else"
+            | "enum"
+            | "extends"
+            | "final"
+            | "finally"
+            | "float"
+            | "for"
+            | "goto"
+            | "if"
+            | "implements"
+            | "import"
+            | "instanceof"
+            | "int"
+            | "interface"
+            | "long"
+            | "native"
+            | "new"
+            | "package"
+            | "private"
+            | "protected"
+            | "public"
+            | "return"
+            | "short"
+            | "static"
+            | "strictfp"
+            | "super"
+            | "switch"
+            | "synchronized"
+            | "this"
+            | "throw"
+            | "throws"
+            | "transient"
+            | "try"
+            | "void"
+            | "volatile"
+            | "while"
     )
 }
 
 pub fn common_alias_path(rel_to_ui_root: &Path) -> String {
-    let depth = rel_to_ui_root.parent().map(|p| p.components().count()).unwrap_or(0);
+    let depth = rel_to_ui_root
+        .parent()
+        .map(|p| p.components().count())
+        .unwrap_or(0);
     let mut out = String::new();
     if depth == 0 {
         out.push_str("Common.ui");
