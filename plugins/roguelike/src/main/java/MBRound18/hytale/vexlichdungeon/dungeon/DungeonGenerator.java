@@ -146,10 +146,15 @@ public class DungeonGenerator {
       return;
     }
 
-    if (tileSize != config.getTileSize()) {
-      log.info("Applied stitch pattern %s: tileSize %d -> %d",
-          patternPrefab, config.getTileSize(), tileSize);
-      config.setTileSize(tileSize);
+    if (tileSize >= config.getTileSize()) {
+      if (tileSize != config.getTileSize()) {
+        log.info("Applied stitch pattern %s: tileSize %d -> %d",
+            patternPrefab, config.getTileSize(), tileSize);
+        config.setTileSize(tileSize);
+      }
+    } else {
+      log.info("Stitch pattern %s size %d is smaller than tileSize %d; keeping tileSize to avoid overlap",
+          patternPrefab, tileSize, config.getTileSize());
     }
   }
 

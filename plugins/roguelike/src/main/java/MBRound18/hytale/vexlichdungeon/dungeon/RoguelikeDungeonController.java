@@ -283,7 +283,7 @@ public class RoguelikeDungeonController {
       prefabPath = selectEventPrefab(source);
       state.eventRoomPending = false;
     } else {
-      prefabPath = selector.selectRandomRoom();
+      prefabPath = selectRoomPrefab(source);
     }
     if (prefabPath == null) {
       prefabPath = selector.getBasePrefab();
@@ -294,6 +294,30 @@ public class RoguelikeDungeonController {
       tile.setEventRoom(true);
     }
     return tile;
+  }
+
+  private String selectRoomPrefab(@Nullable DungeonTile source) {
+    if (source == null || stitchIndex == null) {
+      return selector.selectRandomRoom();
+    }
+
+    java.util.Set<String> roomSet = new java.util.HashSet<>(selector.getDiscovery().getAllDungeonPrefabs());
+    java.util.List<String> matchingRooms = new java.util.ArrayList<>();
+    for (java.util.Map.Entry<String, java.util.List<String>> entry : stitchIndex.getStitchesToPrefabs().entrySet()) {
+      if (!entry.getValue().contains(source.getPrefabPath())) {
+        continue;
+      }
+      for (String prefab : entry.getValue()) {
+        if (roomSet.contains(prefab)) {
+          matchingRooms.add(prefab);
+        }
+      }
+    }
+
+    if (matchingRooms.isEmpty()) {
+      return selector.selectRandomRoom();
+    }
+    return matchingRooms.get(new java.util.Random().nextInt(matchingRooms.size()));
   }
 
   private String selectEventPrefab(DungeonTile source) {
@@ -716,7 +740,8 @@ public class RoguelikeDungeonController {
     if (chunk == null) {
       return null;
     }
-    for (int y = maxY; y >= minY; y--) {
+    int searchMax = Math.max(minY, maxY - 2);
+    for (int y = minY; y <= searchMax; y++) {
       if (!isSolid(chunk, x, y, z)) {
         continue;
       }

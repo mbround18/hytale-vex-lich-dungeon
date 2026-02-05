@@ -11,12 +11,15 @@ import MBRound18.hytale.vexlichdungeon.events.DungeonGenerationEventHandler;
 import MBRound18.hytale.vexlichdungeon.events.UniversalEventLogger;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
+import MBRound18.hytale.vexlichdungeon.prefab.PrefabHookRegistry;
+import MBRound18.hytale.vexlichdungeon.prefab.PrefabPlacementHook;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.loot.LootCatalog;
 import MBRound18.hytale.vexlichdungeon.loot.LootService;
 import MBRound18.hytale.vexlichdungeon.loot.LootTableConfig;
 import MBRound18.hytale.vexlichdungeon.loot.LootTableLoader;
 import MBRound18.ImmortalEngine.api.prefab.StitchIndex;
+import MBRound18.hytale.vexlichdungeon.prefab.PrefabStitchIndexBuilder;
 
 import MBRound18.hytale.vexlichdungeon.portal.PortalManagerSystem;
 import com.hypixel.hytale.event.EventBus;
@@ -25,6 +28,7 @@ import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.util.thread.TickingThread;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import javax.annotation.Nonnull;
@@ -44,6 +48,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
   private TickingThread watchdog;
   private LoggingHelper eventsLogger;
   private PrefabSpawner prefabSpawner;
+  private PrefabDiscovery prefabDiscovery;
 
   public VexLichDungeonPlugin(@Nonnull JavaPluginInit init) {
     super(init);
@@ -59,6 +64,11 @@ public class VexLichDungeonPlugin extends JavaPlugin {
   @Nullable
   public PrefabSpawner getPrefabSpawner() {
     return prefabSpawner;
+  }
+
+  @Nullable
+  public PrefabDiscovery getPrefabDiscovery() {
+    return prefabDiscovery;
   }
 
   @Nullable
@@ -91,24 +101,35 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     log.fine("[HUD-BOOT] EngineHud adapter setup complete");
     MBRound18.hytale.vexlichdungeon.ui.VexUiCatalog.registerDefaults();
     CommandManager.get().register(new VexCommand());
-    StitchIndex stitchIndex = null;
     log.info("Registered Vex UI and HUD templates (code-driven)");
     eventsLogger = new LoggingHelper("VexLichDungeon-Events");
 
     // Initialize prefab discovery - loads from ZIP asset bundle
     // The ZIP should be in the same directory as the JAR with the same base name
     // E.g., VexLichDungeon-0.1.0.jar -> VexLichDungeon.zip
-    PrefabDiscovery prefabDiscovery = new PrefabDiscovery(Objects.requireNonNull(log, "log"), pluginJarPath);
+    Path unpackedRoot = Path.of("data", "unpacked");
+    if (!Files.exists(unpackedRoot)) {
+      unpackedRoot = null;
+    }
+    prefabDiscovery = Objects.requireNonNull(
+      new PrefabDiscovery(Objects.requireNonNull(log, "log"), pluginJarPath, unpackedRoot),
+      "prefabDiscovery");
     PortalEngineAdapter engineAdapter = new PortalEngineAdapter();
 
     // Initialize dungeon generation components using config
     GenerationConfig config = new GenerationConfig();
     DungeonGenerator dungeonGenerator = new DungeonGenerator(config, Objects.requireNonNull(log, "log"),
-        prefabDiscovery);
+      Objects.requireNonNull(prefabDiscovery, "prefabDiscovery"));
     prefabSpawner = new PrefabSpawner(
-        Objects.requireNonNull(log, "log"),
-        prefabDiscovery.getZipFile(),
-        config);
+      Objects.requireNonNull(log, "log"),
+      prefabDiscovery.getZipFile(),
+      config,
+      unpackedRoot);
+    StitchIndex stitchIndex = PrefabStitchIndexBuilder.build(
+      Objects.requireNonNull(prefabDiscovery, "prefabDiscovery"),
+      Objects.requireNonNull(prefabSpawner, "prefabSpawner"),
+      Objects.requireNonNull(log, "log"));
+    PrefabHookRegistry.register(new PrefabPlacementHook());
     Path lootTablePath = dataDirectory.resolve("loot_tables.json");
     LootService lootService = buildLootService(
         Objects.requireNonNull(lootTablePath, "lootTablePath"),
@@ -118,7 +139,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
     RoguelikeDungeonController roguelikeController = new RoguelikeDungeonController(
         Objects.requireNonNull(log, "log"),
         dungeonGenerator,
-        prefabDiscovery,
+        Objects.requireNonNull(prefabDiscovery, "prefabDiscovery"),
         Objects.requireNonNull(prefabSpawner, "prefabSpawner"),
         Objects.requireNonNull(dataStore, "dataStore"),
         engineAdapter,

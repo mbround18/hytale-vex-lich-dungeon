@@ -22,7 +22,7 @@ public class GenerationConfig {
   public static final double DEFAULT_ROOM_PROBABILITY = 0.7;
 
   /** Default stitch pattern prefab path (relative to Server/Prefabs/) */
-  public static final String DEFAULT_STITCH_PATTERN = "Stitch/Vex_Stitch_Pattern_A";
+  public static final String DEFAULT_STITCH_PATTERN = "Stitch/Vex_Stitch_Pattern_B";
 
   /** Default world bounds to prevent spawning outside valid Y range */
   public static final int DEFAULT_WORLD_MIN_Y = 0;

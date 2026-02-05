@@ -7,10 +7,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,6 +28,7 @@ public class PrefabInspector {
 
   private final @Nonnull LoggingHelper log;
   private final @Nonnull ZipFile zipFile;
+  private final @Nullable Path unpackedRoot;
   private final int tileSize;
   private final int gateGap;
   private final Map<String, PrefabDimensions> dimensionsCache;
@@ -35,10 +39,16 @@ public class PrefabInspector {
    * @param log Logger for inspection events
    */
   public PrefabInspector(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, int tileSize, int gateGap) {
+    this(log, zipFile, tileSize, gateGap, null);
+  }
+
+  public PrefabInspector(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, int tileSize, int gateGap,
+      @Nullable Path unpackedRoot) {
     this.log = Objects.requireNonNull(log, "log");
     this.zipFile = Objects.requireNonNull(zipFile, "zipFile");
     this.tileSize = Math.max(1, tileSize);
     this.gateGap = Math.max(0, gateGap);
+    this.unpackedRoot = unpackedRoot;
     this.dimensionsCache = Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
       @Override
       protected boolean removeEldestEntry(Map.Entry<String, PrefabDimensions> eldest) {
@@ -101,75 +111,106 @@ public class PrefabInspector {
       String entryPath = "Server/Prefabs/" + normalizedPath;
 
       ZipEntry entry = zipFile.getEntry(entryPath);
-      if (entry == null) {
-        log.warn("Prefab file not found in ZIP: %s", entryPath);
-        PrefabDimensions dims = createDefaultDimensions();
-        dimensionsCache.put(modRelativePath, dims);
-        return dims;
+      if (entry != null) {
+        // Parse JSON directly from ZIP entry
+        try (BufferedReader reader = new BufferedReader(
+            new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8))) {
+          return parseDimensions(modRelativePath, Objects.requireNonNull(reader, "reader"));
+        }
       }
 
-      // Parse JSON directly from ZIP entry
-      try (BufferedReader reader = new BufferedReader(
-          new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8))) {
-        JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-        JsonArray blocks = json.getAsJsonArray("blocks");
-
-        if (blocks == null || blocks.isEmpty()) {
-          log.warn("Prefab %s has no blocks", modRelativePath);
-          PrefabDimensions dims = createDefaultDimensions();
-          dimensionsCache.put(modRelativePath, dims);
-          return dims;
+      Path unpackedFile = resolveUnpackedPrefab(entryPath);
+      if (unpackedFile != null && Files.exists(unpackedFile)) {
+        try (BufferedReader reader = Files.newBufferedReader(unpackedFile, StandardCharsets.UTF_8)) {
+          return parseDimensions(modRelativePath, Objects.requireNonNull(reader, "reader"));
         }
-
-        // Calculate bounds
-        PrefabDimensions dims = new PrefabDimensions();
-        dims.minX = Integer.MAX_VALUE;
-        dims.maxX = Integer.MIN_VALUE;
-        dims.minY = Integer.MAX_VALUE;
-        dims.maxY = Integer.MIN_VALUE;
-        dims.minZ = Integer.MAX_VALUE;
-        dims.maxZ = Integer.MIN_VALUE;
-
-        for (JsonElement elem : blocks) {
-          JsonObject block = elem.getAsJsonObject();
-          int x = block.get("x").getAsInt();
-          int y = block.get("y").getAsInt();
-          int z = block.get("z").getAsInt();
-
-          dims.minX = Math.min(dims.minX, x);
-          dims.maxX = Math.max(dims.maxX, x);
-          dims.minY = Math.min(dims.minY, y);
-          dims.maxY = Math.max(dims.maxY, y);
-          dims.minZ = Math.min(dims.minZ, z);
-          dims.maxZ = Math.max(dims.maxZ, z);
-        }
-
-        // Handle edge case: single block or no blocks parsed
-        if (dims.minX == Integer.MAX_VALUE || dims.minY == Integer.MAX_VALUE || dims.minZ == Integer.MAX_VALUE) {
-          log.warn("Prefab %s has invalid bounds", modRelativePath);
-          PrefabDimensions fallback = createDefaultDimensions();
-          dimensionsCache.put(modRelativePath, fallback);
-          return fallback;
-        }
-
-        dims.width = dims.maxX - dims.minX + 1;
-        dims.depth = dims.maxZ - dims.minZ + 1;
-
-        // Ensure dimensions are at least 1
-        dims.width = Math.max(1, dims.width);
-        dims.depth = Math.max(1, dims.depth);
-
-        log.info("Inspected prefab %s: %s", modRelativePath, dims);
-        dimensionsCache.put(modRelativePath, dims);
-        return dims;
-
       }
+
+      log.warn("Prefab file not found in ZIP or unpacked path: %s", entryPath);
+      PrefabDimensions dims = createDefaultDimensions();
+      dimensionsCache.put(modRelativePath, dims);
+      return dims;
+
     } catch (Exception e) {
       log.error("Failed to inspect prefab %s: %s", modRelativePath, e.getMessage());
       PrefabDimensions dims = createDefaultDimensions();
       dimensionsCache.put(modRelativePath, dims);
       return dims;
     }
+  }
+
+  @Nonnull
+  @SuppressWarnings("null")
+  private PrefabDimensions parseDimensions(@Nonnull String modRelativePath, @Nonnull BufferedReader reader) {
+    try {
+      JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+      JsonArray blocks = json.getAsJsonArray("blocks");
+
+      if (blocks == null || blocks.isEmpty()) {
+        log.warn("Prefab %s has no blocks", modRelativePath);
+        PrefabDimensions dims = createDefaultDimensions();
+        dimensionsCache.put(modRelativePath, dims);
+        return dims;
+      }
+
+      // Calculate bounds
+      PrefabDimensions dims = new PrefabDimensions();
+      dims.minX = Integer.MAX_VALUE;
+      dims.maxX = Integer.MIN_VALUE;
+      dims.minY = Integer.MAX_VALUE;
+      dims.maxY = Integer.MIN_VALUE;
+      dims.minZ = Integer.MAX_VALUE;
+      dims.maxZ = Integer.MIN_VALUE;
+
+      for (JsonElement elem : blocks) {
+        JsonObject block = elem.getAsJsonObject();
+        int x = block.get("x").getAsInt();
+        int y = block.get("y").getAsInt();
+        int z = block.get("z").getAsInt();
+
+        dims.minX = Math.min(dims.minX, x);
+        dims.maxX = Math.max(dims.maxX, x);
+        dims.minY = Math.min(dims.minY, y);
+        dims.maxY = Math.max(dims.maxY, y);
+        dims.minZ = Math.min(dims.minZ, z);
+        dims.maxZ = Math.max(dims.maxZ, z);
+      }
+
+      // Handle edge case: single block or no blocks parsed
+      if (dims.minX == Integer.MAX_VALUE || dims.minY == Integer.MAX_VALUE || dims.minZ == Integer.MAX_VALUE) {
+        log.warn("Prefab %s has invalid bounds", modRelativePath);
+        PrefabDimensions fallback = createDefaultDimensions();
+        dimensionsCache.put(modRelativePath, fallback);
+        return fallback;
+      }
+
+      dims.width = dims.maxX - dims.minX + 1;
+      dims.depth = dims.maxZ - dims.minZ + 1;
+
+      // Ensure dimensions are at least 1
+      dims.width = Math.max(1, dims.width);
+      dims.depth = Math.max(1, dims.depth);
+
+      log.info("Inspected prefab %s: %s", modRelativePath, dims);
+      dimensionsCache.put(modRelativePath, dims);
+      return dims;
+
+    } catch (Exception e) {
+      log.error("Failed to inspect prefab %s: %s", modRelativePath, e.getMessage());
+      PrefabDimensions dims = createDefaultDimensions();
+      dimensionsCache.put(modRelativePath, dims);
+      return dims;
+    }
+  }
+
+  @Nullable
+  private Path resolveUnpackedPrefab(@Nonnull String entryPath) {
+    Path root = unpackedRoot;
+    if (root == null) {
+      return null;
+    }
+    String trimmed = entryPath.startsWith("Server/") ? entryPath.substring("Server/".length()) : entryPath;
+    return root.resolve(trimmed);
   }
 
   /**

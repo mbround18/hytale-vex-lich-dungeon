@@ -9,6 +9,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.hypixel.hytale.math.Axis;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.fluid.Fluid;
 import com.hypixel.hytale.server.core.console.ConsoleSender;
@@ -18,7 +20,9 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import MBRound18.ImmortalEngine.api.prefab.PrefabEntityUtils;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.server.npc.NPCPlugin;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
@@ -29,8 +33,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -58,6 +65,7 @@ public class PrefabSpawner {
   private final PrefabInspector inspector;
   private final GenerationConfig config;
   private final Map<String, SoftReference<BlockSelection>> prefabCache;
+  private final Map<String, List<PrefabEntityDefinition>> prefabEntityCache = new ConcurrentHashMap<>();
 
   /**
    * Creates a new prefab spawner.
@@ -66,10 +74,15 @@ public class PrefabSpawner {
    * @param zipFile The asset ZIP file containing prefabs
    */
   public PrefabSpawner(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, @Nonnull GenerationConfig config) {
+    this(log, zipFile, config, null);
+  }
+
+  public PrefabSpawner(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, @Nonnull GenerationConfig config,
+      @Nullable Path unpackedRoot) {
     this.log = log;
     this.zipFile = zipFile;
     this.config = config;
-    this.inspector = new PrefabInspector(log, zipFile, config.getTileSize(), config.getGateGap());
+    this.inspector = new PrefabInspector(log, zipFile, config.getTileSize(), config.getGateGap(), unpackedRoot);
     this.prefabCache = Collections.synchronizedMap(new LinkedHashMap<>(MAX_PREFAB_CACHE, 0.75f, true) {
       @Override
       protected boolean removeEldestEntry(Map.Entry<String, SoftReference<BlockSelection>> eldest) {
@@ -110,20 +123,25 @@ public class PrefabSpawner {
           throw new PrefabLoadException("Prefab file not found in ZIP at: " + zipEntryPath);
         }
 
-        // Create a temporary file to store the JSON
-        tempFile = Files.createTempFile("prefab_", ".json");
-
-        // Extract ZIP entry to temporary file
+        // Extract ZIP entry into memory
         try (BufferedReader reader = new BufferedReader(
-            new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8));
-            BufferedWriter writer = new BufferedWriter(
-                new OutputStreamWriter(Files.newOutputStream(tempFile), StandardCharsets.UTF_8))) {
+            new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8))) {
           String line;
           while ((line = reader.readLine()) != null) {
-            writer.write(line);
-            writer.write("\n");
             jsonBuilder.append(line).append('\n');
           }
+        }
+
+        String jsonContent = Objects.requireNonNull(jsonBuilder.toString(), "jsonContent");
+        JsonObject root = Objects.requireNonNull(JsonParser.parseString(jsonContent).getAsJsonObject(), "root");
+        List<PrefabEntityDefinition> entities = extractPrefabEntities(root, modRelativePath);
+        prefabEntityCache.put(modRelativePath, entities);
+
+        // Create a temporary file to store the sanitized JSON
+        tempFile = Files.createTempFile("prefab_", ".json");
+        try (BufferedWriter writer = new BufferedWriter(
+            new OutputStreamWriter(Files.newOutputStream(tempFile), StandardCharsets.UTF_8))) {
+          writer.write(root.toString());
         }
 
         log.info("Extracted prefab JSON to temporary file: %s", tempFile);
@@ -131,7 +149,7 @@ public class PrefabSpawner {
         // Use PrefabStore to deserialize the BlockSelection from the JSON file
         BlockSelection prefab = PrefabStore.get().getPrefab(Objects.requireNonNull(tempFile, "tempFile"));
 
-        hydrateFluidsFromJson(prefab, Objects.requireNonNull(jsonBuilder.toString(), "jsonContent"),
+        hydrateFluidsFromJson(prefab, jsonContent,
             modRelativePath);
 
         if (prefab.getFluidCount() > 0) {
@@ -139,6 +157,9 @@ public class PrefabSpawner {
         }
 
         log.info("Successfully loaded and deserialized prefab: %s", modRelativePath);
+        for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
+          hook.onPrefabLoaded(modRelativePath, prefab);
+        }
         prefabCache.put(modRelativePath, new SoftReference<>(prefab));
         return prefab;
 
@@ -156,6 +177,83 @@ public class PrefabSpawner {
         }
       }
     }), "prefabFuture");
+  }
+
+  private List<PrefabEntityDefinition> extractPrefabEntities(@Nonnull JsonObject root, @Nonnull String prefabPath) {
+    try {
+      JsonArray entities = root.getAsJsonArray("entities");
+      if (entities == null || entities.isEmpty()) {
+        return List.of();
+      }
+      List<PrefabEntityDefinition> definitions = new ArrayList<>();
+      JsonArray keptEntities = new JsonArray();
+
+      for (JsonElement element : entities) {
+        if (!element.isJsonObject()) {
+          keptEntities.add(element);
+          continue;
+        }
+        JsonObject entity = element.getAsJsonObject();
+        JsonObject components = entity.getAsJsonObject("Components");
+        if (components == null) {
+          keptEntities.add(entity);
+          continue;
+        }
+        if (components.has("BlockEntity")) {
+          keptEntities.add(entity);
+          continue;
+        }
+
+        JsonObject modelWrapper = components.getAsJsonObject("Model");
+        if (modelWrapper == null) {
+          keptEntities.add(entity);
+          continue;
+        }
+        JsonObject model = modelWrapper.getAsJsonObject("Model");
+        if (model == null || !model.has("Id")) {
+          keptEntities.add(entity);
+          continue;
+        }
+        String modelId = Objects.requireNonNull(model.get("Id").getAsString(), "modelId");
+
+        JsonObject transform = components.getAsJsonObject("Transform");
+        if (transform == null) {
+          keptEntities.add(entity);
+          continue;
+        }
+        JsonObject position = transform.getAsJsonObject("Position");
+        JsonObject rotation = transform.getAsJsonObject("Rotation");
+        if (position == null || rotation == null) {
+          keptEntities.add(entity);
+          continue;
+        }
+
+        Vector3d pos = new Vector3d(
+            position.get("X").getAsDouble(),
+            position.get("Y").getAsDouble(),
+            position.get("Z").getAsDouble());
+        Vector3f rot = new Vector3f(
+            (float) rotation.get("Pitch").getAsDouble(),
+            (float) rotation.get("Yaw").getAsDouble(),
+            (float) rotation.get("Roll").getAsDouble());
+
+        definitions.add(new PrefabEntityDefinition(modelId, pos, rot));
+      }
+
+      if (keptEntities.size() > 0) {
+        root.add("entities", keptEntities);
+      } else {
+        root.remove("entities");
+      }
+
+      if (!definitions.isEmpty()) {
+        log.info("Extracted %d prefab entities from %s", definitions.size(), prefabPath);
+      }
+      return definitions;
+    } catch (Exception e) {
+      log.warn("Failed to parse prefab entities for %s: %s", prefabPath, e.getMessage());
+      return List.of();
+    }
   }
 
   private void hydrateFluidsFromJson(
@@ -271,12 +369,31 @@ public class PrefabSpawner {
           .rotate(Axis.Y, tile.getRotation());
 
       // Write prefab to world at the specified coordinates
+      Vector3i tileOrigin = new Vector3i(worldX, tileBaseY, worldZ);
+      PrefabPlaceContext placeContext = new PrefabPlaceContext(world, tile.getPrefabPath(), tileOrigin,
+          tile.getRotation(), false, rotatedPrefab);
+      for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
+        hook.beforePlace(placeContext);
+      }
+
       rotatedPrefab.place(
           ConsoleSender.INSTANCE,
           world,
-          new Vector3i(worldX, tileBaseY, worldZ),
+          tileOrigin,
           null,
-          this::unfreezeSpawnedEntity);
+          entityRef -> {
+            if (entityRef != null) {
+              for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
+                hook.onSpawnEntity(world, tile.getPrefabPath(), entityRef);
+              }
+            }
+            unfreezeSpawnedEntity(world, entityRef);
+          });
+
+      for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
+        hook.afterPlace(placeContext);
+      }
+      spawnPrefabEntities(world, tile.getPrefabPath(), tileOrigin, tile.getRotation());
 
       if (spawnGates) {
         // Spawn gates: blocked gates always; interior gates only once per edge
@@ -356,17 +473,32 @@ public class PrefabSpawner {
           .rotate(Axis.Y, rotationDegrees);
 
       // Write gate to world
+      Vector3i gateOrigin = new Vector3i(gateX, gateY, gateZ);
+      PrefabPlaceContext gateContext = new PrefabPlaceContext(world, gatePath, gateOrigin, rotationDegrees, true,
+          rotatedGate);
+      for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
+        hook.beforePlace(gateContext);
+      }
+
       rotatedGate.place(
           ConsoleSender.INSTANCE,
           world,
-          new Vector3i(gateX, gateY, gateZ),
+          gateOrigin,
           null,
           entityRef -> {
             log.info("Spawned entity in gate: %s", entityRef);
             if (entityRef != null) {
-              unfreezeSpawnedEntity(entityRef);
+              for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
+                hook.onSpawnEntity(world, gatePath, entityRef);
+              }
+              unfreezeSpawnedEntity(world, entityRef);
             }
           });
+
+      for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
+        hook.afterPlace(gateContext);
+      }
+      spawnPrefabEntities(world, gatePath, gateOrigin, rotationDegrees);
 
       log.info("Successfully spawned gate at (%d, %d, %d) facing %s with %d degree rotation (dims: %s)",
           gateX, gateY, gateZ, direction, rotationDegrees, gateDims);
@@ -391,8 +523,68 @@ public class PrefabSpawner {
     return inspector.getPrefabDimensions(prefabPath);
   }
 
-  private void unfreezeSpawnedEntity(@Nonnull Ref<EntityStore> entityRef) {
-    PrefabEntityUtils.unfreezePrefabNpc(entityRef, log);
+  private void unfreezeSpawnedEntity(@Nonnull World world, @Nullable Ref<EntityStore> entityRef) {
+    if (entityRef == null) {
+      return;
+    }
+    attemptUnfreeze(world, entityRef, 3);
+  }
+
+  private void attemptUnfreeze(@Nonnull World world, @Nonnull Ref<EntityStore> entityRef, int remainingAttempts) {
+    boolean success = PrefabEntityUtils.tryUnfreezePrefabEntity(entityRef, log.getLogger());
+    if (success || remainingAttempts <= 0) {
+      return;
+    }
+    world.execute(() -> attemptUnfreeze(world, entityRef, remainingAttempts - 1));
+  }
+
+  private void spawnPrefabEntities(@Nonnull World world, @Nonnull String prefabPath, @Nonnull Vector3i origin,
+      int rotationDegrees) {
+    List<PrefabEntityDefinition> entities = prefabEntityCache.get(prefabPath);
+    if (entities == null || entities.isEmpty()) {
+      return;
+    }
+    NPCPlugin npcPlugin = NPCPlugin.get();
+    if (npcPlugin == null) {
+      return;
+    }
+    for (PrefabEntityDefinition def : entities) {
+      if (def == null) {
+        continue;
+      }
+      String modelId = def.getModelId();
+      if (!npcPlugin.hasRoleName(modelId)) {
+        log.warn("Skipping prefab NPC %s (no role registered)", modelId);
+        continue;
+      }
+      Vector3d rotated = rotatePosition(def.getPosition(), rotationDegrees);
+      Vector3d worldPos = new Vector3d(origin.x + rotated.x, origin.y + rotated.y, origin.z + rotated.z);
+      Vector3f rotation = rotateRotation(def.getRotation(), rotationDegrees);
+      npcPlugin.spawnNPC(
+          Objects.requireNonNull(world.getEntityStore().getStore(), "store"),
+          modelId,
+          modelId,
+          worldPos,
+          Objects.requireNonNull(rotation, "rotation"));
+    }
+  }
+
+  private Vector3d rotatePosition(@Nonnull Vector3d position, int rotationDegrees) {
+    int normalized = ((rotationDegrees % 360) + 360) % 360;
+    double x = position.x;
+    double z = position.z;
+    return switch (normalized) {
+      case 90 -> new Vector3d(-z, position.y, x);
+      case 180 -> new Vector3d(-x, position.y, -z);
+      case 270 -> new Vector3d(z, position.y, -x);
+      default -> new Vector3d(x, position.y, z);
+    };
+  }
+
+  private Vector3f rotateRotation(@Nonnull Vector3f rotation, int rotationDegrees) {
+    int normalized = ((rotationDegrees % 360) + 360) % 360;
+    float yaw = rotation.y + (float) Math.toRadians(normalized);
+    return new Vector3f(rotation.x, yaw, rotation.z);
   }
 
   private boolean shouldSpawnGate(

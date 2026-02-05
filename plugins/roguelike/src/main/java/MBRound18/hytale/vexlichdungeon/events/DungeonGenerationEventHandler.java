@@ -8,9 +8,10 @@ import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
 import MBRound18.hytale.vexlichdungeon.commands.VexChallengeCommand;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
-import MBRound18.hytale.shared.utilities.LoggingHelper;
+import MBRound18.hytale.shared.utilities.PlayerPoller;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.ui.VexHudSequenceSupport;
+
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventBus;
@@ -38,6 +39,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Listens for player join events and automatically generates dungeons
@@ -59,6 +63,9 @@ public class DungeonGenerationEventHandler {
   private final Map<String, Long> lastPlayerSeen = new ConcurrentHashMap<>();
   private final Set<UUID> welcomedPlayers = ConcurrentHashMap.newKeySet();
   private static final long EMPTY_INSTANCE_GRACE_MS = 15_000L;
+  private static final ScheduledExecutorService EMPTY_INSTANCE_SCHEDULER = Executors.newScheduledThreadPool(1,
+      Thread.ofVirtual().name("vex-empty-instance-", 0).factory());
+  private final PlayerPoller playerPoller = new PlayerPoller();
 
   /**
    * Creates a new dungeon generation event handler.
@@ -96,6 +103,24 @@ public class DungeonGenerationEventHandler {
     eventBus.register(
         (Class) StartWorldEvent.class,
         (java.util.function.Consumer) (Object e) -> onStartWorld((StartWorldEvent) e));
+    eventBus.register(
+        (Class) AddPlayerToWorldEvent.class,
+        (java.util.function.Consumer) (Object e) -> {
+          AddPlayerToWorldEvent event = (AddPlayerToWorldEvent) e;
+          PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
+          if (ref != null) {
+            VexChallengeCommand.forceRemovePortal(ref.getUuid());
+          }
+        });
+    eventBus.register(
+        (Class) DrainPlayerFromWorldEvent.class,
+        (java.util.function.Consumer) (Object e) -> {
+          DrainPlayerFromWorldEvent event = (DrainPlayerFromWorldEvent) e;
+          PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
+          if (ref != null) {
+            VexChallengeCommand.forceRemovePortal(ref.getUuid());
+          }
+        });
     log.info("Successfully registered dungeon generation event handler");
   }
 
@@ -205,15 +230,44 @@ public class DungeonGenerationEventHandler {
     }
   }
 
+  private void onPlayerArriveInstance(@Nonnull World world, @Nullable PlayerRef eventPlayerRef) {
+  }
+
   private void onAddPlayerToWorld(AddPlayerToWorldEvent event) {
+
     try {
       World world = event.getWorld();
       String worldName = world.getName();
+      PlayerRef eventPlayerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
+      if (eventPlayerRef != null) {
+        VexChallengeCommand.forceRemovePortal(eventPlayerRef.getUuid());
+      } else {
+        log.info("[EVENT] AddPlayerToWorldEvent has no PlayerRef component");
+      }
 
       // Only track Vex dungeon worlds
       if (!worldName.contains("Vex_The_Lich_Dungeon")) {
         return;
       }
+
+      playerPoller.start(eventPlayerRef, 200L, () -> {
+        log.info("[EVENT POLLER] Checking player presence for world: %s", worldName);
+        if (eventPlayerRef == null) {
+          return;
+        }
+
+        UUID playerWorldId = eventPlayerRef.getWorldUuid();
+        if (playerWorldId == null) {
+          return;
+        }
+        World playerWorld = Universe.get().getWorld(playerWorldId);
+        if (playerWorld != null && playerWorld.getName() != null
+            && playerWorld.getName().contains("Vex_The_Lich_Dungeon")) {
+          clearCountdownOnInstanceEntry(world, eventPlayerRef);
+          eventPlayerRef.sendMessage(Message.raw("Vex welcomes a new challenger!"));
+          playerPoller.stop();
+        }
+      });
 
       log.info("[EVENT] AddPlayerToWorldEvent fired for world: %s", worldName);
       lastPlayerSeen.put(worldName, System.currentTimeMillis());
@@ -296,15 +350,12 @@ public class DungeonGenerationEventHandler {
           log.info("[SPAWN] No players found in world yet, will capture on next event");
         }
 
-        PlayerRef eventPlayerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
-        if (eventPlayerRef != null) {
-          UUID uuid = eventPlayerRef.getUuid();
-          if (world.getName().contains("Vex_The_Lich_Dungeon")) {
-            VexChallengeCommand.forceRemovePortal(uuid);
-          }
-          boolean showWelcome = welcomedPlayers.add(uuid);
-          roguelikeController.initializePlayer(world, eventPlayerRef, showWelcome);
-        }
+      }
+
+      if (eventPlayerRef != null) {
+        UUID uuid = eventPlayerRef.getUuid();
+        boolean showWelcome = welcomedPlayers.add(uuid);
+        roguelikeController.initializePlayer(world, eventPlayerRef, showWelcome);
       }
 
       // Trigger generation if spawn is tracked and not yet generated
@@ -345,8 +396,11 @@ public class DungeonGenerationEventHandler {
       if (world == null) {
         return;
       }
+      PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
+      if (ref != null) {
+        VexChallengeCommand.forceRemovePortal(ref.getUuid());
+      }
       if (world.getName().contains("Vex_The_Lich_Dungeon")) {
-        PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
         if (ref != null) {
           roguelikeController.showExitSummary(ref, world);
         }
@@ -360,11 +414,31 @@ public class DungeonGenerationEventHandler {
     }
   }
 
+  private void clearCountdownOnInstanceEntry(@Nonnull World world, @Nullable PlayerRef eventPlayerRef) {
+    if (eventPlayerRef != null) {
+      VexChallengeCommand.clearCountdownHud(eventPlayerRef.getUuid());
+      return;
+    }
+    for (PlayerRef playerRef : world.getPlayerRefs()) {
+      if (playerRef == null || !playerRef.isValid()) {
+        continue;
+      }
+      VexChallengeCommand.clearCountdownHud(playerRef.getUuid());
+    }
+  }
+
   private void scheduleEmptyInstanceCheck(@Nonnull World world) {
     if (!dataStore.getConfig().isRemoveInstanceWhenEmpty()) {
       return;
     }
     world.execute(() -> tryShutdownEmptyInstance(world));
+    EMPTY_INSTANCE_SCHEDULER.schedule(() -> {
+      try {
+        world.execute(() -> tryShutdownEmptyInstance(world));
+      } catch (Exception e) {
+        log.warn("Delayed empty-instance check failed: %s", e.getMessage());
+      }
+    }, EMPTY_INSTANCE_GRACE_MS + 500L, TimeUnit.MILLISECONDS);
   }
 
   @Nullable
@@ -378,31 +452,50 @@ public class DungeonGenerationEventHandler {
   }
 
   private void tryShutdownEmptyInstance(@Nonnull World world) {
+    shutdownInstanceIfEmpty(world, false);
+  }
+
+  public int pruneEmptyInstances() {
+    int removed = 0;
+    for (World world : Universe.get().getWorlds().values()) {
+      if (world == null) {
+        continue;
+      }
+      if (shutdownInstanceIfEmpty(world, true)) {
+        removed++;
+      }
+    }
+    return removed;
+  }
+
+  private boolean shutdownInstanceIfEmpty(@Nonnull World world, boolean force) {
     String worldName = world.getName();
     if (!worldName.contains("Vex_The_Lich_Dungeon")) {
-      return;
-    }
-    if (!dataStore.getConfig().isRemoveInstanceWhenEmpty()) {
-      return;
+      return false;
     }
     if (currentlyGenerating.contains(worldName)) {
-      return;
+      return false;
     }
     if (!dataStore.isGenerated(worldName)) {
-      return;
+      return false;
     }
-    if (!spawnTracker.hasSpawn(worldName)) {
-      return;
+    if (!force) {
+      if (!dataStore.getConfig().isRemoveInstanceWhenEmpty()) {
+        return false;
+      }
+      if (!spawnTracker.hasSpawn(worldName)) {
+        return false;
+      }
+      Long lastSeen = lastPlayerSeen.get(worldName);
+      if (lastSeen != null && System.currentTimeMillis() - lastSeen < EMPTY_INSTANCE_GRACE_MS) {
+        return false;
+      }
     }
     if (world.getPlayerCount() > 0) {
-      return;
-    }
-    Long lastSeen = lastPlayerSeen.get(worldName);
-    if (lastSeen != null && System.currentTimeMillis() - lastSeen < EMPTY_INSTANCE_GRACE_MS) {
-      return;
+      return false;
     }
     if (!shuttingDownWorlds.add(worldName)) {
-      return;
+      return false;
     }
 
     dataStore.clearCurrentPlayers(worldName);
@@ -414,8 +507,11 @@ public class DungeonGenerationEventHandler {
     }
     roguelikeController.removeWorldState(worldName);
     spawnTracker.clearWorld(worldName);
+    world.validateDeleteOnRemove();
+    world.stopIndividualWorld();
     Universe.get().removeWorld(worldName);
     log.info("[INSTANCE] Removed empty dungeon instance: %s", worldName);
+    return true;
   }
 
   private void announceRunSummary(@Nonnull MBRound18.ImmortalEngine.api.RunSummary summary) {
