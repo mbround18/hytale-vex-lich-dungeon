@@ -8,6 +8,7 @@ import MBRound18.hytale.vexlichdungeon.dungeon.DungeonGenerator;
 import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
 import MBRound18.hytale.vexlichdungeon.commands.VexChallengeCommand;
+import MBRound18.hytale.vexlichdungeon.portal.PortalManagerSystem;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.shared.utilities.PlayerPoller;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
@@ -104,8 +105,9 @@ public class DungeonGenerationEventHandler {
         (java.util.function.Consumer) (Object e) -> {
           AddPlayerToWorldEvent event = (AddPlayerToWorldEvent) e;
           PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-          if (ref != null) {
-            VexChallengeCommand.forceRemovePortal(ref.getUuid());
+          if (ref != null && event.getWorld() != null
+              && event.getWorld().getName().contains("Vex_The_Lich_Dungeon")) {
+            PortalManagerSystem.handlePortalEntry(ref, event.getWorld());
           }
         });
     eventBus.register(
@@ -113,8 +115,9 @@ public class DungeonGenerationEventHandler {
         (java.util.function.Consumer) (Object e) -> {
           DrainPlayerFromWorldEvent event = (DrainPlayerFromWorldEvent) e;
           PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-          if (ref != null) {
-            VexChallengeCommand.forceRemovePortal(ref.getUuid());
+          if (ref != null && event.getWorld() != null
+              && event.getWorld().getName().contains("Vex_The_Lich_Dungeon")) {
+            PortalManagerSystem.handlePortalEntry(ref, event.getWorld());
           }
         });
     log.info("Successfully registered dungeon generation event handler");
@@ -235,7 +238,9 @@ public class DungeonGenerationEventHandler {
       String worldName = world.getName();
       PlayerRef eventPlayerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
       if (eventPlayerRef != null) {
-        VexChallengeCommand.forceRemovePortal(eventPlayerRef.getUuid());
+        if (worldName.contains("Vex_The_Lich_Dungeon")) {
+          PortalManagerSystem.handlePortalEntry(eventPlayerRef, world);
+        }
       } else {
         log.info("[EVENT] AddPlayerToWorldEvent has no PlayerRef component");
       }
@@ -392,8 +397,8 @@ public class DungeonGenerationEventHandler {
         return;
       }
       PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-      if (ref != null) {
-        VexChallengeCommand.forceRemovePortal(ref.getUuid());
+      if (ref != null && world.getName().contains("Vex_The_Lich_Dungeon")) {
+        PortalManagerSystem.handlePortalEntry(ref, world);
       }
       if (world.getName().contains("Vex_The_Lich_Dungeon")) {
         if (ref != null) {

@@ -123,7 +123,7 @@ public final class ParticipantTracker {
         : displayName;
   }
 
-  private static final class StatSnapshot {
+  public static final class StatSnapshot {
     private static final StatSnapshot EMPTY = new StatSnapshot(-1f, -1f);
     private final float current;
     private final float max;

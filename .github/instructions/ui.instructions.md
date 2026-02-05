@@ -66,6 +66,7 @@ applyTo: "**/assets/Common/UI/Custom/**,**/assets/Server/Languages/en-US/server.
 
 - Custom UI commands must run on the world thread (not scheduler/ForkJoin).
   - Use UiThread.runOnPlayerWorld(playerRef, () -> ...) from ImmortalEngine.
+- All UI updates must be executed inside UiThread.runOnPlayerWorld(...).
 - When setting label text, target the property:
   - Correct: #FriendsListBody.Text
   - Wrong: #FriendsListBody

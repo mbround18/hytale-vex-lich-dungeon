@@ -74,28 +74,35 @@ public class DataStore {
   }
 
   private void loadPortalPlacements() throws IOException {
-    Path portalsPath = dataDirectory.resolve("portals.json");
+    Path portalsPath = dataDirectory.resolve("portals.db");
 
     if (Files.exists(portalsPath)) {
-      try (Reader reader = Files.newBufferedReader(portalsPath)) {
-        PortalPlacementRecord[] loaded = gson.fromJson(reader, PortalPlacementRecord[].class);
-        if (loaded != null) {
-          for (PortalPlacementRecord record : loaded) {
-            if (record != null && record.getPortalId() != null) {
-              portalPlacements.put(record.getPortalId(), record);
+      try (InputStream inputStream = Files.newInputStream(portalsPath);
+          ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)) {
+        Object loaded = objectInputStream.readObject();
+        if (loaded instanceof Collection) {
+          for (Object value : (Collection<?>) loaded) {
+            if (value instanceof PortalPlacementRecord) {
+              PortalPlacementRecord record = (PortalPlacementRecord) value;
+              if (record.getPortalId() != null) {
+                portalPlacements.put(record.getPortalId(), record);
+              }
             }
           }
         }
         log.info("Loaded %d portal placements from %s", portalPlacements.size(), portalsPath);
+      } catch (ClassNotFoundException e) {
+        throw new IOException("Failed to deserialize portal placements", e);
       }
     }
   }
 
   public void savePortalPlacements() {
     try {
-      Path portalsPath = dataDirectory.resolve("portals.json");
-      try (Writer writer = Files.newBufferedWriter(portalsPath)) {
-        gson.toJson(portalPlacements.values(), writer);
+      Path portalsPath = dataDirectory.resolve("portals.db");
+      try (OutputStream outputStream = Files.newOutputStream(portalsPath);
+          ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream)) {
+        objectOutputStream.writeObject(new ArrayList<>(portalPlacements.values()));
       }
       log.info("Saved %d portal placements to %s", portalPlacements.size(), portalsPath);
     } catch (IOException e) {

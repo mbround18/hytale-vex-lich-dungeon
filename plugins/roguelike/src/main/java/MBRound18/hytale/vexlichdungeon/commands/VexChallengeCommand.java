@@ -1,7 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.commands;
 
 import MBRound18.ImmortalEngine.api.prefab.PrefabEntityUtils;
-import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.shared.utilities.PlayerPoller;
 import MBRound18.hytale.shared.utilities.UiThread;
@@ -10,6 +9,7 @@ import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.ui.VexPortalCountdownHud;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.data.PortalPlacementRecord;
+import MBRound18.hytale.vexlichdungeon.portal.PortalManagerSystem;
 import MBRound18.hytale.vexlichdungeon.portal.PortalSnapshotUtil;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -34,7 +34,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
@@ -48,10 +47,8 @@ public class VexChallengeCommand extends AbstractCommand {
   private static final int MIN_PORTAL_DISTANCE = 50;
   private static final long POLL_INTERVAL_MS = 1000L;
   private static final ConcurrentHashMap<UUID, PlayerPoller> ACTIVE_POLLERS = new ConcurrentHashMap<>();
-  private static final ConcurrentHashMap<UUID, PortalInstance> ACTIVE_PORTALS = new ConcurrentHashMap<>();
-  private static final ConcurrentHashMap<UUID, ScheduledFuture<?>> ACTIVE_CLEANUPS = new ConcurrentHashMap<>();
-  private static final ScheduledExecutorService PORTAL_CLEANUP_SCHEDULER = Executors.newScheduledThreadPool(1,
-      Thread.ofVirtual().name("vex-portal-cleanup-", 0).factory());
+  private static final ScheduledExecutorService PORTAL_EXPIRY_SCHEDULER = Executors
+      .newSingleThreadScheduledExecutor(Thread.ofVirtual().name("portal-expiry-", 0).factory());
   private static final LoggingHelper LOG = new LoggingHelper("VexChallengeCommand");
 
   public VexChallengeCommand() {
@@ -94,32 +91,22 @@ public class VexChallengeCommand extends AbstractCommand {
     if (playerId == null) {
       return;
     }
-    ScheduledFuture<?> cleanup = ACTIVE_CLEANUPS.remove(playerId);
-    if (cleanup != null) {
-      cleanup.cancel(false);
-    }
     PlayerPoller existing = ACTIVE_POLLERS.remove(playerId);
     if (existing != null) {
       existing.stop();
     }
     clearHud(playerId);
-    removePortal(playerId);
   }
 
   public static void forceRemovePortal(@Nullable UUID playerId) {
     if (playerId == null) {
       return;
     }
-    ScheduledFuture<?> cleanup = ACTIVE_CLEANUPS.remove(playerId);
-    if (cleanup != null) {
-      cleanup.cancel(false);
-    }
     PlayerPoller existing = ACTIVE_POLLERS.remove(playerId);
     if (existing != null) {
       existing.stop();
     }
     clearHud(playerId);
-    removePortal(playerId);
   }
 
   public static void clearCountdownHud(@Nullable UUID playerId) {
@@ -200,10 +187,6 @@ public class VexChallengeCommand extends AbstractCommand {
       return;
     }
     UUID playerId = playerRef.getUuid();
-    if (ACTIVE_PORTALS.containsKey(playerId)) {
-      context.sendMessage(Message.raw("A portal is already active for you."));
-      return;
-    }
 
     Ref<EntityStore> ref = playerRef.getReference();
     if (ref == null || !ref.isValid()) {
@@ -299,34 +282,41 @@ public class VexChallengeCommand extends AbstractCommand {
       }
     }
     long expiresAt = System.currentTimeMillis() + (Math.max(0, countdownSeconds) * 1000L);
-    PortalSnapshotUtil.Snapshot snapshot = PortalSnapshotUtil.captureSnapshot(world, minX, maxX, minY, maxY, minZ,
-        maxZ);
-    recordPortal(playerRef.getUuid(), worldUuid, world.getName(), placement, minX, maxX, minY, maxY, minZ, maxZ,
-        expiresAt,
-        dataStore, snapshot);
-    PortalSnapshotUtil.clearBounds(world, minX, maxX, minY, maxY, minZ, maxZ);
-    prefab.place(
-        ConsoleSender.INSTANCE,
-        world,
-        placement,
-        null,
-        entityRef -> {
-          if (entityRef != null) {
-            PrefabEntityUtils.unfreezePrefabNpc(entityRef, LOG.getLogger());
-          }
-        });
+    final int portalSpawnX = spawnX;
+    final int portalSpawnY = spawnY;
+    final int portalSpawnZ = spawnZ;
+    PortalSnapshotUtil.captureSnapshotAsync(world, minX, maxX, minY, maxY, minZ, maxZ)
+        .thenAccept(snapshot -> world.execute(() -> {
+          UUID portalId = recordPortal(playerRef.getUuid(), worldUuid, world.getName(), placement, minX, maxX, minY,
+              maxY, minZ, maxZ, expiresAt, dataStore, Objects.requireNonNull(snapshot, "snapshot"));
+          PortalManagerSystem.registerPortalOwner(Objects.requireNonNull(portalId, "portalId"), playerId);
+          PortalSnapshotUtil.clearBounds(world, minX, maxX, minY, maxY, minZ, maxZ);
+          prefab.place(
+              ConsoleSender.INSTANCE,
+              world,
+              placement,
+              null,
+              entityRef -> {
+                if (entityRef != null) {
+                  PrefabEntityUtils.unfreezePrefabNpc(entityRef, LOG.getLogger());
+                }
+              });
 
-    String locationText = Objects.requireNonNull(formatLocation(spawnX, spawnY, spawnZ), "locationText");
-    startCountdown(playerRef, countdownSeconds, locationText);
-    context.sendMessage(Message.raw("Spawned portal and started countdown (" + countdownSeconds + "s)."));
+          String locationText = Objects.requireNonNull(formatLocation(portalSpawnX, portalSpawnY, portalSpawnZ),
+              "locationText");
+          startCountdown(playerRef, countdownSeconds, locationText,
+              Objects.requireNonNull(portalId, "portalId"));
+          schedulePortalClose(portalId, countdownSeconds);
+          context.sendMessage(Message.raw("Spawned portal and started countdown (" + countdownSeconds + "s)."));
+        }));
   }
 
   private static void startCountdown(@Nonnull PlayerRef playerRef, int totalSeconds,
-      @Nonnull String locationText) {
+      @Nonnull String locationText, @Nonnull UUID portalId) {
     int startValue = Math.max(0, totalSeconds);
     AtomicInteger remaining = new AtomicInteger(startValue);
     VexPortalCountdownHud.update(playerRef,
-        Objects.requireNonNull(AbstractCustomUIHud.formatTime(startValue), "time"),
+        Objects.requireNonNull(VexPortalCountdownHud.formatTime(startValue), "time"),
         locationText);
 
     PlayerPoller poller = new PlayerPoller();
@@ -335,40 +325,31 @@ public class VexChallengeCommand extends AbstractCommand {
         stopPortalCountdown(playerRef.getUuid());
         return;
       }
-      PortalInstance activePortal = ACTIVE_PORTALS.get(playerRef.getUuid());
-      if (activePortal != null) {
-        UUID currentWorld = playerRef.getWorldUuid();
-        if (currentWorld == null || !currentWorld.equals(activePortal.worldUuid())) {
-          stopPortalCountdown(playerRef.getUuid());
-          return;
-        }
-      }
       int value = remaining.decrementAndGet();
       if (value < 0) {
         stopPortalCountdown(playerRef.getUuid());
         return;
       }
       VexPortalCountdownHud.update(playerRef,
-          Objects.requireNonNull(AbstractCustomUIHud.formatTime(value), "time"),
+          Objects.requireNonNull(VexPortalCountdownHud.formatTime(value), "time"),
           locationText);
       if (value == 0) {
+        PortalManagerSystem.requestPortalClose(portalId);
         stopPortalCountdown(playerRef.getUuid());
       }
     });
 
     ACTIVE_POLLERS.put(playerRef.getUuid(), poller);
-    schedulePortalCleanup(playerRef.getUuid(), startValue);
   }
 
-  private static void schedulePortalCleanup(@Nonnull UUID playerId, int totalSeconds) {
-    ScheduledFuture<?> existing = ACTIVE_CLEANUPS.remove(playerId);
-    if (existing != null) {
-      existing.cancel(false);
+  private static void schedulePortalClose(@Nonnull UUID portalId, int totalSeconds) {
+    int delaySeconds = Math.max(0, totalSeconds);
+    if (delaySeconds == 0) {
+      PortalManagerSystem.requestPortalClose(portalId);
+      return;
     }
-    long delayMs = Math.max(0, totalSeconds) * 1000L;
-    ScheduledFuture<?> future = PORTAL_CLEANUP_SCHEDULER.schedule(
-        () -> stopPortalCountdown(playerId), delayMs, TimeUnit.MILLISECONDS);
-    ACTIVE_CLEANUPS.put(playerId, future);
+    PORTAL_EXPIRY_SCHEDULER.schedule(() -> PortalManagerSystem.requestPortalClose(portalId),
+        delaySeconds, TimeUnit.SECONDS);
   }
 
   private static String formatLocation(int x, int y, int z) {
@@ -380,7 +361,9 @@ public class VexChallengeCommand extends AbstractCommand {
     if (playerRef == null || !playerRef.isValid()) {
       return;
     }
-    VexPortalCountdownHud.clear(playerRef);
+    UiThread.runOnPlayerWorld(playerRef, () -> {
+      VexPortalCountdownHud.clear(playerRef);
+    });
   }
 
   private static void clearCountdownUi(@Nonnull UUID playerId) {
@@ -391,12 +374,11 @@ public class VexChallengeCommand extends AbstractCommand {
     clearHud(playerId);
   }
 
-  private static void recordPortal(@Nonnull UUID playerId, @Nonnull UUID worldUuid,
+  private static UUID recordPortal(@Nonnull UUID playerId, @Nonnull UUID worldUuid,
       @Nonnull String worldName, @Nonnull Vector3i placement,
       int minX, int maxX, int minY, int maxY, int minZ, int maxZ,
       long expiresAt, @Nullable DataStore dataStore, @Nonnull PortalSnapshotUtil.Snapshot snapshot) {
     UUID portalId = Objects.requireNonNull(UUID.randomUUID(), "portalId");
-    ACTIVE_PORTALS.put(playerId, new PortalInstance(portalId, worldUuid, minX, maxX, minY, maxY, minZ, maxZ));
     if (dataStore != null) {
       PortalPlacementRecord record = new PortalPlacementRecord(portalId, worldUuid,
           Objects.requireNonNull(worldName, "worldName"), placement.x, placement.y, placement.z,
@@ -407,34 +389,7 @@ public class VexChallengeCommand extends AbstractCommand {
       record.setSnapshotBlocks(snapshot.getBlocks());
       dataStore.recordPortalPlacement(record);
     }
-  }
-
-  private static void removePortal(@Nonnull UUID playerId) {
-    PortalInstance portal = ACTIVE_PORTALS.remove(playerId);
-    DataStore dataStore = resolveDataStore();
-    PortalPlacementRecord record = null;
-    if (dataStore != null) {
-      if (portal != null && portal.portalId() != null) {
-        record = dataStore.getPortalPlacement(portal.portalId()).orElse(null);
-        dataStore.removePortalPlacement(portal.portalId());
-      }
-    }
-    if (portal == null) {
-      return;
-    }
-    World world = Universe.get().getWorld(portal.worldUuid());
-    if (world == null) {
-      return;
-    }
-    PortalPlacementRecord finalRecord = record;
-    world.execute(() -> {
-      if (finalRecord != null) {
-        PortalSnapshotUtil.restore(world, finalRecord);
-      } else {
-        PortalSnapshotUtil.clearBounds(world, portal.minX(), portal.maxX(), portal.minY(), portal.maxY(),
-            portal.minZ(), portal.maxZ());
-      }
-    });
+    return portalId;
   }
 
   public static void cleanupPersistedPortals(@Nonnull DataStore dataStore) {
@@ -483,14 +438,4 @@ public class VexChallengeCommand extends AbstractCommand {
     return plugin.getDataStore();
   }
 
-  private record PortalInstance(
-      @Nonnull UUID portalId,
-      @Nonnull UUID worldUuid,
-      int minX,
-      int maxX,
-      int minY,
-      int maxY,
-      int minZ,
-      int maxZ) {
-  }
 }

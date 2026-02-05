@@ -1,5 +1,6 @@
 package MBRound18.hytale.vexlichdungeon.data;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 import javax.annotation.Nonnull;
@@ -8,7 +9,8 @@ import javax.annotation.Nullable;
 /**
  * Persistent record of a placed portal instance.
  */
-public class PortalPlacementRecord {
+public class PortalPlacementRecord implements Serializable {
+  private static final long serialVersionUID = 1L;
   private UUID portalId;
   private UUID worldUuid;
   private String worldName;

@@ -431,13 +431,10 @@ public class PrefabSpawner {
 
       // Load the tile's prefab
       BlockSelection tilePrefab = loadPrefab(tile.getPrefabPath()).join();
-      log.info("[FLUIDS] %s base fluids=%d", tile.getPrefabPath(), tilePrefab.getFluidCount());
 
       // Apply rotation based on tile rotation (Y-axis)
       BlockSelection rotatedPrefab = tilePrefab.cloneSelection()
           .rotate(Axis.Y, tile.getRotation());
-      log.info("[FLUIDS] %s rotated(%d) fluids=%d", tile.getPrefabPath(), tile.getRotation(),
-          rotatedPrefab.getFluidCount());
       if (rotatedPrefab.getFluidCount() == 0 && tilePrefab.getFluidCount() > 0) {
         String jsonContent = prefabJsonCache.get(tile.getPrefabPath());
         if (jsonContent != null) {
@@ -466,8 +463,6 @@ public class PrefabSpawner {
             }
             unfreezeSpawnedEntity(world, entityRef);
           });
-
-      log.info("[FLUIDS] %s placed fluids=%d", tile.getPrefabPath(), rotatedPrefab.getFluidCount());
 
       for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
         hook.afterPlace(placeContext);
