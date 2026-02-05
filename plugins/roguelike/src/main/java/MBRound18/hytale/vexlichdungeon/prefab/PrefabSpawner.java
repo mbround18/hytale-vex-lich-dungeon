@@ -66,6 +66,7 @@ public class PrefabSpawner {
   private final GenerationConfig config;
   private final Map<String, SoftReference<BlockSelection>> prefabCache;
   private final Map<String, List<PrefabEntityDefinition>> prefabEntityCache = new ConcurrentHashMap<>();
+  private final Map<String, String> prefabJsonCache = new ConcurrentHashMap<>();
 
   /**
    * Creates a new prefab spawner.
@@ -136,6 +137,7 @@ public class PrefabSpawner {
         JsonObject root = Objects.requireNonNull(JsonParser.parseString(jsonContent).getAsJsonObject(), "root");
         List<PrefabEntityDefinition> entities = extractPrefabEntities(root, modRelativePath);
         prefabEntityCache.put(modRelativePath, entities);
+        prefabJsonCache.put(modRelativePath, jsonContent);
 
         // Create a temporary file to store the sanitized JSON
         tempFile = Files.createTempFile("prefab_", ".json");
@@ -304,6 +306,72 @@ public class PrefabSpawner {
     }
   }
 
+  private void hydrateFluidsFromJson(
+      @Nonnull BlockSelection prefab,
+      @Nonnull String jsonContent,
+      @Nonnull String modRelativePath,
+      int rotationDegrees) {
+    int normalized = ((rotationDegrees % 360) + 360) % 360;
+    if (normalized == 0) {
+      hydrateFluidsFromJson(prefab, jsonContent, modRelativePath);
+      return;
+    }
+    try {
+      if (prefab.getFluidCount() > 0) {
+        return;
+      }
+
+      JsonObject root = JsonParser.parseString(jsonContent).getAsJsonObject();
+      JsonArray fluids = root.getAsJsonArray("fluids");
+      if (fluids == null || fluids.isEmpty()) {
+        return;
+      }
+
+      int added = 0;
+      for (JsonElement element : fluids) {
+        if (!element.isJsonObject()) {
+          continue;
+        }
+        JsonObject fluid = element.getAsJsonObject();
+        String name = fluid.has("name") ? fluid.get("name").getAsString() : "Empty";
+        if ("Empty".equalsIgnoreCase(name)) {
+          continue;
+        }
+
+        int level = fluid.has("level") ? fluid.get("level").getAsInt() : 0;
+        int fluidId = Fluid.getFluidIdOrUnknown(name, "Prefab fluid %s", name);
+        if (fluidId == Fluid.EMPTY_ID) {
+          continue;
+        }
+
+        int x = fluid.has("x") ? fluid.get("x").getAsInt() : 0;
+        int y = fluid.has("y") ? fluid.get("y").getAsInt() : 0;
+        int z = fluid.has("z") ? fluid.get("z").getAsInt() : 0;
+
+        int[] rotated = rotateLocalXZ(x, z, normalized);
+        prefab.addFluidAtLocalPos(rotated[0], y, rotated[1], fluidId, (byte) level);
+        added++;
+      }
+
+      if (added > 0) {
+        log.info("[FLUIDS] Rehydrated %d fluids into %s after rotation %d",
+            added, modRelativePath, normalized);
+      }
+    } catch (Exception e) {
+      log.warn("Failed to inject rotated fluids for prefab %s: %s", modRelativePath, e.getMessage());
+    }
+  }
+
+  private int[] rotateLocalXZ(int x, int z, int rotationDegrees) {
+    int normalized = ((rotationDegrees % 360) + 360) % 360;
+    return switch (normalized) {
+      case 90 -> new int[] { -z, x };
+      case 180 -> new int[] { -x, -z };
+      case 270 -> new int[] { z, -x };
+      default -> new int[] { x, z };
+    };
+  }
+
   /**
    * Spawns a dungeon tile into the world.
    * This includes the main tile prefab only (gates are off by default).
@@ -363,10 +431,19 @@ public class PrefabSpawner {
 
       // Load the tile's prefab
       BlockSelection tilePrefab = loadPrefab(tile.getPrefabPath()).join();
+      log.info("[FLUIDS] %s base fluids=%d", tile.getPrefabPath(), tilePrefab.getFluidCount());
 
       // Apply rotation based on tile rotation (Y-axis)
       BlockSelection rotatedPrefab = tilePrefab.cloneSelection()
           .rotate(Axis.Y, tile.getRotation());
+      log.info("[FLUIDS] %s rotated(%d) fluids=%d", tile.getPrefabPath(), tile.getRotation(),
+          rotatedPrefab.getFluidCount());
+      if (rotatedPrefab.getFluidCount() == 0 && tilePrefab.getFluidCount() > 0) {
+        String jsonContent = prefabJsonCache.get(tile.getPrefabPath());
+        if (jsonContent != null) {
+          hydrateFluidsFromJson(rotatedPrefab, jsonContent, tile.getPrefabPath(), tile.getRotation());
+        }
+      }
 
       // Write prefab to world at the specified coordinates
       Vector3i tileOrigin = new Vector3i(worldX, tileBaseY, worldZ);
@@ -389,6 +466,8 @@ public class PrefabSpawner {
             }
             unfreezeSpawnedEntity(world, entityRef);
           });
+
+      log.info("[FLUIDS] %s placed fluids=%d", tile.getPrefabPath(), rotatedPrefab.getFluidCount());
 
       for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
         hook.afterPlace(placeContext);
