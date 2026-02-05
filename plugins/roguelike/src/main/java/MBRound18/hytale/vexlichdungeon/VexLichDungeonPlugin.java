@@ -8,6 +8,7 @@ import MBRound18.hytale.vexlichdungeon.dungeon.GenerationConfig;
 import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
 import MBRound18.hytale.vexlichdungeon.engine.PortalEngineAdapter;
 import MBRound18.hytale.vexlichdungeon.events.DungeonGenerationEventHandler;
+import MBRound18.hytale.vexlichdungeon.events.InstanceTeardownHandler;
 import MBRound18.hytale.vexlichdungeon.events.UniversalEventLogger;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
@@ -49,6 +50,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
   private LoggingHelper eventsLogger;
   private PrefabSpawner prefabSpawner;
   private PrefabDiscovery prefabDiscovery;
+  private InstanceTeardownHandler instanceTeardownHandler;
 
   public VexLichDungeonPlugin(@Nonnull JavaPluginInit init) {
     super(init);
@@ -156,6 +158,12 @@ public class VexLichDungeonPlugin extends JavaPlugin {
         roguelikeController,
         engineAdapter,
         Objects.requireNonNull(eventsLogger, "eventsLogger"));
+    instanceTeardownHandler = new InstanceTeardownHandler(
+        Objects.requireNonNull(log, "log"),
+        Objects.requireNonNull(dataStore, "dataStore"),
+        roguelikeController,
+        engineAdapter,
+        eventsLogger);
     eventLogger = new UniversalEventLogger(Objects.requireNonNull(log, "log"));
     getChunkStoreRegistry().registerSystem(new PortalManagerSystem());
     watchdog = createWatchdog();
@@ -183,6 +191,13 @@ public class VexLichDungeonPlugin extends JavaPlugin {
           log.info("Dungeon generation event handler registered with event bus and event registry");
         } else {
           log.error("DungeonEventHandler is null - not registering");
+        }
+
+        if (instanceTeardownHandler != null) {
+          instanceTeardownHandler.register(eventBus);
+          instanceTeardownHandler.register(getEventRegistry());
+          log.info("Instance teardown handler registered with event registry");
+          instanceTeardownHandler.cleanupOrphanedInstancesOnStartup();
         }
 
         // UniversalEventLogger disabled (too noisy)

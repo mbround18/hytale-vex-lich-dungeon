@@ -2,6 +2,7 @@ package MBRound18.hytale.vexlichdungeon.events;
 
 import MBRound18.ImmortalEngine.api.i18n.EngineLang;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
+import MBRound18.hytale.vexlichdungeon.data.DungeonInstanceData;
 import MBRound18.hytale.vexlichdungeon.data.PlayerSpawnTracker;
 import MBRound18.hytale.vexlichdungeon.dungeon.DungeonGenerator;
 import MBRound18.hytale.vexlichdungeon.dungeon.RoguelikeDungeonController;
@@ -39,9 +40,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Listens for player join events and automatically generates dungeons
@@ -63,8 +61,6 @@ public class DungeonGenerationEventHandler {
   private final Map<String, Long> lastPlayerSeen = new ConcurrentHashMap<>();
   private final Set<UUID> welcomedPlayers = ConcurrentHashMap.newKeySet();
   private static final long EMPTY_INSTANCE_GRACE_MS = 15_000L;
-  private static final ScheduledExecutorService EMPTY_INSTANCE_SCHEDULER = Executors.newScheduledThreadPool(1,
-      Thread.ofVirtual().name("vex-empty-instance-", 0).factory());
   private final PlayerPoller playerPoller = new PlayerPoller();
 
   /**
@@ -163,7 +159,6 @@ public class DungeonGenerationEventHandler {
           lastPlayerSeen.put(world.getName(), System.currentTimeMillis());
         }
         world.execute(() -> roguelikeController.pollWorld(world));
-        scheduleEmptyInstanceCheck(world);
       }
     } catch (Exception e) {
       log.error("Exception in pollAndGenerate: %s", e.getMessage());
@@ -405,7 +400,6 @@ public class DungeonGenerationEventHandler {
           roguelikeController.showExitSummary(ref, world);
         }
       }
-      scheduleEmptyInstanceCheck(world);
     } catch (Exception e) {
       log.error("Exception in onDrainPlayerFromWorld: %s", e.getMessage());
       if (eventsLogger != null) {
@@ -427,20 +421,6 @@ public class DungeonGenerationEventHandler {
     }
   }
 
-  private void scheduleEmptyInstanceCheck(@Nonnull World world) {
-    if (!dataStore.getConfig().isRemoveInstanceWhenEmpty()) {
-      return;
-    }
-    world.execute(() -> tryShutdownEmptyInstance(world));
-    EMPTY_INSTANCE_SCHEDULER.schedule(() -> {
-      try {
-        world.execute(() -> tryShutdownEmptyInstance(world));
-      } catch (Exception e) {
-        log.warn("Delayed empty-instance check failed: %s", e.getMessage());
-      }
-    }, EMPTY_INSTANCE_GRACE_MS + 500L, TimeUnit.MILLISECONDS);
-  }
-
   @Nullable
   private Player resolvePlayer(@Nonnull PlayerRef playerRef) {
     Ref<EntityStore> ref = playerRef.getReference();
@@ -451,12 +431,26 @@ public class DungeonGenerationEventHandler {
     return store.getComponent(ref, Player.getComponentType());
   }
 
-  private void tryShutdownEmptyInstance(@Nonnull World world) {
-    shutdownInstanceIfEmpty(world, false);
-  }
-
   public int pruneEmptyInstances() {
     int removed = 0;
+    ArrayList<String> stale = new ArrayList<>();
+    for (DungeonInstanceData instance : dataStore.getAllInstances()) {
+      if (instance == null) {
+        continue;
+      }
+      String worldName = instance.getWorldName();
+      if (worldName == null || worldName.isBlank()) {
+        continue;
+      }
+      if (Universe.get().getWorld(worldName) == null) {
+        stale.add(worldName);
+      }
+    }
+    if (!stale.isEmpty()) {
+      dataStore.removeInstances(stale);
+      removed += stale.size();
+      log.info("[INSTANCE] Pruned %d missing instance(s) from data store", stale.size());
+    }
     for (World world : Universe.get().getWorlds().values()) {
       if (world == null) {
         continue;
@@ -507,8 +501,7 @@ public class DungeonGenerationEventHandler {
     }
     roguelikeController.removeWorldState(worldName);
     spawnTracker.clearWorld(worldName);
-    world.validateDeleteOnRemove();
-    world.stopIndividualWorld();
+    world.getWorldConfig().setDeleteOnRemove(true);
     Universe.get().removeWorld(worldName);
     log.info("[INSTANCE] Removed empty dungeon instance: %s", worldName);
     return true;
