@@ -163,7 +163,8 @@ public class PrefabDiscovery {
 
       discoverUnpackedPrefabs(seen);
 
-        log.info("Discovered %d dungeon prefabs (%d hallways, %d rooms), %d event prefabs, %d gates, %d stitches from ZIP",
+      log.info(
+          "Discovered %d dungeon prefabs (%d hallways, %d rooms), %d event prefabs, %d gates, %d stitches from ZIP",
           dungeonPrefabs.size(), hallways.size(), rooms.size(), eventPrefabs.size(), gates.size(), stitches.size());
 
       if (dungeonPrefabs.isEmpty()) {

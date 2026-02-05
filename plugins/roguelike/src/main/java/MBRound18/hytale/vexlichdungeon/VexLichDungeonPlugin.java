@@ -112,23 +112,23 @@ public class VexLichDungeonPlugin extends JavaPlugin {
       unpackedRoot = null;
     }
     prefabDiscovery = Objects.requireNonNull(
-      new PrefabDiscovery(Objects.requireNonNull(log, "log"), pluginJarPath, unpackedRoot),
-      "prefabDiscovery");
+        new PrefabDiscovery(Objects.requireNonNull(log, "log"), pluginJarPath, unpackedRoot),
+        "prefabDiscovery");
     PortalEngineAdapter engineAdapter = new PortalEngineAdapter();
 
     // Initialize dungeon generation components using config
     GenerationConfig config = new GenerationConfig();
     DungeonGenerator dungeonGenerator = new DungeonGenerator(config, Objects.requireNonNull(log, "log"),
-      Objects.requireNonNull(prefabDiscovery, "prefabDiscovery"));
+        Objects.requireNonNull(prefabDiscovery, "prefabDiscovery"));
     prefabSpawner = new PrefabSpawner(
-      Objects.requireNonNull(log, "log"),
-      prefabDiscovery.getZipFile(),
-      config,
-      unpackedRoot);
+        Objects.requireNonNull(log, "log"),
+        prefabDiscovery.getZipFile(),
+        config,
+        unpackedRoot);
     StitchIndex stitchIndex = PrefabStitchIndexBuilder.build(
-      Objects.requireNonNull(prefabDiscovery, "prefabDiscovery"),
-      Objects.requireNonNull(prefabSpawner, "prefabSpawner"),
-      Objects.requireNonNull(log, "log"));
+        Objects.requireNonNull(prefabDiscovery, "prefabDiscovery"),
+        Objects.requireNonNull(prefabSpawner, "prefabSpawner"),
+        Objects.requireNonNull(log, "log"));
     PrefabHookRegistry.register(new PrefabPlacementHook());
     Path lootTablePath = dataDirectory.resolve("loot_tables.json");
     LootService lootService = buildLootService(
