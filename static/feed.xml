@@ -3,8 +3,32 @@
   <channel>
     <title>Vex Dev Logs</title>
     <link>https://vex.boop.ninja/dev/</link>
-    <lastBuildDate>Mon, 2 Feb 2026 00:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Wed, 4 Feb 2026 00:00:00 GMT</lastBuildDate>
     <atom:link href='https://vex.boop.ninja/feed.xml' rel='self' type='application/rss+xml' />
+    <item>
+      <title>Remove Friends Plugin</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-04-remove-friends-plugin.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-04-remove-friends-plugin.md</guid>
+      <pubDate>Wed, 4 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Prefab Placement Hooks</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-04-prefab-placement-hooks.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-04-prefab-placement-hooks.md</guid>
+      <pubDate>Wed, 4 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Dungeon Instance Management</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-04-dungeon-instance-management.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-04-dungeon-instance-management.md</guid>
+      <pubDate>Wed, 4 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Vex Portal Countdown Lifecycle</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-04-vex-portal-countdown-lifecycle.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-04-vex-portal-countdown-lifecycle.md</guid>
+      <pubDate>Wed, 4 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
     <item>
       <title>UI Tooling + Friends Integration Sweep</title>
       <link>https://vex.boop.ninja/dev/logs/2026-02-02-ui-tooling-and-friends-sweep.md</link>
