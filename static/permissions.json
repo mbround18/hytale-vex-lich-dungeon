@@ -1,14 +1,14 @@
 [
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.prune",
-        "description": "Permission required",
-        "command": null
-    },
-    {
-        "plugin": "VexLichDungeon",
-        "permission": "vex.prefab.list",
-        "description": "Permission required",
-        "command": null
-    }
+  {
+    "plugin": "VexLichDungeon",
+    "permission": "vex.prune",
+    "description": "Permission required",
+    "command": null
+  },
+  {
+    "plugin": "VexLichDungeon",
+    "permission": "vex.prefab.list",
+    "description": "Permission required",
+    "command": null
+  }
 ]

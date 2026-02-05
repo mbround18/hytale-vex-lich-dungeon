@@ -362,18 +362,6 @@ tasks.register("exportPermissions") {
 
         def permissions = []
         def permissionDescriptions = [
-            "party.use": "Use /party to view party status.",
-            "party.create": "Create a new party via /party new.",
-            "party.invite": "Invite a player to your party via /party invite <name>.",
-            "party.join": "Accept a party invite via /party join.",
-            "party.decline": "Decline a party invite via /party decline.",
-            "party.leave": "Leave your current party via /party leave.",
-            "party.disband": "Disband your current party via /party disband.",
-            "friends.use": "Open the friends list UI via /friends.",
-            "friends.add": "Send a friend invite via /friend add <name>.",
-            "friends.accept": "Accept a friend invite via /friend accept.",
-            "friends.decline": "Decline a friend invite via /friend decline.",
-            "friends.remove": "Remove a friend via /friend remove <name>.",
             "vex.score.view": "View the Vex leaderboard via /vex score.",
             "vex.score.edit": "Edit Vex score metrics via /vex score edit <player> <metric> <value>.",
             "vex.ui.list": "List Vex UI templates via /vex ui list.",
@@ -383,18 +371,6 @@ tasks.register("exportPermissions") {
             "vex.purge": "Purge Vex instance data and delete dungeons.json via /vex purge."
         ]
         def permissionCommands = [
-            "party.use": "/party",
-            "party.create": "/party new",
-            "party.invite": "/party invite <name>",
-            "party.join": "/party join",
-            "party.decline": "/party decline",
-            "party.leave": "/party leave",
-            "party.disband": "/party disband",
-            "friends.use": "/friends",
-            "friends.add": "/friend add <name>",
-            "friends.accept": "/friend accept",
-            "friends.decline": "/friend decline",
-            "friends.remove": "/friend remove <name>",
             "vex.score.view": "/vex score",
             "vex.score.edit": "/vex score edit <player> <metric> <value>",
             "vex.ui.list": "/vex ui list",
