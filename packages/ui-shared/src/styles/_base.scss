@@ -1,0 +1,47 @@
+@use './tokens' as *;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: $font-body;
+  background: $vex-bg;
+  color: $vex-text;
+}
+
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px;
+  border-bottom: 1px solid rgba(138, 75, 255, 0.3);
+  background: rgba(18, 11, 27, 0.85);
+}
+
+.brand-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #0f0b18;
+  background: linear-gradient(135deg, #8b5cf6, #f472b6);
+}
+
+.brand-title {
+  font-family: $font-title;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.brand-subtitle {
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #bca8ff;
+}

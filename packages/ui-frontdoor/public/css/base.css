@@ -1,0 +1,30 @@
+/* Shared base styles */
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 5px;
+  border: 2px solid #121212;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Typography Utilities */
+.text-glow {
+  text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+[x-cloak] {
+  display: none !important;
+}

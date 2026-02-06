@@ -1,0 +1,58 @@
+@use "tailwindcss";
+@use "../../../ui-shared/src/styles/app.scss" as app;
+
+@layer base {
+  body {
+    // @apply app.$font-body antialiased;
+    font-family: app.$font-body;
+  }
+
+  h1,z
+  h2,
+  h3,
+  .font-fantasy {
+    font-family: 'Cinzel', serif;
+  }
+
+  .font-body {
+    font-family: 'MedievalSharp', cursive;
+  }
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1a1821;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4c1d95;
+  border-radius: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}

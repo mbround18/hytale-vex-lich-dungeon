@@ -1,0 +1,14 @@
+@use './_base' as *;
+@use "./_tokens" as tokens;
+@use "tailwindcss";
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+$font-body: tokens.$font-body;

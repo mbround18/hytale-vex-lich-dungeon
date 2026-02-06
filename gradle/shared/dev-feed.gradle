@@ -1,10 +1,10 @@
 tasks.register("updateDevFeed") {
     group = "docs"
-    description = "Generate static/feed.xml from static/dev/logs index + front matter"
+    description = "Generate frontdoor/feed.xml from frontdoor/dev/logs index + front matter"
     doLast {
-        def logsDir = file("static/dev/logs")
+        def logsDir = file("packages/ui-frontdoor/public/dev/logs")
         def indexFile = new File(logsDir, "index.json")
-        def outputFile = file("static/feed.xml")
+        def outputFile = file("packages/ui-frontdoor/public/feed.xml")
 
         if (!indexFile.exists()) {
             throw new IllegalStateException("Missing dev log index at ${indexFile}")
@@ -155,10 +155,10 @@ tasks.register("updateDevFeed") {
 
 tasks.register("validateDevFeed") {
     group = "docs"
-    description = "Validate static/dev/logs index + front matter"
+    description = "Validate frontdoor/dev/logs index + front matter"
     dependsOn "updateDevFeed"
     doLast {
-        def logsDir = file("static/dev/logs")
+        def logsDir = file("packages/ui-frontdoor/public/dev/logs")
         def indexFile = new File(logsDir, "index.json")
 
         if (!indexFile.exists()) {

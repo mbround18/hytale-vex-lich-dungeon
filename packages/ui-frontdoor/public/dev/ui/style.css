@@ -1,0 +1,130 @@
+:root {
+  --bg: #0f1419;
+  --panel: #151c22;
+  --panel-2: #1b242c;
+  --text: #e6edf3;
+  --muted: #9fb0c0;
+  --accent: #7ad4ff;
+  --accent-2: #8bffa1;
+  --border: #24303a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at 10% 10%, #1b2731 0%, #0f1419 55%, #0c1116 100%);
+  color: var(--text);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, var(--panel) 0%, #10161b 100%);
+  border-right: 1px solid var(--border);
+  padding: 24px 18px;
+}
+
+.brand {
+  padding: 8px 8px 20px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.brand-title {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  font-size: 20px;
+}
+
+.brand-subtitle {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+nav a {
+  display: block;
+  color: var(--text);
+  text-decoration: none;
+  padding: 10px 12px;
+  margin: 4px 0;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+nav a:hover {
+  border-color: var(--border);
+  background: var(--panel-2);
+}
+
+nav a.active {
+  border-color: var(--accent);
+  background: rgba(122, 212, 255, 0.12);
+  color: var(--accent);
+}
+
+.content {
+  padding: 32px 40px;
+}
+
+.output {
+  max-width: 980px;
+  background: rgba(21, 28, 34, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 32px;
+  backdrop-filter: blur(6px);
+}
+
+.output h1, .output h2, .output h3 {
+  color: var(--accent-2);
+}
+
+.output code {
+  background: #0b1015;
+  border: 1px solid #1f2a33;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.output pre {
+  background: #0b1015;
+  border: 1px solid #1f2a33;
+  padding: 14px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.output table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 14px 0;
+}
+
+.output th, .output td {
+  border: 1px solid #24303a;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.output th {
+  background: #152029;
+}
+
+@media (max-width: 980px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+}
