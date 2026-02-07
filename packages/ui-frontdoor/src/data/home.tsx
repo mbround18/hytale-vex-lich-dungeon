@@ -21,6 +21,15 @@ export type DungeonFeature = {
   status?: 'active' | 'coming';
 };
 
+export type VideoCategory = 'dev' | 'trailer';
+
+export type VideoEntry = {
+  title: string;
+  href: string;
+  category: VideoCategory;
+  summary?: string;
+};
+
 export const homeContent = {
   hero: {
     kicker: 'New Hytale Adventure Mod',
@@ -111,6 +120,23 @@ export const homeContent = {
       title: 'Gameplay Preview',
       badge: 'Coming Soon'
     }
+  },
+  videos: {
+    id: 'videos',
+    title: 'Vex Broadcasts',
+    subtitle: 'Trailers, dev logs, and dungeon previews from the workshop.',
+    categories: [
+      { id: 'dev' as VideoCategory, label: 'Dev' },
+      { id: 'trailer' as VideoCategory, label: 'Trailers' }
+    ],
+    entries: [
+      {
+        title: 'Dev Log: Dungeon Systems Overview',
+        href: 'https://www.youtube.com/watch?v=o3uHD7LCegs',
+        category: 'dev',
+        summary: 'Quick update on dungeon generation and live tooling.'
+      }
+    ] satisfies VideoEntry[]
   },
   callToAction: {
     id: 'download',

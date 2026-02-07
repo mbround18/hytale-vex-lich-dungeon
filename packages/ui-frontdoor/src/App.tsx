@@ -1,4 +1,18 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  NavLink,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams
+} from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Badge } from 'ui-shared/components';
 import { navSections, primaryAction } from './data/navigation';
 import { homeContent } from './data/home';
@@ -8,7 +22,7 @@ const isExternal = (href: string) => href.startsWith('http');
 
 const linkProps = (href: string) =>
   isExternal(href)
-    ? ({ target: '_blank', rel: 'noreferrer' } as const)
+    ? ({ target: '_blank', rel: 'noopener noreferrer' } as const)
     : ({} as const);
 
 const accentClass: Record<string, string> = {
@@ -17,12 +31,74 @@ const accentClass: Record<string, string> = {
   green: 'hover:border-necro-green'
 };
 
-export default function App() {
+const normalizePath = (href: string) => {
+  const withoutQuery = href.split('?')[0];
+  if (withoutQuery === '/') return '/';
+  return withoutQuery.replace(/\/+$/, '');
+};
+
+const routePaths = new Set(['/','/dev','/dev/ui','/dev/hosting','/dev/logs']);
+
+const isMarkdownRoute = (href: string) => href.startsWith('/dev/ui/') || href.startsWith('/dev/logs/');
+
+const isRouteLink = (href: string) => {
+  if (!href.startsWith('/')) return false;
+  if (href.includes('#')) return false;
+  if (href.match(/\.(html|json)$/i)) return false;
+  if (href.match(/\.md$/i)) return isMarkdownRoute(href);
+  return routePaths.has(normalizePath(href));
+};
+
+function Shell() {
   const [navOpen, setNavOpen] = useState(false);
   const sections = useMemo(() => navSections, []);
+  const quickRoutes = useMemo(
+    () => [
+      { label: 'Home', to: '/' },
+      { label: 'Dev Hub', to: '/dev' },
+      { label: 'UI Grimoire', to: '/dev/ui' },
+      { label: 'Hosting', to: '/dev/hosting' },
+      { label: 'Dev Logs', to: '/dev/logs' }
+    ],
+    []
+  );
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogoClick = () => {
+    if (location.pathname !== '/') {
+      navigate('/');
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const renderLink = (href: string, label: string, className: string, onClick?: () => void) => {
+    if (isRouteLink(href)) {
+      return (
+        <NavLink
+          to={normalizePath(href)}
+          className={({ isActive }) =>
+            `${className} ${isActive ? 'text-necro-green' : ''}`.trim()
+          }
+          onClick={onClick}
+        >
+          {label}
+        </NavLink>
+      );
+    }
+    return (
+      <a href={href} className={className} onClick={onClick} {...linkProps(href)}>
+        {label}
+      </a>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-vex-dark text-slate-200 antialiased custom-scrollbar selection:bg-necro-green selection:text-vex-dark relative">
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <div
         className="fixed inset-0 opacity-10 pointer-events-none"
         style={{
@@ -30,59 +106,54 @@ export default function App() {
         }}
       />
 
-      <nav className="sticky top-0 w-full z-50 bg-vex-surface/90 backdrop-blur-md border-b border-vex-border transition-all duration-300">
+      <nav className="sticky top-0 w-full z-50 bg-vex-surface/95 backdrop-blur-md border-b border-vex-border/80 shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex flex-col gap-3 py-3">
+            <div className="flex justify-between items-center">
             <button
               className="flex-shrink-0 flex items-center gap-3 cursor-pointer group"
-              onClick={() => {
-                if (window.location.pathname !== '/') {
-                  window.location.assign('/');
-                } else {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
+              onClick={handleLogoClick}
               type="button"
+              aria-label="Go to home"
             >
               <img
                 src="https://imagedelivery.net/6QPDh2i4MEi-JY_RW1iPZQ/62e09a2c-0be3-4486-ebe6-4185678d9800/public"
                 alt="Vex Logo"
-                className="w-12 h-12 rounded-lg border-2 border-ancient-gold shadow-lg transform group-hover:rotate-12 transition duration-300"
+                className="w-11 h-11 rounded-xl border border-ancient-gold/70 shadow-lg transform group-hover:rotate-6 transition duration-300"
               />
               <div>
                 <span className="font-fantasy font-bold text-lg tracking-widest text-ancient-gold group-hover:text-necro-green transition duration-300">
                   Vex&apos;s Challenge
                 </span>
+                <span className="block text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                  Frontdoor
+                </span>
               </div>
             </button>
 
-            <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-              {sections.map((section) => (
-                <div key={section.id} className="flex items-center gap-3">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                    {section.label}
-                  </span>
-                  <div className="flex items-center gap-3 text-xs text-slate-300">
-                    {section.links.map((child) => (
-                      <a
-                        key={child.href}
-                        href={child.href}
-                        className="hover:text-necro-green transition"
-                        {...linkProps(child.href)}
-                      >
-                        {child.label}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <a
-                href={primaryAction.href}
-                className="px-4 py-2 rounded-full bg-vex-deep text-white font-fantasy text-xs uppercase tracking-widest border border-necro-green/40 hover:bg-necro-green hover:text-vex-dark transition"
-                {...linkProps(primaryAction.href)}
-              >
-                {primaryAction.label}
-              </a>
+            <div className="hidden md:flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 rounded-full border border-vex-border/70 bg-vex-deep/60 px-2 py-1">
+                {quickRoutes.map((route) => (
+                  <NavLink
+                    key={route.to}
+                    to={route.to}
+                    className={({ isActive }) =>
+                      `px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-[0.2em] transition ${
+                        isActive
+                          ? 'bg-necro-green text-vex-dark shadow-[0_0_12px_rgba(74,222,128,0.4)]'
+                          : 'text-slate-300 hover:text-necro-green hover:bg-white/5'
+                      }`
+                    }
+                  >
+                    {route.label}
+                  </NavLink>
+                ))}
+              </div>
+              {renderLink(
+                primaryAction.href,
+                primaryAction.label,
+                'ml-2 px-4 py-2 rounded-full bg-vex-deep text-white font-fantasy text-xs uppercase tracking-widest border border-necro-green/40 hover:bg-necro-green hover:text-vex-dark transition'
+              )}
             </div>
 
             <div className="md:hidden flex items-center">
@@ -90,6 +161,7 @@ export default function App() {
                 className="text-ancient-gold hover:text-necro-green"
                 aria-controls="mobile-nav"
                 aria-expanded={navOpen}
+                aria-label={navOpen ? 'Close navigation menu' : 'Open navigation menu'}
                 onClick={() => setNavOpen((prev) => !prev)}
               >
                 <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,12 +169,31 @@ export default function App() {
                 </svg>
               </button>
             </div>
+            </div>
+
+            <div className="hidden md:flex items-center gap-6 border-t border-vex-border/60 pt-3">
+              {sections.map((section) => (
+                <div key={section.id} className="flex items-center gap-3">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                    {section.label}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
+                    {section.links.map((child) => (
+                      <span key={child.href}>
+                        {renderLink(child.href, child.label, 'hover:text-necro-green transition')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         <div
           id="mobile-nav"
           className={`md:hidden border-t border-vex-border bg-vex-surface/95 ${navOpen ? 'block' : 'hidden'}`}
+          aria-hidden={!navOpen}
         >
           <div className="px-6 py-5 space-y-6">
             {sections.map((section) => (
@@ -112,31 +203,109 @@ export default function App() {
                 </p>
                 <div className="grid grid-cols-1 gap-2">
                   {section.links.map((child) => (
-                    <a
-                      key={child.href}
-                      href={child.href}
-                      className="block text-sm text-slate-300 hover:text-necro-green transition"
-                      onClick={() => setNavOpen(false)}
-                      {...linkProps(child.href)}
-                    >
-                      {child.label}
-                    </a>
+                    <span key={child.href}>
+                      {renderLink(
+                        child.href,
+                        child.label,
+                        'block text-sm text-slate-300 hover:text-necro-green transition',
+                        () => setNavOpen(false)
+                      )}
+                    </span>
                   ))}
                 </div>
               </div>
             ))}
-            <a
-              href={primaryAction.href}
-              className="block text-center px-4 py-2 rounded-full bg-vex-deep text-white font-fantasy text-xs uppercase tracking-widest border border-necro-green/40 hover:bg-necro-green hover:text-vex-dark transition"
-              onClick={() => setNavOpen(false)}
-              {...linkProps(primaryAction.href)}
-            >
-              {primaryAction.label}
-            </a>
+            {renderLink(
+              primaryAction.href,
+              primaryAction.label,
+              'block text-center px-4 py-2 rounded-full bg-vex-deep text-white font-fantasy text-xs uppercase tracking-widest border border-necro-green/40 hover:bg-necro-green hover:text-vex-dark transition',
+              () => setNavOpen(false)
+            )}
           </div>
         </div>
       </nav>
 
+      <Outlet />
+    </div>
+  );
+}
+
+const renderResourceLink = (href: string, label: string, className: string) => {
+  if (isRouteLink(href)) {
+    const target = href.endsWith('.md') ? `/md${href}` : normalizePath(href);
+    return (
+      <Link to={target} className={className}>
+        {label}
+      </Link>
+    );
+  }
+  return (
+    <a href={href} className={className} {...linkProps(href)}>
+      {label}
+    </a>
+  );
+};
+
+const extractYoutubeId = (url: string) => {
+  const match = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+  return match ? match[1] : null;
+};
+
+const toYoutubeThumb = (url: string) => {
+  const id = extractYoutubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+};
+
+type DevLogEntry = {
+  title: string;
+  date?: string;
+  excerpt?: string;
+  href: string;
+};
+
+const parseDevLogEntry = (file: string, content: string): DevLogEntry => {
+  const datePart = file.split('-').slice(0, 3).join('-');
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
+  const lines = content.split(/\r?\n/).map((line) => line.trim());
+  let title = file.replace(/\.md$/i, '').replace(/-/g, ' ');
+  for (const line of lines) {
+    if (line.startsWith('# ')) {
+      title = line.replace(/^#\s+/, '').trim();
+      break;
+    }
+  }
+  let excerpt = '';
+  for (const line of lines) {
+    if (!line) continue;
+    if (line.startsWith('#')) continue;
+    if (line.startsWith('>')) continue;
+    excerpt = line;
+    break;
+  }
+  return {
+    title,
+    date,
+    excerpt,
+    href: `/dev/logs/${file}`
+  };
+};
+
+const formatLogTitle = (file: string) => file.replace(/\.md$/i, '').replace(/-/g, ' ');
+
+const parseLogDate = (file: string) => {
+  const datePart = file.split('-').slice(0, 3).join('-');
+  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
+};
+
+function HomePage() {
+  const [activeVideoCategory, setActiveVideoCategory] = useState<'dev' | 'trailer'>('dev');
+  const videoEntries = useMemo(
+    () => homeContent.videos.entries.filter((entry) => entry.category === activeVideoCategory),
+    [activeVideoCategory]
+  );
+
+  return (
+    <main id="main-content">
       <section className="pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-vex-purple rounded-full blur-[120px] opacity-20 pointer-events-none" />
 
@@ -301,6 +470,76 @@ export default function App() {
         </div>
       </section>
 
+      <section id={homeContent.videos.id} className="py-24 bg-vex-surface/40 border-t border-vex-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+              <p className="text-necro-green text-xs uppercase tracking-[0.3em]">Video Vault</p>
+              <h2 className="font-fantasy text-4xl text-white mt-3">{homeContent.videos.title}</h2>
+              <p className="text-slate-400 mt-2 max-w-2xl">{homeContent.videos.subtitle}</p>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-vex-border/60 bg-vex-deep/60 p-1">
+              {homeContent.videos.categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setActiveVideoCategory(cat.id)}
+                  aria-pressed={activeVideoCategory === cat.id}
+                  className={`px-4 py-2 rounded-full text-xs uppercase tracking-[0.2em] font-semibold transition ${
+                    activeVideoCategory === cat.id
+                      ? 'bg-necro-green text-vex-dark shadow-[0_0_16px_rgba(74,222,128,0.4)]'
+                      : 'text-slate-300 hover:text-necro-green'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {videoEntries.length === 0 ? (
+            <div className="mt-10 rounded-2xl border border-vex-border bg-vex-surface/70 p-8 text-slate-400">
+              No videos in this category yet.
+            </div>
+          ) : (
+            <div className="mt-10 flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
+              {videoEntries.map((entry) => {
+                const thumb = toYoutubeThumb(entry.href);
+                return (
+                  <a
+                    key={entry.href}
+                    href={entry.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-[280px] max-w-[320px] flex-shrink-0 rounded-2xl border border-vex-border bg-vex-surface/70 overflow-hidden hover:border-necro-green/60 transition"
+                  >
+                    <div className="relative aspect-video bg-black">
+                      {thumb ? (
+                        <img src={thumb} alt={entry.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-500">Video</div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/60 border border-white/20 flex items-center justify-center">
+                          <span className="text-white text-xl">▶</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <h3 className="font-fantasy text-lg text-white">{entry.title}</h3>
+                      {entry.summary && <p className="text-sm text-slate-400">{entry.summary}</p>}
+                      <span className="text-[11px] uppercase tracking-[0.3em] text-necro-green">
+                        {entry.category}
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
       <section id={homeContent.callToAction.id} className="py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-vex-dark to-vex-deep opacity-80" />
         <div className="max-w-4xl mx-auto px-4 relative z-10 text-center">
@@ -361,6 +600,395 @@ export default function App() {
           </div>
         </div>
       </footer>
-    </div>
+    </main>
+  );
+}
+
+function DevHubPage() {
+  const devLinks = navSections.find((section) => section.id === 'dev')?.links ?? [];
+  const [logEntries, setLogEntries] = useState<DevLogEntry[]>([]);
+  const [logLoading, setLogLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('/dev/logs/index.json');
+        if (!res.ok) {
+          throw new Error('Failed to load index');
+        }
+        const files = (await res.json()) as string[];
+        const latestFiles = files.slice(0, 3);
+        const entries = await Promise.all(
+          latestFiles.map(async (file) => {
+            try {
+              const contentRes = await fetch(`/dev/logs/${file}`);
+              const content = contentRes.ok ? await contentRes.text() : '';
+              return parseDevLogEntry(file, content);
+            } catch {
+              return parseDevLogEntry(file, '');
+            }
+          })
+        );
+        if (!cancelled) {
+          setLogEntries(entries);
+        }
+      } catch {
+        if (!cancelled) {
+          setLogEntries([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLogLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <main id="main-content" className="py-24 bg-vex-dark">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <header className="space-y-4">
+          <p className="text-necro-green text-xs uppercase tracking-[0.3em]">Developer Hub</p>
+          <h1 className="font-fantasy text-4xl text-white">Tools, dashboards, and build notes</h1>
+          <p className="text-slate-400 max-w-2xl">
+            Quick entry points for UI tooling, hosting workflows, and the latest Vex development logs.
+          </p>
+        </header>
+
+        <section className="space-y-6">
+          <h2 className="font-fantasy text-2xl text-ancient-gold">Latest dev log</h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            {(logLoading ? Array.from({ length: 3 }) : logEntries).map((entry, index) => (
+              <div
+                key={entry?.href ?? `loading-${index}`}
+                className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6"
+              >
+                {entry ? (
+                  <>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                      {entry.date ?? 'Dev Log'}
+                    </p>
+                    <h3 className="font-fantasy text-lg text-white mt-2">{entry.title}</h3>
+                    <p className="text-sm text-slate-400 mt-3 line-clamp-4">
+                      {entry.excerpt || 'Open the log to read more.'}
+                    </p>
+                    {renderResourceLink(
+                      entry.href,
+                      'Read log →',
+                      'inline-flex mt-4 text-sm text-necro-green hover:text-ancient-gold transition'
+                    )}
+                  </>
+                ) : (
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-3 w-20 bg-vex-border/60 rounded" />
+                    <div className="h-5 w-40 bg-vex-border/60 rounded" />
+                    <div className="h-3 w-full bg-vex-border/40 rounded" />
+                    <div className="h-3 w-5/6 bg-vex-border/40 rounded" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-6">
+          <h2 className="font-fantasy text-2xl text-ancient-gold">Core tooling</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {devLinks.map((link) => (
+              <div key={link.href} className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6">
+                <p className="text-sm text-slate-400 mb-2">{link.description || 'Developer resource'}</p>
+                {renderResourceLink(link.href, link.label, 'text-lg text-white hover:text-necro-green transition')}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="font-fantasy text-2xl text-ancient-gold">Browse the archives</h2>
+          <div className="rounded-xl border border-vex-border bg-vex-surface/60 p-4">
+            {renderResourceLink('/dev/logs', 'Open all dev logs', 'text-sm text-slate-200 hover:text-necro-green transition')}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function DevUiPage() {
+  const devLinks = navSections.find((section) => section.id === 'dev')?.links ?? [];
+  const uiLinks = devLinks.filter((link) => link.href.startsWith('/dev/ui') && link.href !== '/dev/ui');
+
+  return (
+    <main id="main-content" className="py-24 bg-vex-dark">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <header className="space-y-4">
+          <p className="text-necro-green text-xs uppercase tracking-[0.3em]">UI Grimoire</p>
+          <h1 className="font-fantasy text-4xl text-white">Interface patterns &amp; cheatsheets</h1>
+          <p className="text-slate-400 max-w-2xl">
+            Reference pages for Vex UI patterns, rules, and reusable components.
+          </p>
+        </header>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {uiLinks.map((link) => (
+            <div key={link.href} className="rounded-xl border border-vex-border bg-vex-surface/60 p-4">
+              {renderResourceLink(link.href, link.label, 'text-sm text-slate-200 hover:text-necro-green transition')}
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function DevHostingPage() {
+  return (
+    <main id="main-content" className="py-24 bg-vex-dark">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <header className="space-y-4">
+          <p className="text-necro-green text-xs uppercase tracking-[0.3em]">Hosting</p>
+          <h1 className="font-fantasy text-4xl text-white">Deployment &amp; hosting notes</h1>
+          <p className="text-slate-400">Live notes and runbooks for hosting the Vex stack.</p>
+        </header>
+
+        <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6">
+          {renderResourceLink('/dev/hosting/', 'Open hosting handbook', 'text-lg text-white hover:text-necro-green transition')}
+          <p className="text-sm text-slate-400 mt-2">Includes docker, infra, and launch guides.</p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function DevLogsPage() {
+  const [files, setFiles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('/dev/logs/index.json');
+        if (!res.ok) {
+          throw new Error('Failed to load logs');
+        }
+        const list = (await res.json()) as string[];
+        if (!cancelled) {
+          setFiles(list);
+        }
+      } catch {
+        if (!cancelled) {
+          setFiles([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <main id="main-content" className="py-24 bg-vex-dark">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <header className="space-y-4">
+          <p className="text-necro-green text-xs uppercase tracking-[0.3em]">Dev Logs</p>
+          <h1 className="font-fantasy text-4xl text-white">Recent build notes</h1>
+          <p className="text-slate-400">Chronological updates from the dungeon engineering team.</p>
+        </header>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {(loading ? Array.from({ length: 6 }) : files).map((file, index) => (
+            <div key={file ?? `loading-${index}`} className="rounded-xl border border-vex-border bg-vex-surface/60 p-4">
+              {file ? (
+                <>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                    {parseLogDate(file) ?? 'Dev Log'}
+                  </p>
+                  <h3 className="font-fantasy text-lg text-white mt-2">{formatLogTitle(file)}</h3>
+                  <div className="mt-3 flex gap-3 text-xs text-slate-400">
+                    <Link
+                      to={`/md/dev/logs/${encodeURIComponent(file)}`}
+                      className="text-necro-green hover:text-ancient-gold transition"
+                    >
+                      Open post →
+                    </Link>
+                    <a
+                      href={`/dev/logs/${file}`}
+                      className="hover:text-necro-green transition"
+                    >
+                      Raw markdown
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-3 w-20 bg-vex-border/60 rounded" />
+                  <div className="h-5 w-40 bg-vex-border/60 rounded" />
+                  <div className="h-3 w-5/6 bg-vex-border/40 rounded" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function MarkdownPage() {
+  const { '*': pathSlug } = useParams();
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!pathSlug) {
+        setError('Missing markdown path');
+        setLoading(false);
+        return;
+      }
+      const safePath = pathSlug.replace(/\.\.+/g, '');
+      try {
+        const res = await fetch(`/${safePath}`);
+        if (!res.ok) {
+          throw new Error('Not found');
+        }
+        const text = await res.text();
+        if (!cancelled) {
+          setContent(text);
+          setError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Markdown not found');
+          setContent('');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathSlug]);
+
+  return (
+    <main id="main-content" className="py-24 bg-vex-dark">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="flex items-center gap-4">
+          <Link to="/dev/logs" className="text-xs text-slate-400 hover:text-necro-green transition">
+            ← Back to logs
+          </Link>
+          {pathSlug && (
+            <a
+              href={`/${pathSlug}`}
+              className="text-xs text-slate-400 hover:text-necro-green transition"
+            >
+              View raw markdown
+            </a>
+          )}
+        </div>
+
+        {loading && (
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 w-40 bg-vex-border/60 rounded" />
+            <div className="h-4 w-3/4 bg-vex-border/40 rounded" />
+            <div className="h-4 w-full bg-vex-border/40 rounded" />
+          </div>
+        )}
+        {error && !loading && (
+          <div className="rounded-xl border border-vex-border bg-vex-surface/60 p-6 text-slate-300">
+            {error}
+          </div>
+        )}
+        {!loading && !error && (
+          <article className="markdown-body rounded-2xl border border-vex-border bg-vex-surface/70 p-6 prose prose-invert prose-headings:font-fantasy prose-a:text-necro-green max-w-none">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a: ({ href = '', children, ...props }) => {
+                  if (!href) {
+                    return <span {...props}>{children}</span>;
+                  }
+                  if (isExternal(href)) {
+                    return (
+                      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                        {children}
+                      </a>
+                    );
+                  }
+                  if (href.startsWith('/')) {
+                    return (
+                      <Link to={href} {...props}>
+                        {children}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <a href={href} {...props}>
+                      {children}
+                    </a>
+                  );
+                }
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </article>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function NotFound() {
+  return (
+    <main id="main-content" className="min-h-screen bg-vex-dark text-slate-200 flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <p className="font-fantasy text-4xl text-ancient-gold">Lost in the catacombs</p>
+        <p className="text-slate-400">That page does not exist.</p>
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-vex-deep text-white font-fantasy text-xs uppercase tracking-widest border border-necro-green/40 hover:bg-necro-green hover:text-vex-dark transition"
+        >
+          Return home
+        </Link>
+      </div>
+    </main>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Shell />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/dev" element={<DevHubPage />} />
+          <Route path="/dev/ui" element={<DevUiPage />} />
+          <Route path="/dev/ui/" element={<Navigate to="/dev/ui" replace />} />
+          <Route path="/dev/ui/index.html" element={<Navigate to="/dev/ui" replace />} />
+          <Route path="/dev/hosting" element={<DevHostingPage />} />
+          <Route path="/dev/logs" element={<DevLogsPage />} />
+          <Route path="/md/*" element={<MarkdownPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }

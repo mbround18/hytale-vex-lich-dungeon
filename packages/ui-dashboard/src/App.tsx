@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 import Header from './components/Header';
 import { VexGlobalStyles } from 'ui-shared/components';
 import StatsView from './components/StatsView';
@@ -7,6 +8,16 @@ import ArchivesView from './components/ArchivesView';
 import TelemetryView from './components/TelemetryView';
 import type { Metrics } from './types';
 import api, { apiBaseUrl } from './api';
+import { publishEvent, setStreamStatus, streamStatus$ } from './state/dashboardBus';
+import {
+  clearArchiveStorageDb,
+  deleteArchiveStorageDb,
+  initArchiveDb,
+  loadArchivesFromDb,
+  loadEventLogFromDb,
+  saveArchiveToDb,
+  saveEventLogToDb
+} from './state/eventArchive';
 
 const isPreviewMode = () => window.location.protocol === 'file:' || window.location.protocol === 'blob:';
 
@@ -34,12 +45,9 @@ const defaultMetrics: Metrics = {
   instanceStats: { active: 0, total: 0, recentEvents: 0 }
 };
 
-export default function App() {
-  const [view, setView] = useState<'stats' | 'map' | 'archives' | 'logs'>('stats');
+function DashboardApp() {
   const [status, setStatus] = useState('connecting');
   const [events, setEvents] = useState<VexEvent[]>([]);
-  const [search, setSearch] = useState('');
-  const [selectedEvent, setSelectedEvent] = useState<VexEvent | null>(null);
   const [selectedArchive, setSelectedArchive] = useState<any | null>(null);
   const [worldState, setWorldState] = useState<WorldState>({
     activeInstances: {},
@@ -50,12 +58,15 @@ export default function App() {
   const [metrics, setMetrics] = useState<Metrics>(defaultMetrics);
   const [prefabMetadata, setPrefabMetadata] = useState<Record<string, { w: number; h: number }>>({});
 
-  const dbRef = useRef<IDBDatabase | null>(null);
   const pendingPrefabFetches = useRef<Set<string>>(new Set());
   const replayTimerRef = useRef<number | null>(null);
   const archivedInstancesRef = useRef<any[]>([]);
   const prefabMetadataRef = useRef<Record<string, { w: number; h: number }>>({});
   const sseRef = useRef<EventSource | null>(null);
+  const sseReconnectTimerRef = useRef<number | null>(null);
+  const sseHealthTimerRef = useRef<number | null>(null);
+  const sseAttemptRef = useRef(0);
+  const sseLastEventAtRef = useRef<number>(0);
   const sawLiveEventRef = useRef(false);
   const recentEventFingerprintsRef = useRef<Map<string, number>>(new Map());
 
@@ -65,14 +76,6 @@ export default function App() {
     cursor: 0,
     events: [] as VexEvent[]
   });
-
-  const filteredEvents = useMemo(() => {
-    if (!search) return events;
-    const term = search.toLowerCase();
-    return events.filter(e =>
-      (e.type || '').toLowerCase().includes(term) || JSON.stringify(e.data || {}).toLowerCase().includes(term)
-    );
-  }, [events, search]);
 
   const playerRoster = useMemo(() => {
     return Object.values(worldState.players).sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
@@ -115,25 +118,6 @@ export default function App() {
     prefabMetadataRef.current = prefabMetadata;
   }, [prefabMetadata]);
 
-  const initDB = useCallback(() => {
-    return new Promise<void>((resolve) => {
-      const request = indexedDB.open('VexDungeonDB', 2);
-      request.onupgradeneeded = (e) => {
-        const db = (e.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains('archives')) {
-          db.createObjectStore('archives', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('eventLogs')) {
-          db.createObjectStore('eventLogs', { keyPath: 'id' });
-        }
-      };
-      request.onsuccess = (e) => {
-        dbRef.current = (e.target as IDBOpenDBRequest).result;
-        resolve();
-      };
-    });
-  }, []);
-
   const loadArchives = useCallback(() => {
     if (!isPreviewMode()) {
       api.get('/archives')
@@ -146,14 +130,10 @@ export default function App() {
         .catch(() => null);
       return;
     }
-    const db = dbRef.current;
-    if (!db) return;
-    const tx = db.transaction('archives', 'readonly');
-    const req = tx.objectStore('archives').getAll();
-    req.onsuccess = () => {
-      const list = (req.result || []).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      setWorldState(prev => ({ ...prev, archivedInstances: list }));
-    };
+    void loadArchivesFromDb().then((list) => {
+      const sorted = (list || []).sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setWorldState(prev => ({ ...prev, archivedInstances: sorted }));
+    });
   }, []);
 
   const saveArchive = useCallback((instanceData: any) => {
@@ -168,15 +148,11 @@ export default function App() {
         .catch(() => null);
       return;
     }
-    const db = dbRef.current;
-    if (!db) return;
-    const tx = db.transaction('archives', 'readwrite');
-    tx.objectStore('archives').put({
+    void saveArchiveToDb({
       id: instanceData.name,
       timestamp: new Date().toISOString(),
       data: JSON.parse(JSON.stringify(serializable))
-    });
-    loadArchives();
+    }).then(loadArchives);
   }, [loadArchives]);
 
   const clearArchives = useCallback(() => {
@@ -190,16 +166,11 @@ export default function App() {
         .catch(() => null);
       return;
     }
-    const db = dbRef.current;
-    if (!db) return;
-    const tx = db.transaction(['archives', 'eventLogs'], 'readwrite');
-    tx.objectStore('archives').clear();
-    tx.objectStore('eventLogs').clear();
-    tx.oncomplete = () => {
+    void clearArchiveStorageDb().then(() => {
       setSelectedArchive(null);
       setReplay({ active: false, playing: false, cursor: 0, events: [] });
       loadArchives();
-    };
+    });
   }, [loadArchives]);
 
   const deleteArchive = useCallback((archiveId: string) => {
@@ -212,15 +183,10 @@ export default function App() {
         .catch(() => null);
       return;
     }
-    const db = dbRef.current;
-    if (!db) return;
-    const tx = db.transaction(['archives', 'eventLogs'], 'readwrite');
-    tx.objectStore('archives').delete(archiveId);
-    tx.objectStore('eventLogs').delete(archiveId);
-    tx.oncomplete = () => {
+    void deleteArchiveStorageDb(archiveId).then(() => {
       setSelectedArchive((prev: any | null) => (prev?.id === archiveId ? null : prev));
       loadArchives();
-    };
+    });
   }, [loadArchives]);
 
   const getEventFields = useCallback((ev: VexEvent) => ev.data?.fields || ev.data?.fields || {}, []);
@@ -246,42 +212,27 @@ export default function App() {
   }, [getEventFields, getEventTimestamp, getEventWorld, getPlayerIdFromRef]);
 
   const saveEventToLog = useCallback((event: VexEvent) => {
-    const db = dbRef.current;
-    if (!db || replay.active) return;
+    if (replay.active) return;
     const fields = getEventFields(event);
     const worldName = getEventWorld(fields);
     if (!worldName || !worldName.startsWith('instance-')) return;
-    const tx = db.transaction('eventLogs', 'readwrite');
-    const store = tx.objectStore('eventLogs');
-    const req = store.get(worldName);
-    req.onsuccess = () => {
-      const existing = req.result || { id: worldName, events: [] };
-      existing.events.push(event);
-      store.put(existing);
-    };
+    void saveEventLogToDb(worldName, event);
   }, [getEventFields, getEventWorld, replay.active]);
 
   const loadEventLog = useCallback((instanceName: string) => {
-    const db = dbRef.current;
-    if (!db || !instanceName) return Promise.resolve(null);
-    return new Promise<VexEvent[] | null>((resolve) => {
-      const tx = db.transaction('eventLogs', 'readonly');
-      const req = tx.objectStore('eventLogs').get(instanceName);
-      req.onsuccess = () => resolve(req.result?.events || null);
-      req.onerror = () => resolve(null);
-    });
+    if (!instanceName) return Promise.resolve(null);
+    return loadEventLogFromDb(instanceName).catch(() => null);
   }, []);
 
   const checkHealth = useCallback(async () => {
     if (isPreviewMode()) {
-      setStatus('demo mode');
-      return;
+      return true;
     }
     try {
       await api.get('/health');
-      setStatus('online');
+      return true;
     } catch {
-      setStatus('severed');
+      return false;
     }
   }, []);
 
@@ -566,6 +517,7 @@ export default function App() {
       return next.length > 1200 ? next.slice(0, 1200) : next;
     });
     saveEventToLog(normalized);
+    publishEvent(normalized);
   }, [buildEventFingerprint, saveEventToLog]);
 
   const tryLoadJsonFiles = useCallback(async (files: string[]) => {
@@ -610,21 +562,72 @@ export default function App() {
   const connectSSE = useCallback(() => {
     if (isPreviewMode()) {
       injectDemoData();
-      return;
+      setStreamStatus(true);
+      return () => undefined;
     }
-    try {
+
+    const clearReconnectTimer = () => {
+      if (sseReconnectTimerRef.current != null) {
+        window.clearTimeout(sseReconnectTimerRef.current);
+        sseReconnectTimerRef.current = null;
+      }
+    };
+
+    const clearHealthTimer = () => {
+      if (sseHealthTimerRef.current != null) {
+        window.clearInterval(sseHealthTimerRef.current);
+        sseHealthTimerRef.current = null;
+      }
+    };
+
+    const closeSource = () => {
       if (sseRef.current) {
         sseRef.current.close();
         sseRef.current = null;
       }
+    };
+
+    const scheduleReconnect = () => {
+      clearReconnectTimer();
+      const attempt = sseAttemptRef.current + 1;
+      sseAttemptRef.current = attempt;
+      const baseDelay = Math.min(30000, 1000 * Math.pow(2, Math.min(attempt, 5)));
+      const jitter = Math.floor(Math.random() * 500);
+      sseReconnectTimerRef.current = window.setTimeout(() => {
+        connect();
+      }, baseDelay + jitter);
+    };
+
+    const ensureHealth = async () => {
+      const healthy = await checkHealth();
+      if (healthy) {
+        connect();
+        return true;
+      }
+      return false;
+    };
+
+    const connect = () => {
+      clearReconnectTimer();
+      closeSource();
       sawLiveEventRef.current = false;
       const source = new EventSource(`${apiBaseUrl.replace(/\/$/, '')}/events`);
       sseRef.current = source;
+
+      source.onopen = () => {
+        sseAttemptRef.current = 0;
+        sseLastEventAtRef.current = Date.now();
+        setStreamStatus(true);
+      };
+
       source.addEventListener('message', (e) => {
+        sseLastEventAtRef.current = Date.now();
         sawLiveEventRef.current = true;
         addEvent(JSON.parse((e as MessageEvent).data));
       });
+
       source.addEventListener('prefab', (e) => {
+        sseLastEventAtRef.current = Date.now();
         sawLiveEventRef.current = true;
         try {
           const data = JSON.parse((e as MessageEvent).data);
@@ -639,16 +642,52 @@ export default function App() {
           // ignore malformed prefab payloads
         }
       });
-      source.onerror = () => console.warn('SSE disconnected');
+
+      source.onerror = async () => {
+        setStreamStatus(false);
+        closeSource();
+        const healthy = await ensureHealth();
+        if (!healthy) {
+          scheduleReconnect();
+        }
+      };
+
       window.setTimeout(() => {
         if (!sawLiveEventRef.current) {
           injectDemoData(true);
         }
       }, 1500);
-    } catch {
-      injectDemoData();
-    }
-  }, [addEvent, injectDemoData]);
+    };
+
+    const livenessTimer = window.setInterval(async () => {
+      if (!sseRef.current) {
+        return;
+      }
+      const last = sseLastEventAtRef.current;
+      if (last > 0 && Date.now() - last > 15000) {
+        setStreamStatus(false);
+        closeSource();
+        const healthy = await ensureHealth();
+        if (!healthy) {
+          scheduleReconnect();
+        }
+      }
+    }, 5000);
+
+    connect();
+    clearHealthTimer();
+    sseHealthTimerRef.current = window.setInterval(() => {
+      if (sseRef.current) return;
+      void ensureHealth();
+    }, 5000);
+
+    return () => {
+      window.clearInterval(livenessTimer);
+      clearHealthTimer();
+      clearReconnectTimer();
+      closeSource();
+    };
+  }, [addEvent, checkHealth, injectDemoData]);
 
   const pollPlayerMetadata = useCallback(async () => {
     if (isPreviewMode()) return;
@@ -681,28 +720,43 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    void initDB().then(() => loadArchives());
-    connectSSE();
-    checkHealth();
-    const healthTimer = window.setInterval(checkHealth, 10000);
+    if (isPreviewMode()) {
+      void initArchiveDb().then(() => loadArchives());
+    } else {
+      loadArchives();
+    }
+    const disconnect = connectSSE();
     pollPlayerMetadata();
     const playerTimer = window.setInterval(pollPlayerMetadata, 5000);
 
     return () => {
-      window.clearInterval(healthTimer);
       window.clearInterval(playerTimer);
+      if (typeof disconnect === 'function') {
+        disconnect();
+      }
       if (sseRef.current) {
         sseRef.current.close();
         sseRef.current = null;
       }
     };
-  }, [checkHealth, connectSSE, initDB, loadArchives, pollPlayerMetadata]);
+  }, [connectSSE, loadArchives, pollPlayerMetadata]);
 
   useEffect(() => {
     if (!replay.active) {
       recalculateState();
     }
   }, [events, replay.active, recalculateState]);
+
+  useEffect(() => {
+    const sub = streamStatus$.subscribe((statusUpdate) => {
+      if (isPreviewMode()) {
+        setStatus('demo mode');
+        return;
+      }
+      setStatus(statusUpdate.connected ? 'online' : 'severed');
+    });
+    return () => sub.unsubscribe();
+  }, []);
 
   const downloadJson = (filename: string, payload: any) => {
     try {
@@ -817,57 +871,75 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col vex-grid">
       <VexGlobalStyles />
-      <Header status={status} view={view} onViewChange={setView} />
+      <Header status={status} />
       <main className="flex-1 flex overflow-hidden">
-        {view === 'stats' && (
-          <StatsView
-            metrics={metrics}
-            playerRoster={playerRoster}
-            instanceList={instanceList}
-            portalList={portalList}
+        <Routes>
+          <Route path="/" element={<Navigate to="/stats" replace />} />
+          <Route
+            path="/stats"
+            element={
+              <StatsView
+                metrics={metrics}
+                playerRoster={playerRoster}
+                instanceList={instanceList}
+                portalList={portalList}
+              />
+            }
           />
-        )}
-
-        {view === 'map' && (
-          <MapView worldState={worldState} getRoomSizeForRoom={getRoomSizeForRoom} />
-        )}
-
-        {view === 'archives' && (
-          <ArchivesView
-            archives={worldState.archivedInstances}
-            selectedArchive={selectedArchive}
-            onSelectArchive={setSelectedArchive}
-            onClearArchives={clearArchives}
-            onDeleteArchive={deleteArchive}
-            onDownloadInstanceLog={downloadInstanceLog}
-            replay={replay}
-            replayRangeMax={replayRangeMax}
-            replayStartTime={replayStartTime}
-            replayCurrentTime={replayCurrentTime}
-            replayEndTime={replayEndTime}
-            onStartReplay={startReplay}
-            onToggleReplay={toggleReplay}
-            onStopReplay={stopReplay}
-            onSeekReplay={seekReplay}
+          <Route
+            path="/map"
+            element={<MapView worldState={worldState} getRoomSizeForRoom={getRoomSizeForRoom} />}
           />
-        )}
-
-        {view === 'logs' && (
-          <TelemetryView
-            search={search}
-            onSearchChange={setSearch}
-            events={filteredEvents}
-            selectedEvent={selectedEvent}
-            onSelectEvent={setSelectedEvent}
-            onPurge={() => {
-              setEvents([]);
-              setSelectedEvent(null);
-              recalculateState();
-            }}
-            onDownload={downloadFullTelemetry}
+          <Route
+            path="/archives"
+            element={
+              <ArchivesView
+                archives={worldState.archivedInstances}
+                selectedArchive={selectedArchive}
+                onSelectArchive={setSelectedArchive}
+                onClearArchives={clearArchives}
+                onDeleteArchive={deleteArchive}
+                onDownloadInstanceLog={downloadInstanceLog}
+                replay={replay}
+                replayRangeMax={replayRangeMax}
+                replayStartTime={replayStartTime}
+                replayCurrentTime={replayCurrentTime}
+                replayEndTime={replayEndTime}
+                onStartReplay={startReplay}
+                onToggleReplay={toggleReplay}
+                onStopReplay={stopReplay}
+                onSeekReplay={seekReplay}
+              />
+            }
           />
-        )}
+          <Route path="/logs" element={<TelemetryView />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </main>
     </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="min-h-screen bg-[#0c0812] text-slate-100 flex items-center justify-center">
+      <div className="text-center space-y-3">
+        <p className="text-2xl font-semibold">Page not found</p>
+        <Link
+          to="/stats"
+          className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-vex-purple/40 text-vex-purple hover:bg-vex-purple/10 transition"
+        >
+          Back to dashboard
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <DashboardApp />
+    </BrowserRouter>
   );
 }
