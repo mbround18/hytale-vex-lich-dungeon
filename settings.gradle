@@ -2,6 +2,7 @@ rootProject.name = "vex-lich-dungeon"
 include("plugins:roguelike")
 include("plugins:engine")
 include("plugins:forwarder")
+include("plugins:dungeon-master")
 include("shared:interfaces")
 include("shared:utilities")
 include("tools:ui-validator")

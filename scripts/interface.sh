@@ -13,6 +13,10 @@ DEBOUNCE_SECONDS=5
 last_build_time=0
 compose_pid=""
 
+docker compose down 2>/dev/null || true
+rm -rf ./dist/*.jar || true
+./gradlew "$BUILD_TASK"
+
 build_and_copy() {
   ./gradlew "$BUILD_TASK"
 }
