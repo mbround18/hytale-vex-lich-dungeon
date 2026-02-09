@@ -40,14 +40,16 @@ async fn main() -> Result<()> {
     // Gradle build must complete before Docker starts
     println!("🔨 Starting Gradle build...");
     process_manager.start_process(ProcessType::Gradle).await?;
-    process_manager.wait_for_completion(ProcessType::Gradle).await?;
+    process_manager
+        .wait_for_completion(ProcessType::Gradle)
+        .await?;
     println!("✓ Gradle build completed");
 
     println!("🐳 Starting Docker container...");
     process_manager
         .start_process(ProcessType::DockerCompose)
         .await?;
-    
+
     println!("📦 Starting package manager...");
     process_manager.start_process(ProcessType::Pnpm).await?;
 
