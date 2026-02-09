@@ -23,10 +23,10 @@ pub fn collect_ui_files(args: &Args, ui_root: &Path) -> Result<Vec<PathBuf>> {
         let java_root = normalize_path(java_root)?;
         let refs = scan_java_for_ui_refs(&java_root)?;
         for ui_ref in refs {
-            if let Some(path) = resolve_ui_ref(ui_root, &ui_ref) {
-                if path.exists() {
-                    files.insert(path);
-                }
+            if let Some(path) = resolve_ui_ref(ui_root, &ui_ref)
+                && path.exists()
+            {
+                files.insert(path);
             }
         }
     }
@@ -108,9 +108,9 @@ pub fn relative_path(from_dir: &Path, to: &Path) -> String {
 }
 
 pub fn is_ident_start(c: u8) -> bool {
-    (c >= b'a' && c <= b'z') || (c >= b'A' && c <= b'Z') || c == b'_'
+    c.is_ascii_lowercase() || c.is_ascii_uppercase() || c == b'_'
 }
 
 pub fn is_ident_char(c: u8) -> bool {
-    is_ident_start(c) || (c >= b'0' && c <= b'9')
+    is_ident_start(c) || c.is_ascii_digit()
 }

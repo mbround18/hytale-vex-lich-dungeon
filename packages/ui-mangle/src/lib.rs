@@ -168,7 +168,7 @@ pub fn run(args: Args) -> Result<()> {
             &lang_root,
             &java_out,
             &args.java_package,
-            args.lang_class_file.as_ref().map(|v| &**v),
+            args.lang_class_file.as_deref(),
             args.lang_class_name.as_deref(),
         )?;
         if args.verbose {
@@ -184,14 +184,14 @@ fn collect_aliases(text: &str) -> BTreeSet<String> {
     let bytes = text.as_bytes();
     let mut i = 0usize;
     while i < bytes.len() {
-        if bytes[i] == b'$' {
-            if let Some((alias, end)) = parse_ident_at(bytes, i + 1) {
-                if end < bytes.len() && bytes[end] == b'.' {
-                    aliases.insert(alias.to_string());
-                }
-                i = end;
-                continue;
+        if bytes[i] == b'$'
+            && let Some((alias, end)) = parse_ident_at(bytes, i + 1)
+        {
+            if end < bytes.len() && bytes[end] == b'.' {
+                aliases.insert(alias.to_string());
             }
+            i = end;
+            continue;
         }
         i += 1;
     }

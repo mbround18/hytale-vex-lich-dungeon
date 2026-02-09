@@ -19,12 +19,12 @@ pub fn parse_ui_file(path: &Path, registry: &mut MacroRegistry) -> Result<FileAs
             break;
         }
 
-        if parser.peek_char() == Some('@') {
-            if let Some(macro_def) = parser.try_parse_macro_def()? {
-                let file_macros = registry.files.entry(path.to_path_buf()).or_default();
-                file_macros.macros.insert(macro_def.0, macro_def.1);
-                continue;
-            }
+        if parser.peek_char() == Some('@')
+            && let Some(macro_def) = parser.try_parse_macro_def()?
+        {
+            let file_macros = registry.files.entry(path.to_path_buf()).or_default();
+            file_macros.macros.insert(macro_def.0, macro_def.1);
+            continue;
         }
 
         let stmt = parser.parse_statement_or_node(&mut items)?;

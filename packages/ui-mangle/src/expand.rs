@@ -63,14 +63,13 @@ fn expand_node(
             let constant_keys: HashSet<String> = param_map.keys().cloned().collect();
             param_map.insert("__alias".to_string(), prefix.clone());
             param_map.extend(macro_def.defaults.clone());
-            if let Some(parent_params) = params {
-                if parent_params
+            if let Some(parent_params) = params
+                && parent_params
                     .get("__warn_duplicates")
                     .map(|v| v == "true")
                     .unwrap_or(false)
-                {
-                    param_map.insert("__warn_duplicates".to_string(), "true".to_string());
-                }
+            {
+                param_map.insert("__warn_duplicates".to_string(), "true".to_string());
             }
             let mut call_items = node.items;
             if let Some(parent_params) = params {
@@ -121,10 +120,8 @@ fn resolve_macro_def(
 }
 
 fn get_file_constants(path: &Path, registry: &mut MacroRegistry) -> HashMap<String, String> {
-    if !registry.files.contains_key(path) {
-        if path.exists() {
-            let _ = crate::parser::parse_ui_file(path, registry);
-        }
+    if !registry.files.contains_key(path) && path.exists() {
+        let _ = crate::parser::parse_ui_file(path, registry);
     }
     let raw = registry
         .files
@@ -159,7 +156,7 @@ fn extract_param_overrides(items: &mut Vec<BodyItem>, params: &mut HashMap<Strin
     *items = retained;
 }
 
-fn apply_params_to_items(items: &mut Vec<BodyItem>, params: &HashMap<String, String>) {
+fn apply_params_to_items(items: &mut [BodyItem], params: &HashMap<String, String>) {
     for item in items.iter_mut() {
         match item {
             BodyItem::Property(text) => {
@@ -253,18 +250,16 @@ fn qualify_spread_in_text(text: &str, alias: &str, constants: &HashSet<String>) 
             && bytes[i + 1] == b'.'
             && bytes[i + 2] == b'.'
             && bytes[i + 3] == b'@'
+            && let Some((name, end)) = parse_ident_at(bytes, i + 4)
+            && constants.contains(name)
         {
-            if let Some((name, end)) = parse_ident_at(bytes, i + 4) {
-                if constants.contains(name) {
-                    out.push_str("...");
-                    out.push('$');
-                    out.push_str(alias);
-                    out.push_str(".@");
-                    out.push_str(name);
-                    i = end;
-                    continue;
-                }
-            }
+            out.push_str("...");
+            out.push('$');
+            out.push_str(alias);
+            out.push_str(".@");
+            out.push_str(name);
+            i = end;
+            continue;
         }
         out.push(bytes[i] as char);
         i += 1;
@@ -277,9 +272,9 @@ fn property_key(text: &str) -> Option<String> {
     if trimmed.is_empty() || trimmed.starts_with('@') {
         return None;
     }
-    let mut iter = trimmed.chars().peekable();
+    let iter = trimmed.chars().peekable();
     let mut key = String::new();
-    while let Some(c) = iter.next() {
+    for c in iter {
         if c == ':' {
             break;
         }
@@ -313,12 +308,12 @@ fn replace_params_once(text: &str, params: &HashMap<String, String>) -> String {
                     i += 1;
                     continue;
                 }
-                if !is_import_ref(bytes, i) {
-                    if let Some(value) = params.get(name) {
-                        out.push_str(value);
-                        i = end;
-                        continue;
-                    }
+                if !is_import_ref(bytes, i)
+                    && let Some(value) = params.get(name)
+                {
+                    out.push_str(value);
+                    i = end;
+                    continue;
                 }
             }
         }
@@ -360,26 +355,24 @@ fn replace_params_with_imports(
     let mut out = String::with_capacity(text.len());
     let mut i = 0usize;
     while i < bytes.len() {
-        if bytes[i] == b'$' {
-            if let Some((alias, alias_end)) = parse_ident_at(bytes, i + 1) {
-                let j = alias_end;
-                if j + 1 < bytes.len() && bytes[j] == b'.' && bytes[j + 1] == b'@' {
-                    if let Some((name, name_end)) = parse_ident_at(bytes, j + 2) {
-                        let spread = i >= 3
-                            && bytes[i - 1] == b'.'
-                            && bytes[i - 2] == b'.'
-                            && bytes[i - 3] == b'.';
-                        if !spread {
-                            if let Some(import_path) = imports.get(alias) {
-                                let constants = get_file_constants(import_path, registry);
-                                if let Some(value) = constants.get(name) {
-                                    let replaced = replace_params(value, &constants);
-                                    out.push_str(&replaced);
-                                    i = name_end;
-                                    continue;
-                                }
-                            }
-                        }
+        if bytes[i] == b'$'
+            && let Some((alias, alias_end)) = parse_ident_at(bytes, i + 1)
+        {
+            let j = alias_end;
+            if j + 1 < bytes.len()
+                && bytes[j] == b'.'
+                && bytes[j + 1] == b'@'
+                && let Some((name, name_end)) = parse_ident_at(bytes, j + 2)
+            {
+                let spread =
+                    i >= 3 && bytes[i - 1] == b'.' && bytes[i - 2] == b'.' && bytes[i - 3] == b'.';
+                if !spread && let Some(import_path) = imports.get(alias) {
+                    let constants = get_file_constants(import_path, registry);
+                    if let Some(value) = constants.get(name) {
+                        let replaced = replace_params(value, &constants);
+                        out.push_str(&replaced);
+                        i = name_end;
+                        continue;
                     }
                 }
             }
@@ -392,14 +385,13 @@ fn replace_params_with_imports(
                 i += 1;
                 continue;
             }
-            if let Some((name, end)) = parse_ident_at(bytes, i + 1) {
-                if !is_import_ref(bytes, i) {
-                    if let Some(value) = params.get(name) {
-                        out.push_str(value);
-                        i = end;
-                        continue;
-                    }
-                }
+            if let Some((name, end)) = parse_ident_at(bytes, i + 1)
+                && !is_import_ref(bytes, i)
+                && let Some(value) = params.get(name)
+            {
+                out.push_str(value);
+                i = end;
+                continue;
             }
         }
         out.push(bytes[i] as char);
