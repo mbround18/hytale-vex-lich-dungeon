@@ -32,7 +32,6 @@ export const navSections: NavSection[] = [
     links: [
       { label: 'Overview', href: '/dev', description: 'Dev portal landing page.' },
       { label: 'Dev Logs', href: '/dev/logs', description: 'Chronological build notes.' },
-      { label: 'UI Grimoire', href: '/dev/ui', description: 'Patterns, components, and UI rules.' },
       { label: 'Hosting', href: '/dev/hosting', description: 'Deployment and runbook notes.' },
       { label: 'UI Cheat Sheet', href: '/dev/ui/cheat-sheet.md', description: 'Quick reference for UI syntax.' },
       { label: 'UI Core Rules', href: '/dev/ui/core-rules.md', description: 'Foundational UI rules and guardrails.' },

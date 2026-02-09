@@ -56,7 +56,6 @@ function Shell() {
     () => [
       { label: 'Home', to: '/' },
       { label: 'Dev Hub', to: '/dev' },
-      { label: 'UI Grimoire', to: '/dev/ui' },
       { label: 'Hosting', to: '/dev/hosting' },
       { label: 'Dev Logs', to: '/dev/logs' }
     ],
@@ -734,46 +733,252 @@ function DevHubPage() {
 }
 
 function DevUiPage() {
-  const devLinks = navSections.find((section) => section.id === 'dev')?.links ?? [];
-  const uiLinks = devLinks.filter((link) => link.href.startsWith('/dev/ui') && link.href !== '/dev/ui');
+  const uiResources = [
+    {
+      title: 'UI Cheat Sheet',
+      description: 'Quick reference for UI syntax, components, and common patterns.',
+      href: '/dev/ui/cheat-sheet.md',
+      icon: '📋',
+      tags: ['reference', 'quick-start']
+    },
+    {
+      title: 'Core Rules',
+      description: 'Foundational UI rules, guardrails, and best practices for consistency.',
+      href: '/dev/ui/core-rules.md',
+      icon: '📐',
+      tags: ['fundamentals', 'guidelines']
+    },
+    {
+      title: 'UI Patterns',
+      description: 'Reusable patterns, layouts, and component compositions.',
+      href: '/dev/ui/patterns.md',
+      icon: '🧩',
+      tags: ['patterns', 'components']
+    }
+  ];
 
   return (
     <main id="main-content" className="py-24 bg-vex-dark">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <header className="space-y-4">
           <p className="text-necro-green text-xs uppercase tracking-[0.3em]">UI Grimoire</p>
-          <h1 className="font-fantasy text-4xl text-white">Interface patterns &amp; cheatsheets</h1>
+          <h1 className="font-fantasy text-4xl text-white">Interface Patterns &amp; Cheatsheets</h1>
           <p className="text-slate-400 max-w-2xl">
-            Reference pages for Vex UI patterns, rules, and reusable components.
+            Reference pages for Vex UI patterns, rules, and reusable components. Everything you need to build consistent, maintainable interfaces.
           </p>
         </header>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {uiLinks.map((link) => (
-            <div key={link.href} className="rounded-xl border border-vex-border bg-vex-surface/60 p-4">
-              {renderResourceLink(link.href, link.label, 'text-sm text-slate-200 hover:text-necro-green transition')}
+        <div className="grid gap-6 md:grid-cols-3">
+          {uiResources.map((resource) => (
+            <div
+              key={resource.href}
+              className="group rounded-2xl border border-vex-border bg-vex-surface/70 p-6 hover:border-necro-green transition-all duration-300"
+            >
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="text-4xl">{resource.icon}</div>
+                  <div className="flex gap-2">
+                    {resource.tags.map((tag) => (
+                      <span key={tag} className="text-xs px-2 py-1 rounded bg-vex-surface border border-vex-border text-slate-400">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  {renderResourceLink(
+                    resource.href,
+                    resource.title,
+                    'text-xl font-fantasy text-white group-hover:text-necro-green transition inline-block'
+                  )}
+                  <p className="text-sm text-slate-400">{resource.description}</p>
+                </div>
+
+                <div className="pt-2">
+                  {renderResourceLink(
+                    resource.href,
+                    'View Reference →',
+                    'text-sm text-necro-green hover:text-ancient-gold transition'
+                  )}
+                </div>
+              </div>
             </div>
           ))}
+        </div>
+
+        <section className="rounded-2xl border border-vex-border bg-vex-surface/70 p-8 space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-fantasy text-white">What's Inside</h2>
+            <p className="text-slate-400">
+              The UI Grimoire provides comprehensive guidance for building Vex-themed interfaces:
+            </p>
+          </div>
+          
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-necro-green">📋 Cheat Sheet</h3>
+              <ul className="space-y-2 text-sm text-slate-300">
+                <li>• Component syntax reference</li>
+                <li>• Color palette & typography</li>
+                <li>• Common UI patterns</li>
+                <li>• Code snippets & examples</li>
+              </ul>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-necro-green">📐 Core Rules</h3>
+              <ul className="space-y-2 text-sm text-slate-300">
+                <li>• Design principles & constraints</li>
+                <li>• Accessibility guidelines</li>
+                <li>• Naming conventions</li>
+                <li>• State management patterns</li>
+              </ul>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-necro-green">🧩 UI Patterns</h3>
+              <ul className="space-y-2 text-sm text-slate-300">
+                <li>• Layout compositions</li>
+                <li>• Navigation structures</li>
+                <li>• Form patterns</li>
+                <li>• Data visualization</li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-necro-green">🎨 Design System</h3>
+              <ul className="space-y-2 text-sm text-slate-300">
+                <li>• Theme tokens & variables</li>
+                <li>• Component library</li>
+                <li>• Icon sets</li>
+                <li>• Animation guidelines</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6">
+          <h2 className="text-xl font-fantasy text-white mb-4">Related Resources</h2>
+          <div className="space-y-2">
+            <a href="/dev/logs" className="block text-necro-green hover:text-ancient-gold transition">
+              📝 Development Logs →
+            </a>
+            <a href="/dev/hosting" className="block text-necro-green hover:text-ancient-gold transition">
+              🚀 Hosting & Deployment →
+            </a>
+            <a href="https://github.com/mbround18/hytale-vex-lich-dungeon" className="block text-necro-green hover:text-ancient-gold transition" target="_blank" rel="noopener noreferrer">
+              📦 GitHub Repository →
+            </a>
+          </div>
         </div>
       </div>
     </main>
   );
 }
-
 function DevHostingPage() {
   return (
     <main id="main-content" className="py-24 bg-vex-dark">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <header className="space-y-4">
           <p className="text-necro-green text-xs uppercase tracking-[0.3em]">Hosting</p>
-          <h1 className="font-fantasy text-4xl text-white">Deployment &amp; hosting notes</h1>
+          <h1 className="font-fantasy text-4xl text-white">Deployment &amp; Hosting Notes</h1>
           <p className="text-slate-400">Live notes and runbooks for hosting the Vex stack.</p>
         </header>
 
-        <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6">
-          {renderResourceLink('/dev/hosting/', 'Open hosting handbook', 'text-lg text-white hover:text-necro-green transition')}
-          <p className="text-sm text-slate-400 mt-2">Includes docker, infra, and launch guides.</p>
-        </div>
+        <section className="space-y-6">
+          <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6 space-y-4">
+            <h2 className="text-2xl font-fantasy text-white">Docker Deployment</h2>
+            <p className="text-slate-300">
+              The Vex Lich Dungeon stack runs via Docker Compose with Hytale server, database, and web dashboard services.
+            </p>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-necro-green">Quick Start</h3>
+              <pre className="bg-vex-dark p-4 rounded-lg overflow-x-auto">
+                <code className="text-sm text-slate-300">
+{`# Clone and start services
+docker compose up -d
+
+# View logs
+docker compose logs -f hytale-server
+
+# Stop services
+docker compose down`}
+                </code>
+              </pre>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6 space-y-4">
+            <h2 className="text-2xl font-fantasy text-white">Server Configuration</h2>
+            <p className="text-slate-300">
+              Configuration files are located in <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">data/server/</code>
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-slate-300 ml-4">
+              <li>Server properties: <code className="text-necro-green">server.properties</code></li>
+              <li>Plugin configs: <code className="text-necro-green">plugins/*/config.yml</code></li>
+              <li>World data: <code className="text-necro-green">worlds/</code></li>
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6 space-y-4">
+            <h2 className="text-2xl font-fantasy text-white">Monitoring</h2>
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-lg font-semibold text-necro-green mb-2">Health Checks</h3>
+                <ul className="list-disc list-inside space-y-1 text-slate-300 ml-4">
+                  <li>Server status: <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">http://localhost:25565/status</code></li>
+                  <li>Dashboard: <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">http://localhost:5173</code></li>
+                  <li>API endpoints: <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">http://localhost:8080/api</code></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-necro-green mb-2">Logs</h3>
+                <p className="text-slate-300">
+                  Server logs are written to <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">data/server/logs/</code> and telemetry events to <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">telemetry_dump_*.json</code>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6 space-y-4">
+            <h2 className="text-2xl font-fantasy text-white">Troubleshooting</h2>
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-lg font-semibold text-necro-green">Common Issues</h3>
+                <dl className="mt-2 space-y-3">
+                  <div>
+                    <dt className="font-medium text-white">Port conflicts</dt>
+                    <dd className="text-slate-300 mt-1">Check if ports 25565, 5173, or 8080 are already in use with <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">lsof -i :25565</code></dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-white">Permission errors</dt>
+                    <dd className="text-slate-300 mt-1">Ensure data directories have correct ownership: <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">chown -R 1000:1000 data/</code></dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-white">Build failures</dt>
+                    <dd className="text-slate-300 mt-1">Clean build artifacts: <code className="text-necro-green bg-vex-dark px-2 py-1 rounded">./gradlew clean build</code></dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6">
+            <h2 className="text-2xl font-fantasy text-white mb-4">Additional Resources</h2>
+            <div className="space-y-2">
+              <a href="https://github.com/mbround18/hytale-vex-lich-dungeon" className="block text-necro-green hover:text-ancient-gold transition" target="_blank" rel="noopener noreferrer">
+                📦 GitHub Repository →
+              </a>
+              <a href="/dev/logs" className="block text-necro-green hover:text-ancient-gold transition">
+                📝 Development Logs →
+              </a>
+              <a href="https://hub.docker.com/r/mbround18/hytale-vex-lich-dungeon" className="block text-necro-green hover:text-ancient-gold transition" target="_blank" rel="noopener noreferrer">
+                🐳 Docker Hub →
+              </a>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );

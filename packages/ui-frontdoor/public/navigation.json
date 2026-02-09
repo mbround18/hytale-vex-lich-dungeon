@@ -9,70 +9,136 @@
         "type": "text",
         "children": [
           { "label": "Developer Hub", "href": "/dev/" },
-          { "label": "UI Grimoire", "href": "/dev/ui/" },
           { "label": "Hosting", "href": "/dev/hosting/" }
         ]
       },
-      { "id": "dungeon", "label": "The Dungeon", "href": "#dungeon", "type": "text" },
-      { "id": "rewards", "label": "Rewards", "href": "#rewards", "type": "text" },
-      { "id": "enter", "label": "Enter the Depths", "href": "#download", "type": "button" }
+      {
+        "id": "dungeon",
+        "label": "The Dungeon",
+        "href": "#dungeon",
+        "type": "text"
+      },
+      {
+        "id": "rewards",
+        "label": "Rewards",
+        "href": "#rewards",
+        "type": "text"
+      },
+      {
+        "id": "enter",
+        "label": "Enter the Depths",
+        "href": "#download",
+        "type": "button"
+      }
     ]
   },
   "dev": {
     "links": [
       { "id": "dungeon", "label": "Dungeon", "href": "/", "type": "link" },
-      { "id": "overview", "label": "Overview", "href": "/dev/", "type": "link", "active": true },
-      { "id": "grimoire", "label": "UI Grimoire", "href": "/dev/ui/", "type": "link" },
-      { "id": "hosting", "label": "Hosting", "href": "/dev/hosting/", "type": "link" },
+      {
+        "id": "overview",
+        "label": "Overview",
+        "href": "/dev/",
+        "type": "link",
+        "active": true
+      },
+      {
+        "id": "hosting",
+        "label": "Hosting",
+        "href": "/dev/hosting/",
+        "type": "link"
+      },
       {
         "id": "resources",
         "label": "Resources",
         "href": "#",
         "type": "link",
         "children": [
-          { "label": "Modding Template", "href": "https://github.com/mbround18/hytale-modding-template" },
-          { "label": "UI VS Code Extension", "href": "https://marketplace.visualstudio.com/items?itemName=MBRound18.hytale-ui-ultimate" }
+          {
+            "label": "Modding Template",
+            "href": "https://github.com/mbround18/hytale-modding-template"
+          },
+          {
+            "label": "UI VS Code Extension",
+            "href": "https://marketplace.visualstudio.com/items?itemName=MBRound18.hytale-ui-ultimate"
+          }
         ]
       },
-      { "id": "github", "label": "GitHub", "href": "https://github.com/mbround18", "type": "pill" }
+      {
+        "id": "github",
+        "label": "GitHub",
+        "href": "https://github.com/mbround18",
+        "type": "pill"
+      }
     ]
   },
   "ui": {
     "links": [
       { "id": "dungeon", "label": "Dungeon", "href": "/", "type": "link" },
       { "id": "dev", "label": "Dev Hub", "href": "/dev/", "type": "link" },
-      { "id": "hosting", "label": "Hosting", "href": "/dev/hosting/", "type": "link" },
-      { "id": "grimoire", "label": "UI Grimoire", "href": "/dev/ui/", "type": "link", "active": true },
+      {
+        "id": "hosting",
+        "label": "Hosting",
+        "href": "/dev/hosting/",
+        "type": "link"
+      },
       {
         "id": "resources",
         "label": "Resources",
         "href": "#",
         "type": "link",
         "children": [
-          { "label": "Modding Template", "href": "https://github.com/mbround18/hytale-modding-template" },
-          { "label": "UI VS Code Extension", "href": "https://marketplace.visualstudio.com/items?itemName=MBRound18.hytale-ui-ultimate" }
+          {
+            "label": "Modding Template",
+            "href": "https://github.com/mbround18/hytale-modding-template"
+          },
+          {
+            "label": "UI VS Code Extension",
+            "href": "https://marketplace.visualstudio.com/items?itemName=MBRound18.hytale-ui-ultimate"
+          }
         ]
       },
-      { "id": "github", "label": "GitHub", "href": "https://github.com/mbround18", "type": "pill" }
+      {
+        "id": "github",
+        "label": "GitHub",
+        "href": "https://github.com/mbround18",
+        "type": "pill"
+      }
     ]
   },
   "hosting": {
     "links": [
       { "id": "dungeon", "label": "Dungeon", "href": "/", "type": "link" },
       { "id": "dev", "label": "Dev Hub", "href": "/dev/", "type": "link" },
-      { "id": "grimoire", "label": "UI Grimoire", "href": "/dev/ui/", "type": "link" },
-      { "id": "hosting", "label": "Hosting", "href": "/dev/hosting/", "type": "link", "active": true },
+      {
+        "id": "hosting",
+        "label": "Hosting",
+        "href": "/dev/hosting/",
+        "type": "link",
+        "active": true
+      },
       {
         "id": "resources",
         "label": "Resources",
         "href": "#",
         "type": "link",
         "children": [
-          { "label": "Modding Template", "href": "https://github.com/mbround18/hytale-modding-template" },
-          { "label": "UI VS Code Extension", "href": "https://marketplace.visualstudio.com/items?itemName=MBRound18.hytale-ui-ultimate" }
+          {
+            "label": "Modding Template",
+            "href": "https://github.com/mbround18/hytale-modding-template"
+          },
+          {
+            "label": "UI VS Code Extension",
+            "href": "https://marketplace.visualstudio.com/items?itemName=MBRound18.hytale-ui-ultimate"
+          }
         ]
       },
-      { "id": "github", "label": "GitHub", "href": "https://github.com/mbround18", "type": "pill" }
+      {
+        "id": "github",
+        "label": "GitHub",
+        "href": "https://github.com/mbround18",
+        "type": "pill"
+      }
     ]
   }
 }

@@ -47,6 +47,7 @@ replay_pid*
 ### Node ###
 # Logs
 logs
+!packages/ui-frontdoor/public/dev/logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
