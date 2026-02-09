@@ -45,7 +45,12 @@ public final class UiThread {
       try {
         action.run();
       } catch (Exception e) {
-        log.error("Error executing UI action for player: " + playerRef.getUsername(), e);
+        String playerName = playerRef.getUsername();
+        String worldName = world.getName();
+        String actionName = action.getClass().getName();
+        log.error("Error executing UI action for player %s in world %s (action=%s): %s",
+            playerName, worldName, actionName, e.getMessage());
+        e.printStackTrace();
       }
     });
 

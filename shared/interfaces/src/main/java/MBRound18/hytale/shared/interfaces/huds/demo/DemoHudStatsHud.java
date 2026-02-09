@@ -15,10 +15,6 @@ import com.hypixel.hytale.component.ComponentType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
@@ -49,6 +45,9 @@ public class DemoHudStatsHud extends AbstractCustomUIHud<DemosHudsDemohudstatsUi
       String defensePercent,
       String stamina) {
     DemosHudsDemohudstatsUi UI = getUiModel();
+    if (UI == null) {
+      return;
+    }
     // set(playerRef, UI.customUIDemoHudStatsStaminaLabel, stamina);
     set(playerRef, UI.demoHudStatsStatsRowHealthHealthValue, Message.raw(health != null ? health : "--"));
     set(playerRef, UI.demoHudStatsStatsRowArmorArmorValue, Message.raw(defensePercent != null ? defensePercent : "--"));
@@ -56,7 +55,6 @@ public class DemoHudStatsHud extends AbstractCustomUIHud<DemosHudsDemohudstatsUi
 
   }
 
-  @Override
   public void run() {
     applyLabelRefs();
     playerPoller.start(currentPlayerRef, 200L, this::watchPlayerStats);
@@ -69,6 +67,9 @@ public class DemoHudStatsHud extends AbstractCustomUIHud<DemosHudsDemohudstatsUi
       return;
     }
     DemosHudsDemohudstatsUi UI = getUiModel();
+    if (UI == null) {
+      return;
+    }
     List<Map.Entry<String, Message>> entries = List.of(
         Map.entry(UI.demoHudStatsHeaderHeaderText,
             ServerLang.customUIDemoHudStatsHealthLabel),

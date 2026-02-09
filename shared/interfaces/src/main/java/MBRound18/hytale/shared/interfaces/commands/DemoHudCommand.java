@@ -91,7 +91,7 @@ public class DemoHudCommand extends AbstractCommand<Object> {
     if ("reset".equals(key)) {
       CustomUIHud currentHud = hudManager.getCustomHud();
       if (currentHud instanceof AbstractCustomUIHud) {
-        ((AbstractCustomUIHud<?>) currentHud).clear();
+        AbstractCustomUIHud.closeHud(playerRef, AbstractCustomUIHud.class, null);
         context.sendMessage(Message.raw("HUD reset."));
       } else {
         context.sendMessage(Message.raw("No custom HUD or unknown HUD to reset."));
@@ -112,12 +112,12 @@ public class DemoHudCommand extends AbstractCommand<Object> {
       return;
     }
 
-    UiThread.runOnPlayerWorld(playerRef, () -> {
-      hudManager.setCustomHud(playerRef, hud);
-      if (hud instanceof AbstractCustomUIHud) {
-        ((AbstractCustomUIHud<?>) hud).run();
-      }
-    });
+    // UiThread.runOnPlayerWorld(playerRef, () -> {
+    // hudManager.setCustomHud(playerRef, hud);
+    // if (hud instanceof AbstractCustomUIHud) {
+    // ((AbstractCustomUIHud<?>) hud).get();
+    // }
+    // });
   }
 
   public static String availableHuds() {

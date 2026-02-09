@@ -64,21 +64,26 @@ public final class WorldTickController {
             return;
           }
           if (op instanceof RunnableOp) {
-            RunnableOp task = (RunnableOp) op;
-            try {
-              task.action.run();
-              if (tickListener != null) {
-                tickListener.accept(uuid);
-              }
-            } catch (Exception e) {
-              logger.log(Level.SEVERE, "Error executing queued tick task for " + uuid, e);
-            }
             deque.poll();
           }
         }
 
-        if (deque.isEmpty()) {
-          queues.remove(uuid, deque);
+        if (op instanceof RunnableOp) {
+          RunnableOp task = (RunnableOp) op;
+          try {
+            task.action.run();
+            if (tickListener != null) {
+              tickListener.accept(uuid);
+            }
+          } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error executing queued tick task for " + uuid, e);
+          }
+        }
+
+        synchronized (deque) {
+          if (deque.isEmpty()) {
+            queues.remove(uuid, deque);
+          }
         }
       });
     }

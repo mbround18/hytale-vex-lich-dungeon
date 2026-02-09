@@ -73,8 +73,6 @@ public abstract class AbstractCustomUIController<T extends AbstractCustomUIHud<?
       return false;
     }
 
-    closeHud(playerRef, AbstractCustomUIHud::clear);
-
     enqueue(playerRef, () -> runOnWorld(playerRef, () -> {
       if (!playerRef.isValid()) {
         return;
