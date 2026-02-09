@@ -75,9 +75,10 @@ function Shell() {
 
   const renderLink = (href: string, label: string, className: string, onClick?: () => void) => {
     if (isRouteLink(href)) {
+      const target = href.endsWith('.md') ? `/md${href}` : normalizePath(href);
       return (
         <NavLink
-          to={normalizePath(href)}
+          to={target}
           className={({ isActive }) =>
             `${className} ${isActive ? 'text-necro-green' : ''}`.trim()
           }
@@ -606,6 +607,7 @@ function HomePage() {
 
 function DevHubPage() {
   const devLinks = navSections.find((section) => section.id === 'dev')?.links ?? [];
+  const resourceLinks = devLinks.filter((link) => link.href !== '/dev');
   const [logEntries, setLogEntries] = useState<DevLogEntry[]>([]);
   const [logLoading, setLogLoading] = useState(true);
 
@@ -618,7 +620,7 @@ function DevHubPage() {
           throw new Error('Failed to load index');
         }
         const files = (await res.json()) as string[];
-        const latestFiles = files.slice(0, 3);
+        const latestFiles = files.slice(0, 6);
         const entries = await Promise.all(
           latestFiles.map(async (file) => {
             try {
@@ -654,65 +656,77 @@ function DevHubPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <header className="space-y-4">
           <p className="text-necro-green text-xs uppercase tracking-[0.3em]">Developer Hub</p>
-          <h1 className="font-fantasy text-4xl text-white">Tools, dashboards, and build notes</h1>
+          <h1 className="font-fantasy text-4xl text-white">Dev log portal</h1>
           <p className="text-slate-400 max-w-2xl">
-            Quick entry points for UI tooling, hosting workflows, and the latest Vex development logs.
+            A running narrative of Vex build notes, plus quick links to the resources we use daily.
           </p>
         </header>
-
-        <section className="space-y-6">
-          <h2 className="font-fantasy text-2xl text-ancient-gold">Latest dev log</h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            {(logLoading ? Array.from({ length: 3 }) : logEntries).map((entry, index) => (
-              <div
-                key={entry?.href ?? `loading-${index}`}
-                className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6"
-              >
-                {entry ? (
-                  <>
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
-                      {entry.date ?? 'Dev Log'}
-                    </p>
-                    <h3 className="font-fantasy text-lg text-white mt-2">{entry.title}</h3>
-                    <p className="text-sm text-slate-400 mt-3 line-clamp-4">
-                      {entry.excerpt || 'Open the log to read more.'}
-                    </p>
-                    {renderResourceLink(
-                      entry.href,
-                      'Read log →',
-                      'inline-flex mt-4 text-sm text-necro-green hover:text-ancient-gold transition'
-                    )}
-                  </>
-                ) : (
-                  <div className="animate-pulse space-y-3">
-                    <div className="h-3 w-20 bg-vex-border/60 rounded" />
-                    <div className="h-5 w-40 bg-vex-border/60 rounded" />
-                    <div className="h-3 w-full bg-vex-border/40 rounded" />
-                    <div className="h-3 w-5/6 bg-vex-border/40 rounded" />
-                  </div>
-                )}
-              </div>
-            ))}
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-fantasy text-2xl text-ancient-gold">Dev log stream</h2>
+              {renderResourceLink(
+                '/dev/logs',
+                'Open full archive',
+                'text-xs uppercase tracking-[0.3em] text-slate-400 hover:text-necro-green transition'
+              )}
+            </div>
+            <div className="space-y-4">
+              {(logLoading ? Array.from({ length: 6 }) : logEntries).map((entry, index) => (
+                <div
+                  key={entry?.href ?? `loading-${index}`}
+                  className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6"
+                >
+                  {entry ? (
+                    <>
+                      <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                        {entry.date ?? 'Dev Log'}
+                      </p>
+                      <h3 className="font-fantasy text-lg text-white mt-2">{entry.title}</h3>
+                      <p className="text-sm text-slate-400 mt-3 line-clamp-3">
+                        {entry.excerpt || 'Open the log to read more.'}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-400">
+                        {renderResourceLink(
+                          entry.href,
+                          'Read entry →',
+                          'text-necro-green hover:text-ancient-gold transition'
+                        )}
+                        <a
+                          href={entry.href}
+                          className="hover:text-necro-green transition"
+                        >
+                          Raw markdown
+                        </a>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="animate-pulse space-y-3">
+                      <div className="h-3 w-20 bg-vex-border/60 rounded" />
+                      <div className="h-5 w-40 bg-vex-border/60 rounded" />
+                      <div className="h-3 w-full bg-vex-border/40 rounded" />
+                      <div className="h-3 w-5/6 bg-vex-border/40 rounded" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </section>
 
-        <section className="space-y-6">
-          <h2 className="font-fantasy text-2xl text-ancient-gold">Core tooling</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            {devLinks.map((link) => (
-              <div key={link.href} className="rounded-2xl border border-vex-border bg-vex-surface/70 p-6">
-                <p className="text-sm text-slate-400 mb-2">{link.description || 'Developer resource'}</p>
-                {renderResourceLink(link.href, link.label, 'text-lg text-white hover:text-necro-green transition')}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="font-fantasy text-2xl text-ancient-gold">Browse the archives</h2>
-          <div className="rounded-xl border border-vex-border bg-vex-surface/60 p-4">
-            {renderResourceLink('/dev/logs', 'Open all dev logs', 'text-sm text-slate-200 hover:text-necro-green transition')}
-          </div>
+          <aside className="space-y-6">
+            <div>
+              <h2 className="font-fantasy text-2xl text-ancient-gold">Resource index</h2>
+              <p className="text-sm text-slate-400 mt-2">Tooling, docs, and dashboards for the Vex stack.</p>
+            </div>
+            <div className="space-y-4">
+              {resourceLinks.map((link) => (
+                <div key={link.href} className="rounded-xl border border-vex-border bg-vex-surface/60 p-4">
+                  <p className="text-xs text-slate-400 mb-2">{link.description || 'Developer resource'}</p>
+                  {renderResourceLink(link.href, link.label, 'text-sm text-slate-200 hover:text-necro-green transition')}
+                </div>
+              ))}
+            </div>
+          </aside>
         </section>
       </div>
     </main>
@@ -850,6 +864,11 @@ function MarkdownPage() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const backTarget = pathSlug?.startsWith('dev/ui/')
+    ? '/dev/ui'
+    : pathSlug?.startsWith('dev/logs/')
+      ? '/dev/logs'
+      : '/dev';
 
   useEffect(() => {
     let cancelled = false;
@@ -891,8 +910,8 @@ function MarkdownPage() {
     <main id="main-content" className="py-24 bg-vex-dark">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div className="flex items-center gap-4">
-          <Link to="/dev/logs" className="text-xs text-slate-400 hover:text-necro-green transition">
-            ← Back to logs
+          <Link to={backTarget} className="text-xs text-slate-400 hover:text-necro-green transition">
+            ← Back to hub
           </Link>
           {pathSlug && (
             <a
@@ -933,8 +952,9 @@ function MarkdownPage() {
                     );
                   }
                   if (href.startsWith('/')) {
+                    const target = href.endsWith('.md') ? `/md${href}` : href;
                     return (
-                      <Link to={href} {...props}>
+                      <Link to={target} {...props}>
                         {children}
                       </Link>
                     );

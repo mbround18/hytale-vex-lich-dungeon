@@ -71,3 +71,18 @@ applyTo: "**/assets/Common/UI/Custom/**,**/assets/Server/Languages/en-US/server.
   - Correct: #FriendsListBody.Text
   - Wrong: #FriendsListBody
   - Use UiVars.textId("FriendsListBody") from ImmortalEngine.
+
+1. HUD lifecycle and cleanup
+
+- Always ensure HUD cleanup only targets active HUD instances; never create new HUDs during cleanup operations.
+- Use defensive checks (null/active state validation) in cleanup methods before accessing or modifying HUD instances.
+- When implementing event-driven cleanup for HUDs, validate that event handlers do not instantiate new objects during teardown.
+- Test repeated spawn/removal cycles to catch edge cases like client crashes or lingering UI elements.
+- Prefer AbstractCustomUIHud.closeHud() or similar methods that safely close only active instances.
+
+1. Map markers and component cleanup
+
+- Explicitly clear or reset map markers and related components when removing or restoring entities.
+- Block components (e.g., BlockMapMarker) must be manually reset during snapshot restore or entity removal.
+- Do not rely solely on entity despawn to clean up world markers; explicitly reset blocks to their original state.
+- Test marker cleanup across multiple spawn/despawn cycles to ensure no lingering markers remain.

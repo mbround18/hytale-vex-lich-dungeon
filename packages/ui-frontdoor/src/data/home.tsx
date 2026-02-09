@@ -160,9 +160,9 @@ export const homeContent = {
     title: "Vex's Challenge",
     subtitle: 'Not an official Hytale product. Approved by Vex (mostly).',
     links: [
-      { label: 'Twitter', href: '#' },
-      { label: 'Discord', href: '#' },
-      { label: 'ModNexus', href: '#' }
+      { label: 'GitHub', href: 'https://github.com/mbround18/hytale-vex-lich-dungeon' },
+      { label: 'Dev Logs', href: '/dev/logs' },
+      { label: 'Dev Hub', href: '/dev' }
     ]
   }
 };
