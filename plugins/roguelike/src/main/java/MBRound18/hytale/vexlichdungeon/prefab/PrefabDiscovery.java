@@ -3,186 +3,179 @@ package MBRound18.hytale.vexlichdungeon.prefab;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.Objects;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import java.util.stream.Collectors;
+import com.hypixel.hytale.server.core.prefab.PrefabStore;
 
 /**
- * Dynamically discovers and categorizes prefabs from a ZIP asset bundle.
- * Loads prefabs from a ZIP file alongside the plugin JAR.
+ * Dynamically discovers and categorizes prefabs from the server asset store.
+ * Uses PrefabStore paths instead of ZIP inspection.
  */
 public class PrefabDiscovery {
 
   private final @Nonnull LoggingHelper log;
+  private final List<String> prefabPrefixAllowList;
   private final List<String> rooms = new ArrayList<>();
   private final List<String> hallways = new ArrayList<>();
   private final List<String> gates = new ArrayList<>();
   private final List<String> stitches = new ArrayList<>();
   private final List<String> dungeonPrefabs = new ArrayList<>();
   private final List<String> eventPrefabs = new ArrayList<>();
-  private final @Nonnull ZipFile zipFile;
-  private final @Nonnull Path assetsZipPath;
   private final @Nullable Path unpackedRoot;
 
   /**
-   * Creates a new prefab discovery system that loads from a ZIP file.
+   * Creates a new prefab discovery system that loads from the server asset store.
    * 
-   * @param log     Logger for discovery events
-   * @param jarPath Path to the plugin JAR file (e.g., VexLichDungeon-0.1.0.jar)
+   * @param log Logger for discovery events
    */
-  public PrefabDiscovery(@Nonnull LoggingHelper log, @Nonnull Path jarPath) {
-    this(log, jarPath, null);
+  public PrefabDiscovery(@Nonnull LoggingHelper log) {
+    this(log, null, java.util.List.of("Vex_"));
   }
 
-  public PrefabDiscovery(@Nonnull LoggingHelper log, @Nonnull Path jarPath, @Nullable Path unpackedRoot) {
+  public PrefabDiscovery(@Nonnull LoggingHelper log, @Nullable Path unpackedRoot) {
+    this(log, unpackedRoot, java.util.List.of("Vex_"));
+  }
+
+  public PrefabDiscovery(@Nonnull LoggingHelper log, @Nullable Path unpackedRoot,
+      @Nonnull List<String> prefabPrefixAllowList) {
     this.log = Objects.requireNonNull(log, "log");
-    this.zipFile = Objects.requireNonNull(openAssetsZip(jarPath), "zipFile");
-    this.assetsZipPath = Objects.requireNonNull(resolveAssetsZipPath(jarPath), "assetsZipPath");
     this.unpackedRoot = unpackedRoot;
+    this.prefabPrefixAllowList = new ArrayList<>(
+        Objects.requireNonNull(prefabPrefixAllowList, "prefabPrefixAllowList"));
     discoverPrefabs();
   }
 
-  /**
-   * Locates and opens the assets ZIP file.
-   * Looks for a ZIP with the same base name as the JAR.
-   * For example: VexLichDungeon-0.1.0.jar -> VexLichDungeon.zip
-   */
-  private ZipFile openAssetsZip(@Nonnull Path jarPath) {
-    try {
-      // Get the directory containing the JAR
-      File jarFile = jarPath.toFile();
-      File jarDir = jarFile.getParentFile();
-
-      String jarName = jarFile.getName();
-      String baseFull = jarName.endsWith(".jar")
-          ? jarName.substring(0, jarName.length() - 4)
-          : jarName;
-      String versionedZip = baseFull + ".zip";
-      File zipFile = new File(jarDir, versionedZip);
-      if (!zipFile.exists()) {
-        String legacyBase = baseFull.split("-")[0];
-        String legacyZip = legacyBase + ".zip";
-        File legacyFile = new File(jarDir, legacyZip);
-        if (legacyFile.exists()) {
-          log.warn("Assets ZIP not found at %s, falling back to %s", versionedZip, legacyZip);
-          zipFile = legacyFile;
-        } else {
-          log.warn("Assets ZIP not found at %s; falling back to plugin JAR", versionedZip);
-          zipFile = jarFile;
-        }
-      }
-
-      log.info("Opening assets ZIP: %s", zipFile.getAbsolutePath());
-      return new ZipFile(zipFile);
-
-    } catch (Exception e) {
-      log.error("Failed to open assets ZIP: %s", e.getMessage());
-      throw new RuntimeException("Cannot load assets ZIP", e);
+  public synchronized void refresh() {
+    rooms.clear();
+    hallways.clear();
+    gates.clear();
+    stitches.clear();
+    dungeonPrefabs.clear();
+    eventPrefabs.clear();
+    log.fine("[PREFABS] Refresh requested. unpackedRoot=%s", unpackedRoot);
+    discoverPrefabs();
+    log.info(
+        "[PREFABS] Discovered: %d rooms, %d hallways, %d events, %d gates, %d stitches",
+        rooms.size(), hallways.size(), eventPrefabs.size(), gates.size(), stitches.size());
+    if (!rooms.isEmpty()) {
+      log.fine("[PREFABS] Rooms: %s", rooms);
+    }
+    if (!hallways.isEmpty()) {
+      log.fine("[PREFABS] Hallways: %s", hallways);
+    }
+    if (!eventPrefabs.isEmpty()) {
+      log.fine("[PREFABS] Events: %s", eventPrefabs);
     }
   }
 
-  private Path resolveAssetsZipPath(@Nonnull Path jarPath) {
-    // Mirrors openAssetsZip selection logic for StitchIndexBuilder
-    File jarFile = jarPath.toFile();
-    File jarDir = jarFile.getParentFile();
-    String jarName = jarFile.getName();
-    String baseFull = jarName.endsWith(".jar")
-        ? jarName.substring(0, jarName.length() - 4)
-        : jarName;
-    String versionedZip = baseFull + ".zip";
-    File zipFile = new File(jarDir, versionedZip);
-    if (!zipFile.exists()) {
-      String legacyBase = baseFull.split("-")[0];
-      String legacyZip = legacyBase + ".zip";
-      File legacyFile = new File(jarDir, legacyZip);
-      if (legacyFile.exists()) {
-        zipFile = legacyFile;
-      } else {
-        zipFile = jarFile;
-      }
-    }
-    return zipFile.toPath();
-  }
-
   /**
-   * Scans the ZIP file and discovers all available prefabs.
+   * Scans the server asset store and discovers all available prefabs.
    */
   private void discoverPrefabs() {
     try {
       Set<String> seen = new HashSet<>();
-      // Enumerate all entries in the ZIP
-      Enumeration<? extends ZipEntry> entries = zipFile.entries();
-      while (entries.hasMoreElements()) {
-        ZipEntry entry = entries.nextElement();
-        String entryName = entry.getName();
-
-        // Skip directories and non-prefab files
-        if (entry.isDirectory() || !entryName.endsWith(".prefab.json")) {
+      List<Path> roots = resolvePrefabRoots();
+      log.fine("[PREFABS] Resolved prefab roots: %s", roots);
+      for (Path root : roots) {
+        if (root == null || !Files.exists(root)) {
           continue;
         }
+        Files.walk(root)
+            .filter(path -> path != null && Files.isRegularFile(path))
+            .filter(path -> path.toString().endsWith(".prefab.json"))
+            .forEach(path -> {
+              String rel = root.relativize(path).toString().replace('\\', '/');
+              String entryName = "Server/Prefabs/" + rel;
+              if (!entryName.startsWith("Server/Prefabs/")) {
+                return;
+              }
 
-        // Check if this is in Server/Prefabs/
-        if (!entryName.startsWith("Server/Prefabs/")) {
-          continue;
-        }
+              if (entryName.startsWith("Server/Prefabs/Gates/")) {
+                String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
+                registerPrefab(prefabPath, PrefabCategory.GATE, PrefabSource.ASSET, seen);
+                return;
+              }
 
-        if (entryName.startsWith("Server/Prefabs/Gates/")) {
-          String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
-          registerPrefab(prefabPath, PrefabCategory.GATE, PrefabSource.ZIP, seen);
-          continue;
-        }
+              if (entryName.startsWith("Server/Prefabs/Stitch/")) {
+                String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
+                registerPrefab(prefabPath, PrefabCategory.STITCH, PrefabSource.ASSET, seen);
+                return;
+              }
 
-        if (entryName.startsWith("Server/Prefabs/Stitch/")) {
-          String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
-          registerPrefab(prefabPath, PrefabCategory.STITCH, PrefabSource.ZIP, seen);
-          continue;
-        }
+              if (entryName.startsWith("Server/Prefabs/Dungeon/")) {
+                String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
+                if (entryName.contains("/Hallways/")) {
+                  registerPrefab(prefabPath, PrefabCategory.HALLWAY, PrefabSource.ASSET, seen);
+                } else if (entryName.contains("/Rooms/")) {
+                  registerPrefab(prefabPath, PrefabCategory.ROOM, PrefabSource.ASSET, seen);
+                } else {
+                  registerPrefab(prefabPath, PrefabCategory.DUNGEON, PrefabSource.ASSET, seen);
+                }
+                return;
+              }
 
-        if (entryName.startsWith("Server/Prefabs/Dungeon/")) {
-          String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
-          if (entryName.contains("/Hallways/")) {
-            registerPrefab(prefabPath, PrefabCategory.HALLWAY, PrefabSource.ZIP, seen);
-          } else if (entryName.contains("/Rooms/")) {
-            registerPrefab(prefabPath, PrefabCategory.ROOM, PrefabSource.ZIP, seen);
-          } else {
-            registerPrefab(prefabPath, PrefabCategory.DUNGEON, PrefabSource.ZIP, seen);
-          }
-          continue;
-        }
-
-        if (entryName.startsWith("Server/Prefabs/Event/")) {
-          String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
-          registerPrefab(prefabPath, PrefabCategory.EVENT, PrefabSource.ZIP, seen);
-        }
+              if (entryName.startsWith("Server/Prefabs/Event/")) {
+                String prefabPath = Objects.requireNonNull(toPrefabPath(entryName), "prefabPath");
+                registerPrefab(prefabPath, PrefabCategory.EVENT, PrefabSource.ASSET, seen);
+              }
+            });
       }
 
       discoverUnpackedPrefabs(seen);
 
-      log.info(
-          "Discovered %d dungeon prefabs (%d hallways, %d rooms), %d event prefabs, %d gates, %d stitches from ZIP",
+      log.fine(
+          "Discovered %d dungeon prefabs (%d hallways, %d rooms), %d event prefabs, %d gates, %d stitches from asset store",
           dungeonPrefabs.size(), hallways.size(), rooms.size(), eventPrefabs.size(), gates.size(), stitches.size());
 
       if (dungeonPrefabs.isEmpty()) {
-        log.warn("No dungeon prefabs found under Server/Prefabs/Dungeon/");
+        log.fine("No dungeon prefabs found under Server/Prefabs/Dungeon/");
       }
       if (eventPrefabs.isEmpty()) {
-        log.warn("No event prefabs found under Server/Prefabs/Event/");
+        log.fine("No event prefabs found under Server/Prefabs/Event/");
       }
       if (gates.isEmpty()) {
-        log.warn("No gate prefabs found under Server/Prefabs/Gates/");
+        log.fine("No gate prefabs found under Server/Prefabs/Gates/");
       }
       if (stitches.isEmpty()) {
-        log.warn("No stitch prefabs found under Server/Prefabs/Stitch/");
+        log.fine("No stitch prefabs found under Server/Prefabs/Stitch/");
       }
 
     } catch (Exception e) {
-      log.error("Failed to discover prefabs from ZIP: %s", e.getMessage());
+      log.error("Failed to discover prefabs from asset store: %s", e.getMessage());
     }
+  }
+
+  @Nonnull
+  private List<Path> resolvePrefabRoots() {
+    List<Path> roots = new ArrayList<>();
+    try {
+      PrefabStore store = PrefabStore.get();
+      Path baseRoot = store.getAssetPrefabsPath();
+      if (baseRoot != null) {
+        roots.add(baseRoot);
+      }
+      for (PrefabStore.AssetPackPrefabPath packPath : store.getAllAssetPrefabPaths()) {
+        if (packPath == null) {
+          continue;
+        }
+        Path prefabsPath = packPath.prefabsPath();
+        if (prefabsPath != null) {
+          roots.add(prefabsPath);
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Failed to resolve prefab roots from PrefabStore: %s", e.getMessage());
+    }
+    LinkedHashSet<Path> unique = new LinkedHashSet<>();
+    for (Path root : roots) {
+      if (root != null) {
+        unique.add(root);
+      }
+    }
+    return new ArrayList<>(unique);
   }
 
   private void discoverUnpackedPrefabs(@Nonnull Set<String> seen) {
@@ -233,6 +226,9 @@ public class PrefabDiscovery {
     if (!seen.add(prefabPath)) {
       return;
     }
+    if (!isAllowedPrefab(prefabPath)) {
+      return;
+    }
     switch (category) {
       case GATE -> gates.add(prefabPath);
       case STITCH -> stitches.add(prefabPath);
@@ -251,6 +247,26 @@ public class PrefabDiscovery {
     for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
       hook.onPrefabDiscovered(discovered);
     }
+  }
+
+  private boolean isAllowedPrefab(@Nonnull String prefabPath) {
+    String name = prefabPath;
+    int slash = prefabPath.lastIndexOf('/');
+    if (slash >= 0 && slash < prefabPath.length() - 1) {
+      name = prefabPath.substring(slash + 1);
+    }
+    if (prefabPrefixAllowList.isEmpty()) {
+      return true;
+    }
+    for (String prefix : prefabPrefixAllowList) {
+      if (prefix == null || prefix.isBlank()) {
+        continue;
+      }
+      if (name.startsWith(prefix)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -383,28 +399,8 @@ public class PrefabDiscovery {
   /**
    * Closes the ZIP file when done.
    */
-  public void close() {
-    if (zipFile != null) {
-      try {
-        zipFile.close();
-      } catch (Exception e) {
-        log.warn("Failed to close ZIP file: %s", e.getMessage());
-      }
-    }
-  }
-
-  /**
-   * Gets the underlying ZipFile for direct access to prefab resources.
-   * 
-   * @return The ZipFile containing the prefabs
-   */
-  @Nonnull
-  public ZipFile getZipFile() {
-    return Objects.requireNonNull(zipFile, "zipFile");
-  }
-
-  @Nonnull
-  public Path getAssetsZipPath() {
-    return Objects.requireNonNull(assetsZipPath, "assetsZipPath");
+  @Nullable
+  public Path getUnpackedRoot() {
+    return unpackedRoot;
   }
 }
