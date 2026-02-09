@@ -1,59 +1,64 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
-import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIPage;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexdemohudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
-import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nonnull;
 
 public final class VexDemoHud extends AbstractCustomUIHud<VexHudVexdemohudUi> {
-  private VexDemoHud(@Nonnull PlayerRef playerRef) {
+  public VexDemoHud(@Nonnull PlayerRef playerRef) {
     super(VexHudVexdemohudUi.class, playerRef);
+  }
+
+  public static VexDemoHud open(@Nonnull PlayerRef playerRef) {
+    return ensureActive(playerRef, VexDemoHud.class);
   }
 
   public static void open(@Nonnull PlayerRef playerRef, @Nonnull String scoreText,
       @Nonnull String timerText, @Nonnull String debugStat) {
-    VexDemoHud hud = new VexDemoHud(playerRef);
-    Map<String, String> vars = new HashMap<>();
-    VexHudVexdemohudUi ui = hud.getUiModel();
-    vars.put(ui.demoScore, scoreText);
-    vars.put(ui.demoTimer, timerText);
-    vars.put(ui.vexDebugStat, debugStat);
-    openHud(playerRef, hud, vars);
+    update(playerRef, scoreText, timerText, debugStat);
   }
 
-  private static void openHud(@Nonnull PlayerRef playerRef, @Nonnull VexDemoHud hud,
-      @Nonnull Map<String, String> vars) {
+  public static void update(@Nonnull PlayerRef playerRef, @Nonnull String scoreText,
+      @Nonnull String timerText, @Nonnull String debugStat) {
     UiThread.runOnPlayerWorld(playerRef, () -> {
-      Ref<EntityStore> ref = playerRef.getReference();
-      if (ref == null || !ref.isValid()) {
+      VexDemoHud hud = VexDemoHud.open(playerRef);
+      if (hud == null) {
         return;
       }
-      Store<EntityStore> store = ref.getStore();
-      Player player = store.getComponent(ref, Player.getComponentType());
-      if (player == null) {
-        return;
-      }
-      HudManager hudManager = player.getHudManager();
-      if (hudManager == null) {
-        return;
-      }
-      hudManager.setCustomHud(playerRef, hud);
-      if (!vars.isEmpty()) {
-        UICommandBuilder builder = new UICommandBuilder();
-        AbstractCustomUIPage.applyInitialState(builder, vars);
-        hud.update(false, builder);
-      }
+      hud.setScore(playerRef, scoreText);
+      hud.setTimer(playerRef, timerText);
+      hud.setDebugStat(playerRef, debugStat);
     });
+  }
+
+  public void setScore(@Nonnull PlayerRef playerRef, @Nonnull String scoreText) {
+    VexHudVexdemohudUi ui = getUiModel();
+    String value = scoreText != null ? scoreText : "---";
+    if (value.isBlank()) {
+      value = "---";
+    }
+    set(playerRef, ui.demoScore, Message.raw(value));
+  }
+
+  public void setTimer(@Nonnull PlayerRef playerRef, @Nonnull String timerText) {
+    VexHudVexdemohudUi ui = getUiModel();
+    String value = timerText != null ? timerText : "---";
+    if (value.isBlank()) {
+      value = "---";
+    }
+    set(playerRef, ui.demoTimer, Message.raw(value));
+  }
+
+  public void setDebugStat(@Nonnull PlayerRef playerRef, @Nonnull String debugStat) {
+    VexHudVexdemohudUi ui = getUiModel();
+    String value = debugStat != null ? debugStat : "---";
+    if (value.isBlank()) {
+      value = "---";
+    }
+    set(playerRef, ui.vexDebugStat, Message.raw(value));
   }
 }

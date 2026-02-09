@@ -1,58 +1,54 @@
 package MBRound18.hytale.vexlichdungeon.ui;
 
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
-import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIPage;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexsummaryhudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
-import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nonnull;
 
 public final class VexSummaryHud extends AbstractCustomUIHud<VexHudVexsummaryhudUi> {
-  private VexSummaryHud(@Nonnull PlayerRef playerRef) {
+  public VexSummaryHud(@Nonnull PlayerRef playerRef) {
     super(VexHudVexsummaryhudUi.class, playerRef);
+  }
+
+  public static VexSummaryHud open(@Nonnull PlayerRef playerRef) {
+    return ensureActive(playerRef, VexSummaryHud.class);
   }
 
   public static void open(@Nonnull PlayerRef playerRef, @Nonnull String statsLine,
       @Nonnull String summaryLine) {
-    VexSummaryHud hud = new VexSummaryHud(playerRef);
-    Map<String, String> vars = new HashMap<>();
-    VexHudVexsummaryhudUi ui = hud.getUiModel();
-    vars.put(ui.vexContentVexSummaryStats, statsLine);
-    vars.put(ui.vexContentVexSummaryBody, summaryLine);
-    openHud(playerRef, hud, vars);
+    update(playerRef, statsLine, summaryLine);
   }
 
-  private static void openHud(@Nonnull PlayerRef playerRef, @Nonnull VexSummaryHud hud,
-      @Nonnull Map<String, String> vars) {
+  public static void update(@Nonnull PlayerRef playerRef, @Nonnull String statsLine,
+      @Nonnull String summaryLine) {
     UiThread.runOnPlayerWorld(playerRef, () -> {
-      Ref<EntityStore> ref = playerRef.getReference();
-      if (ref == null || !ref.isValid()) {
+      VexSummaryHud hud = VexSummaryHud.open(playerRef);
+      if (hud == null) {
         return;
       }
-      Store<EntityStore> store = ref.getStore();
-      Player player = store.getComponent(ref, Player.getComponentType());
-      if (player == null) {
-        return;
-      }
-      HudManager hudManager = player.getHudManager();
-      if (hudManager == null) {
-        return;
-      }
-      hudManager.setCustomHud(playerRef, hud);
-      if (!vars.isEmpty()) {
-        UICommandBuilder builder = new UICommandBuilder();
-        AbstractCustomUIPage.applyInitialState(builder, vars);
-        hud.update(false, builder);
-      }
+      hud.setStatsLine(playerRef, statsLine);
+      hud.setSummaryLine(playerRef, summaryLine);
     });
+  }
+
+  public void setStatsLine(@Nonnull PlayerRef playerRef, @Nonnull String statsLine) {
+    VexHudVexsummaryhudUi ui = getUiModel();
+    String value = statsLine != null ? statsLine : "---";
+    if (value.isBlank()) {
+      value = "---";
+    }
+    set(playerRef, ui.vexContentVexSummaryStats, Message.raw(value));
+  }
+
+  public void setSummaryLine(@Nonnull PlayerRef playerRef, @Nonnull String summaryLine) {
+    VexHudVexsummaryhudUi ui = getUiModel();
+    String value = summaryLine != null ? summaryLine : "---";
+    if (value.isBlank()) {
+      value = "---";
+    }
+    set(playerRef, ui.vexContentVexSummaryBody, Message.raw(value));
   }
 }
