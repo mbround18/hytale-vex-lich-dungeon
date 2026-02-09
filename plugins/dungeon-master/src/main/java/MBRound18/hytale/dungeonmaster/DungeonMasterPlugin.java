@@ -110,8 +110,10 @@ public class DungeonMasterPlugin extends JavaPlugin {
       // Success
       this.debugServer = serverInstance;
       String base = serverInstance.getListenAddress();
+      int registeredCount = serverInstance.getRegisteredEventCount();
 
       log.info("=== DungeonMaster Debug Server Ready ===");
+      log.info("Watching:  %d event type(s)", registeredCount);
       log.info("Dashboard: %s/api/stats", base);
       log.info("Events:    %s/api/events", base);
       log.info("Health:    %s/api/health", base);

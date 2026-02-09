@@ -1,5 +1,7 @@
 package MBRound18.hytale.dungeonmaster.handlers;
 
+import MBRound18.hytale.dungeonmaster.helpers.EventEnvelope;
+import MBRound18.hytale.dungeonmaster.helpers.EventSerializationHelper;
 import MBRound18.hytale.dungeonmaster.helpers.SseClient;
 import MBRound18.hytale.dungeonmaster.helpers.WebContext;
 import com.google.gson.Gson;
@@ -7,6 +9,7 @@ import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Deque;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,10 +19,13 @@ import javax.annotation.Nonnull;
 public final class SseHandler {
   private final @Nonnull Gson gson;
   private final @Nonnull CopyOnWriteArrayList<SseClient> clients;
+  private final @Nonnull Deque<EventEnvelope> events;
 
-  public SseHandler(@Nonnull Gson gson, @Nonnull CopyOnWriteArrayList<SseClient> clients) {
+  public SseHandler(@Nonnull Gson gson, @Nonnull CopyOnWriteArrayList<SseClient> clients,
+      @Nonnull Deque<EventEnvelope> events) {
     this.gson = java.util.Objects.requireNonNull(gson, "gson");
     this.clients = java.util.Objects.requireNonNull(clients, "clients");
+    this.events = java.util.Objects.requireNonNull(events, "events");
   }
 
   public void handle(@Nonnull HttpExchange exchange) throws IOException {
@@ -41,5 +47,22 @@ public final class SseHandler {
     SseClient client = new SseClient(exchange, out, allowedTypes);
     clients.add(client);
     client.send(java.util.Objects.requireNonNull(": connected\n\n".getBytes(StandardCharsets.UTF_8), "payload"));
+    sendSnapshot(client);
+  }
+
+  private void sendSnapshot(@Nonnull SseClient client) {
+    byte[] payload;
+    synchronized (events) {
+      for (EventEnvelope envelope : events) {
+        if (!client.accepts(envelope.type())) {
+          continue;
+        }
+        String data = EventSerializationHelper.toJson(envelope);
+        payload = ("data: " + data + "\n\n").getBytes(StandardCharsets.UTF_8);
+        if (!client.send(payload)) {
+          return;
+        }
+      }
+    }
   }
 }

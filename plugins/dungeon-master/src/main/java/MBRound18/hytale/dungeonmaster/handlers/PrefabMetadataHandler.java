@@ -7,14 +7,15 @@ import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public final class PrefabMetadataHandler {
   private final @Nonnull Gson gson;
-  private final @Nonnull PrefabInspector prefabInspector;
+  private final @Nullable PrefabInspector prefabInspector;
 
-  public PrefabMetadataHandler(@Nonnull Gson gson, @Nonnull PrefabInspector prefabInspector) {
+  public PrefabMetadataHandler(@Nonnull Gson gson, @Nullable PrefabInspector prefabInspector) {
     this.gson = java.util.Objects.requireNonNull(gson, "gson");
-    this.prefabInspector = java.util.Objects.requireNonNull(prefabInspector, "prefabInspector");
+    this.prefabInspector = prefabInspector;
   }
 
   public void handle(@Nonnull HttpExchange exchange) throws IOException {
@@ -23,6 +24,11 @@ public final class PrefabMetadataHandler {
 
     if (prefabId == null || prefabId.isBlank()) {
       ctx.text(400, "Missing prefab id");
+      return;
+    }
+
+    if (prefabInspector == null) {
+      ctx.text(503, "Prefab inspector unavailable");
       return;
     }
 

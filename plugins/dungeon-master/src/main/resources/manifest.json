@@ -8,10 +8,10 @@
   "ServerVersion": "*",
   "IncludesAssetPack": false,
   "OptionalDependencies": {
-    "MBRound18:VexLichDungeon": "*"
+    "MBRound18:VexLichDungeon": "*",
+    "MBRound18:SharedInterfaces": "*"
   },
   "Dependencies": {
-    "MBRound18:ImmortalEngine": "*",
-    "MBRound18:SharedInterfaces": "*"
+    "MBRound18:ImmortalEngine": "*"
   }
 }

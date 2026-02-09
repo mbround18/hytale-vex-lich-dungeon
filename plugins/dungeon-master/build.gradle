@@ -21,7 +21,7 @@ java {
 
 dependencies {
     implementation project(":shared:utilities")
-    implementation project(":plugins:engine")
+    compileOnly project(":plugins:engine")
 
     // Javalin
     implementation 'io.javalin:javalin:6.7.0'
@@ -47,6 +47,87 @@ tasks.withType(JavaCompile).configureEach {
     dependsOn(rootProject.tasks.named("ensureServerJar"))
 }
 
+def eventCatalogDir = layout.buildDirectory.dir("generated/sources/eventCatalog/java")
+
+sourceSets {
+    main {
+        java {
+            srcDir(eventCatalogDir)
+        }
+    }
+}
+
+tasks.register("generateEventCatalog") {
+    group = "build"
+    description = "Generate a catalog of event class names (DebugEvent/IEvent)."
+    def repoRoot = project.rootDir
+    def findRoot = repoRoot
+    while (findRoot != null && !new File(findRoot, "plugins/engine/src/main/java").exists()) {
+        findRoot = findRoot.parentFile
+    }
+    if (findRoot != null) {
+        repoRoot = findRoot
+    }
+    def engineSrc = new File(repoRoot, "plugins/engine/src/main/java")
+    def roguelikeSrc = new File(repoRoot, "plugins/roguelike/src/main/java")
+    def dungeonMasterSrc = project.file("src/main/java")
+    inputs.files(fileTree(engineSrc) { include "**/*.java" })
+    inputs.files(fileTree(roguelikeSrc) { include "**/*.java" })
+    inputs.files(fileTree(dungeonMasterSrc) { include "**/*.java" })
+    outputs.dir(eventCatalogDir)
+    doLast {
+        def classNames = new LinkedHashSet<String>()
+        def scanDirs = [engineSrc, roguelikeSrc, dungeonMasterSrc]
+        scanDirs.each { dir ->
+            if (!dir.exists()) {
+                return
+            }
+            fileTree(dir) {
+                include "**/*.java"
+            }.each { File file ->
+                def text = file.getText("UTF-8")
+                if (!(text.contains("extends DebugEvent") || text.contains("implements IEvent"))) {
+                    return
+                }
+                def pkgMatch = (text =~ /package\\s+([A-Za-z0-9_.]+)\\s*;/)
+                if (!pkgMatch.find()) {
+                    return
+                }
+                def pkg = pkgMatch.group(1)
+                def classMatch = (text =~ /\\bclass\\s+([A-Za-z0-9_]+)/)
+                if (!classMatch.find()) {
+                    return
+                }
+                def cls = classMatch.group(1)
+                classNames.add("${pkg}.${cls}".toString())
+            }
+        }
+
+        def sorted = classNames.toList().sort()
+        logger.lifecycle("Event catalog: found ${sorted.size()} event class(es) from ${repoRoot}")
+        def outputDir = eventCatalogDir.get().asFile
+        outputDir.mkdirs()
+        def outputFile = new File(outputDir, "MBRound18/hytale/dungeonmaster/generated/EventClassCatalog.java")
+        outputFile.parentFile.mkdirs()
+        def lines = new StringBuilder()
+        lines.append("package MBRound18.hytale.dungeonmaster.generated;\n\n")
+        lines.append("public final class EventClassCatalog {\n")
+        lines.append("  private EventClassCatalog() {}\n\n")
+        lines.append("  public static final String[] EVENT_CLASS_NAMES = new String[] {\n")
+        sorted.eachWithIndex { name, idx ->
+            lines.append("    \\\"${name}\\\"")
+            lines.append(idx == sorted.size() - 1 ? "\n" : ",\n")
+        }
+        lines.append("  };\n")
+        lines.append("}\n")
+        outputFile.write(lines.toString(), "UTF-8")
+    }
+}
+
+tasks.named("compileJava").configure {
+    dependsOn(tasks.named("generateEventCatalog"))
+}
+
 jar {
     archiveBaseName.set("DungeonMaster")
     dependsOn(project(":shared:utilities").tasks.named("jar"))
@@ -58,7 +139,9 @@ jar {
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
     from({
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    })
+    }) {
+        exclude "MBRound18/ImmortalEngine/**"
+    }
     from({
         def slf4jSimple = configurations.runtimeClasspath.find { it.name.contains('slf4j-simple') }
         return slf4jSimple ? zipTree(slf4jSimple) : []
