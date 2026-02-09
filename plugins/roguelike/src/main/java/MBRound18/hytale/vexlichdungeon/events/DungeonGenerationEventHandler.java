@@ -13,6 +13,12 @@ import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.shared.utilities.PlayerPoller;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.ui.VexHudSequenceSupport;
+import MBRound18.hytale.vexlichdungeon.events.InstanceCreatedEvent;
+import MBRound18.hytale.vexlichdungeon.events.InstanceEnteredEvent;
+import MBRound18.hytale.vexlichdungeon.events.InstanceExitedEvent;
+import MBRound18.hytale.vexlichdungeon.events.InstanceInitializedEvent;
+import MBRound18.hytale.vexlichdungeon.events.PlayerJoinedServerEvent;
+import MBRound18.hytale.vexlichdungeon.events.WorldEventQueue;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -105,9 +111,10 @@ public class DungeonGenerationEventHandler {
         (java.util.function.Consumer) (Object e) -> {
           AddPlayerToWorldEvent event = (AddPlayerToWorldEvent) e;
           PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-          if (ref != null && event.getWorld() != null
-              && event.getWorld().getName().contains("Vex_The_Lich_Dungeon")) {
-            PortalManagerSystem.handlePortalEntry(ref, event.getWorld());
+          World world = event.getWorld();
+          if (ref != null && world != null
+              && world.getName().contains("Vex_The_Lich_Dungeon")) {
+            world.execute(() -> PortalManagerSystem.handlePortalEntry(ref, world));
           }
         });
     eventBus.register(
@@ -115,9 +122,10 @@ public class DungeonGenerationEventHandler {
         (java.util.function.Consumer) (Object e) -> {
           DrainPlayerFromWorldEvent event = (DrainPlayerFromWorldEvent) e;
           PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-          if (ref != null && event.getWorld() != null
-              && event.getWorld().getName().contains("Vex_The_Lich_Dungeon")) {
-            PortalManagerSystem.handlePortalEntry(ref, event.getWorld());
+          World world = event.getWorld();
+          if (ref != null && world != null
+              && world.getName().contains("Vex_The_Lich_Dungeon")) {
+            world.execute(() -> PortalManagerSystem.handlePortalEntry(ref, world));
           }
         });
     log.info("Successfully registered dungeon generation event handler");
@@ -218,10 +226,13 @@ public class DungeonGenerationEventHandler {
    * 
    * @param event The start world event
    */
-  @SuppressWarnings("unused")
   private void onStartWorld(StartWorldEvent event) {
     try {
-      handleWorld(event.getWorld());
+      World world = event.getWorld();
+      if (world == null) {
+        return;
+      }
+      world.execute(() -> handleWorld(world));
     } catch (Exception e) {
       log.error("Exception in onStartWorld: %s", e.getMessage());
       e.printStackTrace();
@@ -232,136 +243,144 @@ public class DungeonGenerationEventHandler {
   }
 
   private void onAddPlayerToWorld(AddPlayerToWorldEvent event) {
-
     try {
       World world = event.getWorld();
-      String worldName = world.getName();
-      PlayerRef eventPlayerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
-      if (eventPlayerRef != null) {
-        if (worldName.contains("Vex_The_Lich_Dungeon")) {
-          PortalManagerSystem.handlePortalEntry(eventPlayerRef, world);
-        }
-      } else {
-        log.info("[EVENT] AddPlayerToWorldEvent has no PlayerRef component");
-      }
-
-      // Only track Vex dungeon worlds
-      if (!worldName.contains("Vex_The_Lich_Dungeon")) {
+      if (world == null) {
         return;
       }
-
-      playerPoller.start(eventPlayerRef, 200L, () -> {
-        log.info("[EVENT POLLER] Checking player presence for world: %s", worldName);
-        if (eventPlayerRef == null) {
-          return;
-        }
-
-        UUID playerWorldId = eventPlayerRef.getWorldUuid();
-        if (playerWorldId == null) {
-          return;
-        }
-        World playerWorld = Universe.get().getWorld(playerWorldId);
-        if (playerWorld != null && playerWorld.getName() != null
-            && playerWorld.getName().contains("Vex_The_Lich_Dungeon")) {
-          clearCountdownOnInstanceEntry(world, eventPlayerRef);
-          eventPlayerRef.sendMessage(Message.raw("Vex welcomes a new challenger!"));
-          playerPoller.stop();
-        }
-      });
-
-      log.info("[EVENT] AddPlayerToWorldEvent fired for world: %s", worldName);
-      lastPlayerSeen.put(worldName, System.currentTimeMillis());
-
-      // Capture first player's actual position if not already tracked
-      // Check if we already have a spawn location for this world
-      if (!spawnTracker.hasSpawn(worldName)) {
-        // Get all players currently in the world
-        Collection<PlayerRef> playerRefs = world.getPlayerRefs();
-
-        if (!playerRefs.isEmpty()) {
-          PlayerRef playerRef = playerRefs.iterator().next();
-          com.hypixel.hytale.server.core.entity.entities.Player player = resolvePlayer(
-              java.util.Objects.requireNonNull(playerRef, "playerRef"));
-          if (player == null) {
-            log.info("[SPAWN] Unable to resolve player entity for spawn capture.");
-            return;
-          }
-          engineAdapter.onPlayerEnter(world, playerRef);
-          com.hypixel.hytale.server.core.modules.entity.component.TransformComponent transform = player
-              .getTransformComponent();
-
-          if (transform != null) {
-            Vector3d playerPos = transform.getPosition();
-
-            boolean isFirstSpawn = spawnTracker.recordFirstSpawn(worldName, playerPos);
-
-            if (isFirstSpawn) {
-              log.info("[SPAWN] Captured first player actual position at (%.1f, %.1f, %.1f) for world: %s",
-                  playerPos.x, playerPos.y, playerPos.z, worldName);
-
-              // Set spawn center on generator
-              // Use player's actual position as the dungeon floor level
-              // Round X and Z to nearest block, use player's Y directly
-              int spawnX = (int) Math.floor(playerPos.x + 0.5);
-              int baseY = (int) Math.floor(playerPos.y);
-              int spawnY = baseY; // Will adjust to ground level if a solid block is below
-              int spawnZ = (int) Math.floor(playerPos.z + 0.5);
-
-              // Check if player is standing on bedrock - if so, base prefab already exists
-              boolean baseAlreadyPresent = false;
-              try {
-                long chunkKey = (((long) (int) playerPos.x >> 4) << 32)
-                    | (((long) (int) playerPos.z >> 4) & 0xFFFFFFFFL);
-                com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor chunk = world
-                    .getChunkIfLoaded(chunkKey);
-                if (chunk != null) {
-                  int blockBelowY = baseY - 1;
-                  int blockBelow = chunk.getBlock((int) playerPos.x, blockBelowY, (int) playerPos.z);
-                  // blockBelow is an ID, check if it matches bedrock block ID
-                  // For now, we'll skip base if any solid block is found below
-                  baseAlreadyPresent = blockBelow != 0; // 0 is typically empty/air
-                  if (blockBelow != 0) {
-                    spawnY = blockBelowY; // Align prefab floor to the solid block below player
-                  }
-                }
-              } catch (Exception e) {
-                log.warn("Could not check block below player: %s", e.getMessage());
-              }
-
-              // Adjust for known instance spawn offset (dungeon appears ~14 blocks high)
-              final int spawnYOffset = -14;
-              spawnY += spawnYOffset;
-
-              log.info("[SPAWN] PlayerY=%d, baseY=%d, spawnY=%d (offset=%d)",
-                  (int) Math.floor(playerPos.y), baseY, spawnY, spawnYOffset);
-
-              log.info("[SPAWN] Dungeon will be centered at grid coordinates: (%d, %d, %d), base present: %s",
-                  spawnX, spawnY, spawnZ, baseAlreadyPresent);
-
-              if (baseAlreadyPresent) {
-                log.info("[SPAWN] Base courtyard already present (bedrock detected), skipping base spawning");
-              }
-
-              dungeonGenerator.setSpawnCenter(spawnX, spawnY, spawnZ);
-              dungeonGenerator.setSkipBaseTile(baseAlreadyPresent);
-            }
+      String worldName = world.getName();
+      PlayerRef eventPlayerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
+      world.execute(() -> {
+        if (eventPlayerRef != null) {
+          if (worldName.contains("Vex_The_Lich_Dungeon")) {
+            PortalManagerSystem.handlePortalEntry(eventPlayerRef, world);
+            WorldEventQueue.get().dispatch(world, new PlayerJoinedServerEvent(world, eventPlayerRef));
+            WorldEventQueue.get().dispatch(world, new InstanceEnteredEvent(world, eventPlayerRef));
           }
         } else {
-          log.info("[SPAWN] No players found in world yet, will capture on next event");
+          log.info("[EVENT] AddPlayerToWorldEvent has no PlayerRef component");
         }
 
-      }
+        // Only track Vex dungeon worlds
+        if (!worldName.contains("Vex_The_Lich_Dungeon")) {
+          return;
+        }
 
-      if (eventPlayerRef != null) {
-        UUID uuid = eventPlayerRef.getUuid();
-        boolean showWelcome = welcomedPlayers.add(uuid);
-        roguelikeController.initializePlayer(world, eventPlayerRef, showWelcome);
-      }
+        playerPoller.start(eventPlayerRef, 200L, () -> {
+          log.info("[EVENT POLLER] Checking player presence for world: %s", worldName);
+          if (eventPlayerRef == null) {
+            return;
+          }
 
-      // Trigger generation if spawn is tracked and not yet generated
-      if (spawnTracker.hasSpawn(worldName)) {
-        handleWorld(world);
-      }
+          UUID playerWorldId = eventPlayerRef.getWorldUuid();
+          if (playerWorldId == null) {
+            return;
+          }
+          World playerWorld = Universe.get().getWorld(playerWorldId);
+          if (playerWorld != null && playerWorld.getName() != null
+              && playerWorld.getName().contains("Vex_The_Lich_Dungeon")) {
+            clearCountdownOnInstanceEntry(world, eventPlayerRef);
+            eventPlayerRef.sendMessage(Message.raw("Vex welcomes a new challenger!"));
+            roguelikeController.initializePlayer(world, eventPlayerRef, true);
+            playerPoller.stop();
+          }
+        });
+
+        log.info("[EVENT] AddPlayerToWorldEvent fired for world: %s", worldName);
+        lastPlayerSeen.put(worldName, System.currentTimeMillis());
+
+        // Capture first player's actual position if not already tracked
+        // Check if we already have a spawn location for this world
+        if (!spawnTracker.hasSpawn(worldName)) {
+          // Get all players currently in the world
+          Collection<PlayerRef> playerRefs = world.getPlayerRefs();
+
+          if (!playerRefs.isEmpty()) {
+            PlayerRef playerRef = playerRefs.iterator().next();
+            com.hypixel.hytale.server.core.entity.entities.Player player = resolvePlayer(
+                java.util.Objects.requireNonNull(playerRef, "playerRef"));
+            if (player == null) {
+              log.info("[SPAWN] Unable to resolve player entity for spawn capture.");
+              return;
+            }
+            engineAdapter.onPlayerEnter(world, playerRef);
+            roguelikeController.initializePlayer(world, playerRef, true);
+            com.hypixel.hytale.server.core.modules.entity.component.TransformComponent transform = player
+                .getTransformComponent();
+
+            if (transform != null) {
+              Vector3d playerPos = transform.getPosition();
+
+              boolean isFirstSpawn = spawnTracker.recordFirstSpawn(worldName, playerPos);
+
+              if (isFirstSpawn) {
+                log.info("[SPAWN] Captured first player actual position at (%.1f, %.1f, %.1f) for world: %s",
+                    playerPos.x, playerPos.y, playerPos.z, worldName);
+
+                // Set spawn center on generator
+                // Use player's actual position as the dungeon floor level
+                // Round X and Z to nearest block, use player's Y directly
+                int spawnX = (int) Math.floor(playerPos.x + 0.5);
+                int baseY = (int) Math.floor(playerPos.y);
+                int spawnY = baseY; // Will adjust to ground level if a solid block is below
+                int spawnZ = (int) Math.floor(playerPos.z + 0.5);
+
+                // Check if player is standing on bedrock - if so, base prefab already exists
+                boolean baseAlreadyPresent = false;
+                try {
+                  long chunkKey = (((long) (int) playerPos.x >> 4) << 32)
+                      | (((long) (int) playerPos.z >> 4) & 0xFFFFFFFFL);
+                  com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor chunk = world
+                      .getChunkIfLoaded(chunkKey);
+                  if (chunk != null) {
+                    int blockBelowY = baseY - 1;
+                    int blockBelow = chunk.getBlock((int) playerPos.x, blockBelowY, (int) playerPos.z);
+                    // blockBelow is an ID, check if it matches bedrock block ID
+                    // For now, we'll skip base if any solid block is found below
+                    baseAlreadyPresent = blockBelow != 0; // 0 is typically empty/air
+                    if (blockBelow != 0) {
+                      spawnY = blockBelowY; // Align prefab floor to the solid block below player
+                    }
+                  }
+                } catch (Exception e) {
+                  log.warn("Could not check block below player: %s", e.getMessage());
+                }
+
+                // Adjust for known instance spawn offset (dungeon appears ~14 blocks high)
+                final int spawnYOffset = -14;
+                spawnY += spawnYOffset;
+
+                log.info("[SPAWN] PlayerY=%d, baseY=%d, spawnY=%d (offset=%d)",
+                    (int) Math.floor(playerPos.y), baseY, spawnY, spawnYOffset);
+
+                log.info("[SPAWN] Dungeon will be centered at grid coordinates: (%d, %d, %d), base present: %s",
+                    spawnX, spawnY, spawnZ, baseAlreadyPresent);
+
+                if (baseAlreadyPresent) {
+                  log.info("[SPAWN] Base courtyard already present (bedrock detected), skipping base spawning");
+                }
+
+                dungeonGenerator.setSpawnCenter(spawnX, spawnY, spawnZ);
+                dungeonGenerator.setSkipBaseTile(baseAlreadyPresent);
+              }
+            }
+          } else {
+            log.info("[SPAWN] No players found in world yet, will capture on next event");
+          }
+
+        }
+
+        if (eventPlayerRef != null) {
+          UUID uuid = eventPlayerRef.getUuid();
+          boolean showWelcome = welcomedPlayers.add(uuid);
+          roguelikeController.initializePlayer(world, eventPlayerRef, showWelcome);
+        }
+
+        // Trigger generation if spawn is tracked and not yet generated
+        if (spawnTracker.hasSpawn(worldName)) {
+          handleWorld(world);
+        }
+      });
     } catch (Exception e) {
       log.error("Exception in onAddPlayerToWorld: %s", e.getMessage());
       e.printStackTrace();
@@ -380,12 +399,36 @@ public class DungeonGenerationEventHandler {
 
   private void onEntityRemoved(EntityRemoveEvent event) {
     try {
-      roguelikeController.handleEntityRemoved(
-          java.util.Objects.requireNonNull(event.getEntity(), "entity"));
+      var entity = java.util.Objects.requireNonNull(event.getEntity(), "entity");
+      if (eventsLogger != null) {
+        eventsLogger.warn("[ENTITY-REMOVE-EVENT] EntityRemoveEvent fired for entity: "
+            + entity.getUuid());
+      }
+      World world = entity.getWorld();
+      if (world != null) {
+        if (eventsLogger != null) {
+          eventsLogger.info("[ENTITY-REMOVE-EVENT] Executing handleEntityRemoved on world: "
+              + world.getName());
+        }
+        // IMPORTANT: Pass world directly - entity.getWorld() becomes null after removal
+        world.execute(() -> {
+          if (eventsLogger != null) {
+            eventsLogger.info("[ENTITY-REMOVE-EVENT] Inside world.execute for entity: "
+                + entity.getUuid());
+          }
+          roguelikeController.handleEntityRemoved(entity, world);
+        });
+        return;
+      }
+      if (eventsLogger != null) {
+        eventsLogger.warn("[ENTITY-REMOVE-EVENT] No world for entity, calling directly");
+      }
+      roguelikeController.handleEntityRemoved(entity, world);
     } catch (Exception e) {
       log.error("Exception in onEntityRemoved: %s", e.getMessage());
       if (eventsLogger != null) {
-        eventsLogger.error("onEntityRemoved failed: " + e.getMessage());
+        eventsLogger.error("[ENTITY-REMOVE-EVENT] onEntityRemoved failed: " + e.getMessage());
+        e.printStackTrace();
       }
     }
   }
@@ -397,14 +440,17 @@ public class DungeonGenerationEventHandler {
         return;
       }
       PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-      if (ref != null && world.getName().contains("Vex_The_Lich_Dungeon")) {
-        PortalManagerSystem.handlePortalEntry(ref, world);
-      }
-      if (world.getName().contains("Vex_The_Lich_Dungeon")) {
-        if (ref != null) {
-          roguelikeController.showExitSummary(ref, world);
+      world.execute(() -> {
+        if (ref != null && world.getName().contains("Vex_The_Lich_Dungeon")) {
+          PortalManagerSystem.handlePortalEntry(ref, world);
         }
-      }
+        if (world.getName().contains("Vex_The_Lich_Dungeon")) {
+          if (ref != null) {
+            roguelikeController.showExitSummary(ref, world);
+            WorldEventQueue.get().dispatch(world, new InstanceExitedEvent(world, ref));
+          }
+        }
+      });
     } catch (Exception e) {
       log.error("Exception in onDrainPlayerFromWorld: %s", e.getMessage());
       if (eventsLogger != null) {
@@ -654,11 +700,13 @@ public class DungeonGenerationEventHandler {
       try {
         log.info("Starting roguelike initialization for world: %s", world.getName());
         roguelikeController.initializeWorld(world);
+        WorldEventQueue.get().dispatch(world, new InstanceInitializedEvent(world));
 
         log.info("[GENERATE-COMPLETE] Successfully initialized roguelike dungeon for world: %s", world.getName());
 
         // Mark as generated in persistent storage
         dataStore.markGenerated(world.getName(), System.currentTimeMillis(), 1);
+        WorldEventQueue.get().dispatch(world, new InstanceCreatedEvent(world));
         currentlyGenerating.remove(world.getName());
         log.info("[GENERATE-MARKED] Marked world as generated: %s", world.getName());
         future.complete(null);
