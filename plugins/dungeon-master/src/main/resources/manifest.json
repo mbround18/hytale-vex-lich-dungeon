@@ -1,0 +1,17 @@
+{
+  "Group": "MBRound18",
+  "Name": "DungeonMaster",
+  "Version": "${version}",
+  "Authors": "GRADLE_INJECT_AUTHORS",
+  "Website": "https://example.com",
+  "Main": "MBRound18.hytale.dungeonmaster.DungeonMasterPlugin",
+  "ServerVersion": "*",
+  "IncludesAssetPack": false,
+  "OptionalDependencies": {
+    "MBRound18:VexLichDungeon": "*"
+  },
+  "Dependencies": {
+    "MBRound18:ImmortalEngine": "*",
+    "MBRound18:SharedInterfaces": "*"
+  }
+}

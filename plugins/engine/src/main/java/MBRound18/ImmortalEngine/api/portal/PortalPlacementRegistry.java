@@ -74,36 +74,48 @@ public final class PortalPlacementRegistry {
     long now = System.currentTimeMillis();
     for (Map.Entry<String, List<PortalPlacement>> entry : PLACEMENTS.entrySet()) {
       String instanceId = entry.getKey();
+      if (instanceId == null) {
+        continue;
+      }
       List<PortalPlacement> placements = entry.getValue();
       if (placements == null || placements.isEmpty()) {
         continue;
       }
 
       World instanceWorld = Universe.get().getWorld(instanceId);
-      int playerCount = instanceWorld != null ? instanceWorld.getPlayerCount() : 0;
-
-      boolean closeForMaxPlayers = false;
-      for (PortalPlacement placement : placements) {
-        if (placement.maxPlayers > 0 && playerCount >= placement.maxPlayers) {
-          closeForMaxPlayers = true;
-          break;
-        }
+      if (instanceWorld == null) {
+        continue;
       }
 
-      List<PortalPlacement> toRemove = new java.util.ArrayList<>();
-      for (PortalPlacement placement : placements) {
-        boolean expired = placement.expiresAtMs > 0 && now >= placement.expiresAtMs;
-        if (expired || closeForMaxPlayers) {
-          removePortalPlacement(placement);
-          toRemove.add(placement);
-        }
+      instanceWorld.execute(() -> tickWorld(instanceId, instanceWorld, placements, now));
+    }
+  }
+
+  private static void tickWorld(@Nonnull String instanceId, @Nonnull World instanceWorld,
+      @Nonnull List<PortalPlacement> placements, long now) {
+    int playerCount = instanceWorld.getPlayerCount();
+
+    boolean closeForMaxPlayers = false;
+    for (PortalPlacement placement : placements) {
+      if (placement.maxPlayers > 0 && playerCount >= placement.maxPlayers) {
+        closeForMaxPlayers = true;
+        break;
       }
-      if (!toRemove.isEmpty()) {
-        placements.removeAll(toRemove);
+    }
+
+    List<PortalPlacement> toRemove = new java.util.ArrayList<>();
+    for (PortalPlacement placement : placements) {
+      boolean expired = placement.expiresAtMs > 0 && now >= placement.expiresAtMs;
+      if (expired || closeForMaxPlayers) {
+        removePortalPlacement(placement);
+        toRemove.add(placement);
       }
-      if (placements.isEmpty()) {
-        PLACEMENTS.remove(instanceId);
-      }
+    }
+    if (!toRemove.isEmpty()) {
+      placements.removeAll(toRemove);
+    }
+    if (placements.isEmpty()) {
+      PLACEMENTS.remove(instanceId);
     }
   }
 

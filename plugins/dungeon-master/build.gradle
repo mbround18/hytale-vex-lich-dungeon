@@ -1,0 +1,150 @@
+plugins {
+    id 'java'
+}
+
+group = 'MBRound18.hytale'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+evaluationDependsOn(":shared:utilities")
+evaluationDependsOn(":plugins:engine")
+evaluationDependsOn(":plugins:roguelike")
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+dependencies {
+    implementation project(":shared:utilities")
+    implementation project(":plugins:engine")
+
+    // Javalin
+    implementation 'io.javalin:javalin:6.7.0'
+
+    // SLF4J
+    implementation 'org.slf4j:slf4j-simple:2.0.17'
+    compileOnly 'org.slf4j:slf4j-api:2.0.17'
+
+    // Gson
+    implementation 'com.google.code.gson:gson:2.11.0'
+
+    // Javax annotations
+    compileOnly 'javax.annotation:javax.annotation-api:1.3.2'
+
+    // Local Hytale Server
+    compileOnly files("${rootProject.projectDir}/data/server/Server/HytaleServer.jar")
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    dependsOn(rootProject.tasks.named("ensureServerJar"))
+}
+
+jar {
+    archiveBaseName.set("DungeonMaster")
+    dependsOn(project(":shared:utilities").tasks.named("jar"))
+    from({
+        def utilJar = project(":shared:utilities").tasks.named("jar").get().archiveFile.get().asFile
+        return zipTree(utilJar)
+    })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+    from({
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    })
+    from({
+        def slf4jSimple = configurations.runtimeClasspath.find { it.name.contains('slf4j-simple') }
+        return slf4jSimple ? zipTree(slf4jSimple) : []
+    }) {
+        include "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
+    }
+    manifest {
+        attributes(
+                'Plugin-Main': 'MBRound18.hytale.dungeonmaster.DungeonMasterPlugin',
+                'Plugin-Name': 'DungeonMaster',
+                'Plugin-Version': project.version,
+                'Implementation-Title': 'DungeonMaster',
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+def authorsJsonProvider = project.objects.property(String)
+authorsJsonProvider.convention("""[
+  {
+    "Name": "Example Dev",
+    "Email": "dev@example.com",
+    "Url": ""
+  }
+]""")
+
+tasks.register("generateAuthors") {
+    group = "build"
+    description = "Extract commit authors from git history"
+    def authorsOutput = authorsJsonProvider
+    doLast {
+        def authorsJson = "[]"
+        try {
+            def gitProcess = new ProcessBuilder(["git", "log", "--format=%an|%ae"]).redirectErrorStream(true).start()
+            def gitLog = new StringBuilder()
+            gitProcess.inputStream.newReader().eachLine { line ->
+                gitLog.append(line).append('\n')
+            }
+            int gitExit = gitProcess.waitFor()
+            def authors = gitLog.toString().readLines()
+                .collect { it.split("\\|") }
+                .findAll { it.size() == 2 }
+                .collect { [name: it[0].trim(), email: it[1].trim()] }
+                .unique { [it.name, it.email] }
+
+            if (gitExit != 0) {
+                logger.warn("git log exited with code ${gitExit}; falling back to default author")
+            }
+            if (authors.isEmpty()) {
+                authors = [[name: "Example Dev", email: "dev@example.com"]]
+            }
+
+            def entries = authors.collect { author ->
+                """  {
+    \"Name\": \"${author.name}\",
+    \"Email\": \"${author.email}\",
+    \"Url\": \"\"
+  }"""
+            }.join(',\n')
+            authorsJson = "[\n${entries}\n]"
+        } catch (Exception e) {
+            logger.warn("Failed to extract git authors: ${e.message}")
+            authorsJson = """[
+  {
+    \"Name\": \"Example Dev\",
+    \"Email\": \"dev@example.com\",
+    \"Url\": \"\"
+  }
+]"""
+        }
+        authorsOutput.set(authorsJson)
+    }
+}
+
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    dependsOn "generateAuthors"
+    from("src/main/resources")
+    def authorsJson = authorsJsonProvider
+    filesMatching('plugin.properties') {
+        expand(version: project.version)
+    }
+    filesMatching('manifest.json') {
+        expand(version: project.version)
+        filter { line ->
+            line.replace('"GRADLE_INJECT_AUTHORS"', authorsJson.get())
+        }
+    }
+}
