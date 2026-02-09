@@ -14,7 +14,7 @@ ext {
     serverDir = file("data/server")
     unpackedDir = file("data/unpacked")
     distDir = file("dist")
-    staticDir = file("static")
+    staticDir = file("packages/ui-frontdoor/public")
     
     // Assets
     serverAssetsDir = file("data/assets")       // Extracted vanilla assets from server
