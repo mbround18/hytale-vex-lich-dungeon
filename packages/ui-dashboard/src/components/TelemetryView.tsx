@@ -10,36 +10,47 @@ import {
   FileJson,
   AlertCircle,
   Pause,
-  Play
+  Play,
+  ArrowUp,
+  Rewind,
+  FastForward,
+  StopCircle
 } from 'lucide-react';
 import { clearEventBuffer, events$, streamStatus$ } from '../state/dashboardBus';
+import type { TelemetryEvent } from '../types';
 
-// --- Types ---
-interface EventEnvelope {
-  id?: number | string;
-  timestamp: number | string;
-  type: string;
-  payload: any;
-  data?: any;
-  internalId?: string; // Client-side ID for list keys
-}
+type TelemetryViewProps = {
+  replayActive?: boolean;
+  replayLabel?: string;
+  onReplayToEvent?: (events: TelemetryEvent[], event: TelemetryEvent) => void;
+  onReplayFromEvent?: (events: TelemetryEvent[], event: TelemetryEvent) => void;
+  onExitReplay?: () => void;
+};
 
-export default function TelemetryView() {
+export default function TelemetryView({
+  replayActive = false,
+  replayLabel,
+  onReplayToEvent,
+  onReplayFromEvent,
+  onExitReplay
+}: TelemetryViewProps) {
   // --- State ---
-  const [events, setEvents] = useState<EventEnvelope[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<EventEnvelope | null>(null);
+  const [events, setEvents] = useState<TelemetryEvent[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<TelemetryEvent | null>(null);
   const [search, setSearch] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [autoPaused, setAutoPaused] = useState(false);
   
   const pausedRef = useRef<boolean>(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     pausedRef.current = isPaused;
   }, [isPaused]);
 
   useEffect(() => {
-    const normalize = (ev: any): EventEnvelope => {
+    const normalize = (ev: any): TelemetryEvent => {
       const ts = ev.timestamp ?? ev.data?.timestamp ?? Date.now();
       const id = ev.id ?? ev.internalId ?? `${ev.type ?? 'event'}-${ts}`;
       return {
@@ -69,6 +80,14 @@ export default function TelemetryView() {
 
   // --- Handlers ---
 
+  const handleSelectEvent = (ev: TelemetryEvent) => {
+    setSelectedEvent(ev);
+    if (!isPaused) {
+      setIsPaused(true);
+      setAutoPaused(true);
+    }
+  };
+
   const handlePurge = () => {
     setEvents([]);
     setSelectedEvent(null);
@@ -83,6 +102,34 @@ export default function TelemetryView() {
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+  };
+
+  const handleTogglePause = () => {
+    setIsPaused(prev => {
+      const next = !prev;
+      if (!next) {
+        setAutoPaused(false);
+      }
+      return next;
+    });
+  };
+
+  const handleFollow = () => {
+    setIsPaused(false);
+    setAutoPaused(false);
+    if (listRef.current) {
+      listRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleReplayToEvent = () => {
+    if (!selectedEvent || !onReplayToEvent) return;
+    onReplayToEvent(events, selectedEvent);
+  };
+
+  const handleReplayFromEvent = () => {
+    if (!selectedEvent || !onReplayFromEvent) return;
+    onReplayFromEvent(events, selectedEvent);
   };
 
   // --- Filtering ---
@@ -134,7 +181,7 @@ export default function TelemetryView() {
           </div>
           <div className="flex gap-2">
             <button 
-              onClick={() => setIsPaused(!isPaused)}
+              onClick={handleTogglePause}
               className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-wider border rounded transition-all ${
                 isPaused 
                   ? 'text-amber-400/80 border-amber-500/20 bg-amber-500/10' 
@@ -143,6 +190,17 @@ export default function TelemetryView() {
             >
               {isPaused ? <Play size={12} /> : <Pause size={12} />} {isPaused ? 'Resume' : 'Pause'}
             </button>
+            {isPaused && (
+              <button
+                onClick={handleFollow}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold uppercase tracking-wider border rounded transition-all ${
+                  autoPaused ? 'text-violet-300 border-violet-500/30 bg-violet-500/10' : 'text-gray-400 border-gray-700 hover:bg-white/5'
+                }`}
+                title="Jump to latest event and resume follow mode"
+              >
+                <ArrowUp size={12} /> Follow
+              </button>
+            )}
             <button 
               onClick={handlePurge}
               className="w-1/4 flex items-center justify-center py-2 text-rose-400/80 border border-rose-500/20 rounded hover:bg-rose-500/10 transition-all"
@@ -158,10 +216,23 @@ export default function TelemetryView() {
               <Download size={12} />
             </button>
           </div>
+          {replayActive && (
+            <div className="flex items-center justify-between px-3 py-2 text-[10px] font-mono rounded border border-violet-500/20 bg-violet-500/10 text-violet-200">
+              <span>Replay Mode {replayLabel ? `// ${replayLabel}` : ''}</span>
+              {onExitReplay && (
+                <button
+                  onClick={onExitReplay}
+                  className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-rose-300 border border-rose-500/20 rounded px-2 py-1 hover:bg-rose-500/10"
+                >
+                  <StopCircle size={12} /> Stop
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Event List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+        <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {filteredEvents.length === 0 ? (
             <div className="p-8 text-center opacity-30 flex flex-col items-center">
               {isConnected ? (
@@ -179,13 +250,13 @@ export default function TelemetryView() {
               )}
             </div>
           ) : (
-            filteredEvents.map((ev: EventEnvelope) => (
+            filteredEvents.map((ev: TelemetryEvent) => (
               <EventLogItem
                 key={ev.internalId || ev.id}
                 type={ev.type || 'UnknownEvent'}
                 time={new Date(ev.timestamp).toLocaleTimeString()}
-                active={selectedEvent?.id === ev.id}
-                onClick={() => setSelectedEvent(ev)}
+                active={selectedEvent?.id === ev.id || selectedEvent?.internalId === ev.internalId}
+                onClick={() => handleSelectEvent(ev)}
               />
             ))
           )}
@@ -222,8 +293,30 @@ export default function TelemetryView() {
                   </span>
                 </div>
               </div>
-              <div className="px-3 py-1 rounded bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[10px] font-mono uppercase tracking-widest">
-                PAYLOAD INSPECTOR
+              <div className="flex flex-col items-end gap-2">
+                <div className="px-3 py-1 rounded bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[10px] font-mono uppercase tracking-widest">
+                  PAYLOAD INSPECTOR
+                </div>
+                {(onReplayToEvent || onReplayFromEvent) && (
+                  <div className="flex items-center gap-2">
+                    {onReplayToEvent && (
+                      <button
+                        onClick={handleReplayToEvent}
+                        className="px-3 py-2 text-[9px] font-black text-white bg-[#1b1326] border border-[#3a2a50] rounded hover:bg-[#8b5cf6] transition-all uppercase tracking-widest"
+                      >
+                        <span className="inline-flex items-center gap-1"><Rewind size={12} /> Replay To</span>
+                      </button>
+                    )}
+                    {onReplayFromEvent && (
+                      <button
+                        onClick={handleReplayFromEvent}
+                        className="px-3 py-2 text-[9px] font-black text-white bg-[#2b1a42] border border-[#5f2b84] rounded hover:bg-[#8b5cf6] transition-all uppercase tracking-widest"
+                      >
+                        <span className="inline-flex items-center gap-1"><FastForward size={12} /> Play From</span>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

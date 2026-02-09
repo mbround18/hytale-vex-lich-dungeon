@@ -6,9 +6,9 @@ import StatsView from './components/StatsView';
 import MapView from './components/MapView';
 import ArchivesView from './components/ArchivesView';
 import TelemetryView from './components/TelemetryView';
-import type { Metrics } from './types';
+import type { Metrics, ServerStats, TelemetryEvent } from './types';
 import api, { apiBaseUrl } from './api';
-import { publishEvent, setStreamStatus, streamStatus$ } from './state/dashboardBus';
+import { events$, publishEvent, setStreamStatus, streamStatus$ } from './state/dashboardBus';
 import {
   clearArchiveStorageDb,
   deleteArchiveStorageDb,
@@ -20,6 +20,7 @@ import {
 } from './state/eventArchive';
 
 const isPreviewMode = () => window.location.protocol === 'file:' || window.location.protocol === 'blob:';
+const VEX_WORLD_FRAGMENT = 'vex_the_lich_dungeon';
 
 type VexEvent = {
   internalId?: string;
@@ -56,6 +57,8 @@ function DashboardApp() {
     portals: {}
   });
   const [metrics, setMetrics] = useState<Metrics>(defaultMetrics);
+  const [serverStats, setServerStats] = useState<ServerStats | null>(null);
+  const [worldMetadata, setWorldMetadata] = useState<Array<{ name: string; playerCount?: number }> | null>(null);
   const [prefabMetadata, setPrefabMetadata] = useState<Record<string, { w: number; h: number }>>({});
 
   const pendingPrefabFetches = useRef<Set<string>>(new Set());
@@ -69,12 +72,14 @@ function DashboardApp() {
   const sseLastEventAtRef = useRef<number>(0);
   const sawLiveEventRef = useRef(false);
   const recentEventFingerprintsRef = useRef<Map<string, number>>(new Map());
+  const knownEventIdsRef = useRef<Set<string>>(new Set());
 
   const [replay, setReplay] = useState({
     active: false,
     playing: false,
     cursor: 0,
-    events: [] as VexEvent[]
+    events: [] as VexEvent[],
+    source: null as null | 'archive' | 'telemetry'
   });
 
   const playerRoster = useMemo(() => {
@@ -160,7 +165,7 @@ function DashboardApp() {
       api.delete('/archives')
         .then(() => {
           setSelectedArchive(null);
-          setReplay({ active: false, playing: false, cursor: 0, events: [] });
+          setReplay({ active: false, playing: false, cursor: 0, events: [], source: null });
           loadArchives();
         })
         .catch(() => null);
@@ -168,7 +173,7 @@ function DashboardApp() {
     }
     void clearArchiveStorageDb().then(() => {
       setSelectedArchive(null);
-      setReplay({ active: false, playing: false, cursor: 0, events: [] });
+      setReplay({ active: false, playing: false, cursor: 0, events: [], source: null });
       loadArchives();
     });
   }, [loadArchives]);
@@ -189,8 +194,12 @@ function DashboardApp() {
     });
   }, [loadArchives]);
 
-  const getEventFields = useCallback((ev: VexEvent) => ev.data?.fields || ev.data?.fields || {}, []);
-  const getEventWorld = useCallback((fields: any) => fields.world?.name || fields.worldName || fields.world?.worldName || null, []);
+  const getEventFields = useCallback((ev: VexEvent) => ev.data?.fields || ev.data?.payload || ev.data || {}, []);
+  const getEventWorld = useCallback((fields: any) => {
+    if (!fields) return null;
+    const world = fields.world || fields.worldMeta || fields.worldRef;
+    return world?.name || world?.worldName || world?.DEFAULT || fields.worldName || fields.worldId || null;
+  }, []);
   const getEventTimestamp = useCallback((ev: VexEvent) => ev.timestamp || ev.data?.timestamp || new Date().toISOString(), []);
   const getPlayerIdFromRef = useCallback((playerRef: any) => {
     if (!playerRef) return null;
@@ -277,6 +286,10 @@ function DashboardApp() {
     };
     const players: Record<string, any> = {};
     const portals: Record<string, any> = {};
+    const instanceMetrics: Record<string, { entityCount: number; killCount: number; roomCount: number }> = {};
+    const instanceRoomStats: Record<string, Record<string, { entities: number; kills: number; order?: number; generatedAt?: string }>> = {};
+    const instancePlayerStats: Record<string, Record<string, { kills: number; points: number }>> = {};
+    const instanceRoomOrder: Record<string, number> = {};
     let entities = 0;
     let rooms = 0;
     const types: Record<string, number> = {};
@@ -289,10 +302,25 @@ function DashboardApp() {
     const sourceEvents = eventsOverride || events;
     const chronological = [...sourceEvents].reverse();
 
+    const ensureInstanceState = (worldName: string) => {
+      if (!activeInstances[worldName]) {
+        activeInstances[worldName] = { name: worldName, rooms: {}, players: new Set(), active: true, status: 'active' };
+      }
+      if (!instanceMetrics[worldName]) {
+        instanceMetrics[worldName] = { entityCount: 0, killCount: 0, roomCount: 0 };
+      }
+      if (!instanceRoomStats[worldName]) {
+        instanceRoomStats[worldName] = {};
+      }
+      if (!instancePlayerStats[worldName]) {
+        instancePlayerStats[worldName] = {};
+      }
+    };
+
     chronological.forEach(ev => {
       const fields = getEventFields(ev);
       const worldName = getEventWorld(fields);
-      const playerRef = fields.playerRef;
+      const playerRef = fields.playerRef || fields.player;
       const timestamp = getEventTimestamp(ev);
       const tsMs = Date.parse(timestamp);
 
@@ -301,22 +329,12 @@ function DashboardApp() {
       }
 
       if (ev.type === 'InstanceInitializedEvent' && worldName) {
-        if (!activeInstances[worldName]) {
-          activeInstances[worldName] = {
-            name: worldName,
-            rooms: {},
-            players: new Set(),
-            active: true,
-            status: 'active',
-            startedAt: timestamp
-          };
-        }
+        ensureInstanceState(worldName);
+        activeInstances[worldName].startedAt = timestamp;
       }
 
       if ((ev.type === 'InstanceTeardownStartedEvent' || ev.type === 'InstanceTeardownCompletedEvent') && worldName) {
-        if (!activeInstances[worldName]) {
-          activeInstances[worldName] = { name: worldName, rooms: {}, players: new Set(), active: true, status: 'active' };
-        }
+        ensureInstanceState(worldName);
         if (ev.type === 'InstanceTeardownStartedEvent') {
           activeInstances[worldName].status = 'teardown';
           activeInstances[worldName].teardownStartedAt = timestamp;
@@ -330,12 +348,21 @@ function DashboardApp() {
 
       if (ev.type === 'RoomGeneratedEvent' && worldName && fields.room) {
         rooms += 1;
-        if (!activeInstances[worldName]) {
-          activeInstances[worldName] = { name: worldName, rooms: {}, players: new Set(), active: true, status: 'active' };
-        }
+        ensureInstanceState(worldName);
         if (fields.prefabPath) ensurePrefabMetadata(fields.prefabPath);
         const size = extractRoomSizeFromFields(fields);
         const roomKey = `${fields.room.x},${fields.room.z}`;
+        if (!activeInstances[worldName].rooms[roomKey]) {
+          instanceMetrics[worldName].roomCount += 1;
+          const order = (instanceRoomOrder[worldName] || 0) + 1;
+          instanceRoomOrder[worldName] = order;
+          const existingStats = instanceRoomStats[worldName][roomKey] || { entities: 0, kills: 0 };
+          instanceRoomStats[worldName][roomKey] = {
+            ...existingStats,
+            order: existingStats.order ?? order,
+            generatedAt: existingStats.generatedAt ?? timestamp
+          };
+        }
         activeInstances[worldName].rooms[roomKey] = {
           x: fields.room.x,
           z: fields.room.z,
@@ -360,9 +387,7 @@ function DashboardApp() {
           roomKey: players[pid]?.roomKey || '0,0',
           lastSeenAt: timestamp
         };
-        if (!activeInstances[worldName]) {
-          activeInstances[worldName] = { name: worldName, rooms: {}, players: new Set(), active: true, status: 'active' };
-        }
+        ensureInstanceState(worldName);
         activeInstances[worldName].players.add(pid);
       }
 
@@ -372,6 +397,10 @@ function DashboardApp() {
         if (!players[pid]) return;
         players[pid].roomKey = `${fields.room.x},${fields.room.z}`;
         players[pid].lastSeenAt = timestamp;
+        ensureInstanceState(worldName);
+        const roomKey = `${fields.room.x},${fields.room.z}`;
+        const existingStats = instanceRoomStats[worldName][roomKey] || { entities: 0, kills: 0 };
+        instanceRoomStats[worldName][roomKey] = existingStats;
       }
 
       if (ev.type === 'PortalCreatedEvent') {
@@ -433,7 +462,42 @@ function DashboardApp() {
         entities += 1;
         const type = fields.entityType || fields.modelId || 'Unknown';
         types[type] = (types[type] || 0) + 1;
+        if (worldName) {
+          ensureInstanceState(worldName);
+          instanceMetrics[worldName].entityCount += 1;
+          if (fields.room) {
+            const roomKey = `${fields.room.x},${fields.room.z}`;
+            const existingStats = instanceRoomStats[worldName][roomKey] || { entities: 0, kills: 0 };
+            existingStats.entities += 1;
+            instanceRoomStats[worldName][roomKey] = existingStats;
+          }
+        }
       }
+
+      if (ev.type === 'EntityEliminatedEvent' && worldName) {
+        ensureInstanceState(worldName);
+        instanceMetrics[worldName].killCount += 1;
+        if (fields.room) {
+          const roomKey = `${fields.room.x},${fields.room.z}`;
+          const existingStats = instanceRoomStats[worldName][roomKey] || { entities: 0, kills: 0 };
+          existingStats.kills += 1;
+          instanceRoomStats[worldName][roomKey] = existingStats;
+        }
+        const killerId = fields.killerId?.toString ? fields.killerId.toString() : fields.killerId;
+        if (killerId) {
+          const playerStats = instancePlayerStats[worldName][killerId] || { kills: 0, points: 0 };
+          playerStats.kills += 1;
+          playerStats.points += Number(fields.points || 0);
+          instancePlayerStats[worldName][killerId] = playerStats;
+        }
+      }
+    });
+
+    Object.keys(instanceMetrics).forEach((worldName) => {
+      if (!activeInstances[worldName]) return;
+      activeInstances[worldName].stats = instanceMetrics[worldName];
+      activeInstances[worldName].roomStats = instanceRoomStats[worldName] || {};
+      activeInstances[worldName].playerStats = instancePlayerStats[worldName] || {};
     });
 
     Object.values(portals).forEach((p: any) => {
@@ -490,13 +554,24 @@ function DashboardApp() {
     }
   }, [events, ensurePrefabMetadata, getEventFields, getEventTimestamp, getEventWorld, getPlayerIdFromRef, getPlayerNameFromRef, saveArchive]);
 
-  const addEvent = useCallback((payload: any) => {
+  const ingestEvent = useCallback((payload: any, options?: { broadcast?: boolean }) => {
     const normalized: VexEvent = payload && payload.internalId ? payload : {
       internalId: Math.random().toString(36).substr(2, 7).toUpperCase(),
       timestamp: payload.timestamp || payload.data?.timestamp || new Date().toISOString(),
       type: payload.type || payload.data?.type || 'unknown.packet',
       data: payload.data || payload
     };
+
+    const eventId = normalized.internalId || (normalized as any).id;
+    if (eventId && knownEventIdsRef.current.has(eventId.toString())) {
+      return;
+    }
+    if (eventId) {
+      knownEventIdsRef.current.add(eventId.toString());
+      if (knownEventIdsRef.current.size > 3000) {
+        knownEventIdsRef.current.clear();
+      }
+    }
 
     const fingerprint = buildEventFingerprint(normalized);
     const now = Date.now();
@@ -517,8 +592,14 @@ function DashboardApp() {
       return next.length > 1200 ? next.slice(0, 1200) : next;
     });
     saveEventToLog(normalized);
-    publishEvent(normalized);
+    if (options?.broadcast) {
+      publishEvent(normalized);
+    }
   }, [buildEventFingerprint, saveEventToLog]);
+
+  const addEvent = useCallback((payload: any) => {
+    ingestEvent(payload, { broadcast: true });
+  }, [ingestEvent]);
 
   const tryLoadJsonFiles = useCallback(async (files: string[]) => {
     if (isPreviewMode()) return false;
@@ -742,6 +823,45 @@ function DashboardApp() {
   }, [connectSSE, loadArchives, pollPlayerMetadata]);
 
   useEffect(() => {
+    let mounted = true;
+    const loadStats = async () => {
+      try {
+        const res = await api.get('/stats');
+        if (mounted) {
+          setServerStats(res.data);
+        }
+      } catch {
+        if (mounted) {
+          setServerStats(null);
+        }
+      }
+    };
+
+    const loadWorlds = async () => {
+      try {
+        const res = await api.get('/metadata/worlds');
+        if (mounted) {
+          setWorldMetadata(res.data || []);
+        }
+      } catch {
+        if (mounted) {
+          setWorldMetadata(null);
+        }
+      }
+    };
+
+    loadStats();
+    loadWorlds();
+    const statsInterval = window.setInterval(loadStats, 5000);
+    const worldsInterval = window.setInterval(loadWorlds, 10000);
+    return () => {
+      mounted = false;
+      window.clearInterval(statsInterval);
+      window.clearInterval(worldsInterval);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!replay.active) {
       recalculateState();
     }
@@ -757,6 +877,21 @@ function DashboardApp() {
     });
     return () => sub.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const sub = events$.subscribe((busEvents) => {
+      if (!Array.isArray(busEvents) || busEvents.length === 0) return;
+      busEvents.forEach((ev) => {
+        const normalized = (ev && (ev as any).internalId) ? ev : { data: (ev as any)?.data || ev };
+        const fields = getEventFields(normalized as VexEvent);
+        const worldName = getEventWorld(fields);
+        if (!worldName) return;
+        if (!worldName.toLowerCase().includes(VEX_WORLD_FRAGMENT)) return;
+        ingestEvent(ev, { broadcast: false });
+      });
+    });
+    return () => sub.unsubscribe();
+  }, [getEventFields, getEventWorld, ingestEvent]);
 
   const downloadJson = (filename: string, payload: any) => {
     try {
@@ -809,7 +944,7 @@ function DashboardApp() {
   const startReplay = async (instanceName: string) => {
     const stored = await loadEventLog(instanceName);
     const replayEvents = stored && stored.length ? stored : buildReplayEvents(instanceName);
-    setReplay({ active: true, playing: false, cursor: 0, events: replayEvents });
+    setReplay({ active: true, playing: false, cursor: 0, events: replayEvents, source: 'archive' });
     if (replayTimerRef.current) {
       window.clearInterval(replayTimerRef.current);
       replayTimerRef.current = null;
@@ -818,7 +953,7 @@ function DashboardApp() {
   };
 
   const stopReplay = () => {
-    setReplay({ active: false, playing: false, cursor: 0, events: [] });
+    setReplay({ active: false, playing: false, cursor: 0, events: [], source: null });
     if (replayTimerRef.current) {
       window.clearInterval(replayTimerRef.current);
       replayTimerRef.current = null;
@@ -826,11 +961,35 @@ function DashboardApp() {
     recalculateState();
   };
 
-  const applyReplayCursor = (nextCursor: number) => {
-    if (!replay.active || replay.events.length === 0) return;
-    const slice = replay.events.slice(0, nextCursor + 1);
+  const applyReplayCursor = useCallback((nextCursor: number, sourceEvents?: VexEvent[]) => {
+    const eventsToUse = sourceEvents || replay.events;
+    if (!eventsToUse.length) return;
+    if (!sourceEvents && !replay.active) return;
+    const slice = eventsToUse.slice(0, nextCursor + 1);
     recalculateState(slice, true);
-  };
+  }, [recalculateState, replay.active, replay.events]);
+
+  const startReplayPlayback = useCallback(() => {
+    if (replayTimerRef.current) {
+      window.clearInterval(replayTimerRef.current);
+      replayTimerRef.current = null;
+    }
+    replayTimerRef.current = window.setInterval(() => {
+      setReplay(prev => {
+        if (!prev.playing) return prev;
+        if (prev.cursor >= prev.events.length - 1) {
+          if (replayTimerRef.current) {
+            window.clearInterval(replayTimerRef.current);
+            replayTimerRef.current = null;
+          }
+          return { ...prev, playing: false };
+        }
+        const nextCursor = prev.cursor + 1;
+        applyReplayCursor(nextCursor, prev.events);
+        return { ...prev, cursor: nextCursor };
+      });
+    }, 450);
+  }, [applyReplayCursor]);
 
   const toggleReplay = () => {
     if (!replay.active || replay.events.length === 0) return;
@@ -844,21 +1003,7 @@ function DashboardApp() {
     }
 
     setReplay(prev => ({ ...prev, playing: true }));
-    replayTimerRef.current = window.setInterval(() => {
-      setReplay(prev => {
-        if (!prev.playing) return prev;
-        if (prev.cursor >= prev.events.length - 1) {
-          if (replayTimerRef.current) {
-            window.clearInterval(replayTimerRef.current);
-            replayTimerRef.current = null;
-          }
-          return { ...prev, playing: false };
-        }
-        const nextCursor = prev.cursor + 1;
-        applyReplayCursor(nextCursor);
-        return { ...prev, cursor: nextCursor };
-      });
-    }, 450);
+    startReplayPlayback();
   };
 
   const seekReplay = (value: string) => {
@@ -867,6 +1012,78 @@ function DashboardApp() {
     setReplay(prev => ({ ...prev, cursor: clamped }));
     applyReplayCursor(clamped);
   };
+
+  const replayLabel = replay.source === 'telemetry' ? 'Telemetry' : replay.source === 'archive' ? 'Archive' : undefined;
+
+  const toReplayTimestamp = (ts?: number | string) => {
+    if (!ts) return new Date().toISOString();
+    if (typeof ts === 'number') return new Date(ts).toISOString();
+    return ts;
+  };
+
+  const getTelemetryId = (ev: TelemetryEvent | VexEvent) => {
+    const raw = (ev as any).internalId ?? (ev as any).id;
+    if (raw == null) return '';
+    return typeof raw === 'string' ? raw : String(raw);
+  };
+
+  const normalizeTelemetryEvent = (ev: TelemetryEvent): VexEvent => {
+    const timestamp = toReplayTimestamp(ev.timestamp);
+    const id = getTelemetryId(ev) || `${ev.type || ev.data?.type || 'event'}-${timestamp}`;
+    return {
+      internalId: id,
+      timestamp,
+      type: ev.type || ev.data?.type || 'unknown.packet',
+      data: ev.payload ?? ev.data ?? ev
+    };
+  };
+
+  const startTelemetryReplay = useCallback((sourceEvents: TelemetryEvent[], anchor: TelemetryEvent, autoplay: boolean) => {
+    if (!sourceEvents.length) return;
+    const normalized = sourceEvents.map(normalizeTelemetryEvent);
+    const ordered = normalized
+      .map((ev, index) => ({
+        ev,
+        index,
+        ts: Date.parse(ev.timestamp || '')
+      }))
+      .sort((a, b) => {
+        const aNaN = Number.isNaN(a.ts);
+        const bNaN = Number.isNaN(b.ts);
+        if (aNaN || bNaN) return a.index - b.index;
+        if (a.ts === b.ts) return a.index - b.index;
+        return a.ts - b.ts;
+      })
+      .map(({ ev }) => ev);
+
+    const anchorId = getTelemetryId(anchor);
+    let cursor = anchorId ? ordered.findIndex(ev => getTelemetryId(ev) === anchorId) : -1;
+    if (cursor < 0 && anchor.timestamp) {
+      const anchorStamp = toReplayTimestamp(anchor.timestamp);
+      cursor = ordered.findIndex(ev => ev.type === anchor.type && ev.timestamp === anchorStamp);
+    }
+    if (cursor < 0) cursor = 0;
+
+    if (replayTimerRef.current) {
+      window.clearInterval(replayTimerRef.current);
+      replayTimerRef.current = null;
+    }
+    setReplay({ active: true, playing: false, cursor, events: ordered, source: 'telemetry' });
+    applyReplayCursor(cursor, ordered);
+
+    if (autoplay) {
+      setReplay(prev => ({ ...prev, playing: true }));
+      startReplayPlayback();
+    }
+  }, [applyReplayCursor, startReplayPlayback]);
+
+  const replayToEvent = useCallback((sourceEvents: TelemetryEvent[], anchor: TelemetryEvent) => {
+    startTelemetryReplay(sourceEvents, anchor, false);
+  }, [startTelemetryReplay]);
+
+  const replayFromEvent = useCallback((sourceEvents: TelemetryEvent[], anchor: TelemetryEvent) => {
+    startTelemetryReplay(sourceEvents, anchor, true);
+  }, [startTelemetryReplay]);
 
   return (
     <div className="h-screen flex flex-col vex-grid">
@@ -883,6 +1100,8 @@ function DashboardApp() {
                 playerRoster={playerRoster}
                 instanceList={instanceList}
                 portalList={portalList}
+                serverStats={serverStats}
+                worldMetadata={worldMetadata}
               />
             }
           />
@@ -912,7 +1131,18 @@ function DashboardApp() {
               />
             }
           />
-          <Route path="/logs" element={<TelemetryView />} />
+          <Route
+            path="/logs"
+            element={
+              <TelemetryView
+                replayActive={replay.active}
+                replayLabel={replayLabel}
+                onReplayToEvent={replayToEvent}
+                onReplayFromEvent={replayFromEvent}
+                onExitReplay={stopReplay}
+              />
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

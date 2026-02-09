@@ -14,6 +14,7 @@ import {
   Database
 } from 'lucide-react';
 import api from '../api';
+import { getStyledRoom } from './map/instanceHandlers';
 
 // --- API Types (Based on provided OpenAPI Spec) ---
 interface EventEnvelope {
@@ -56,6 +57,13 @@ interface Room {
   prefab: string;
   type?: string;
   size?: { w: number; h: number };
+  roomKey?: string;
+  stats?: {
+    entities?: number;
+    kills?: number;
+    order?: number;
+    generatedAt?: string;
+  };
 }
 
 interface Instance {
@@ -71,6 +79,14 @@ interface Instance {
   renderX: number;
   renderY: number;
   isVexDungeon?: boolean;
+  maxRoomOrder?: number;
+  stats?: {
+    entityCount?: number;
+    killCount?: number;
+    roomCount?: number;
+  };
+  roomStats?: Record<string, { entities: number; kills: number; order?: number; generatedAt?: string }>;
+  playerStats?: Record<string, { kills: number; points: number }>;
 }
 
 interface Player {
@@ -78,6 +94,14 @@ interface Player {
   name: string;
   world: string;
   roomKey: string;
+  playerId?: string;
+  id?: string;
+  health?: number;
+  stamina?: number;
+  stats?: {
+    health?: number;
+    stamina?: number;
+  };
 }
 
 interface MapViewProps {
@@ -232,7 +256,17 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
 
     const processedInstances = rawInstances.map(inst => {
       const rooms: Room[] = Object.values(inst.rooms || {});
-      const effectiveRooms = rooms.length ? rooms : [{ x:0, z:0, prefab: 'Empty', size:{w:1,h:1} }];
+      const roomStats = inst.roomStats || {};
+      const effectiveRooms = rooms.length
+        ? rooms.map((room) => {
+            const roomKey = `${room.x},${room.z}`;
+            return {
+              ...room,
+              roomKey,
+              stats: roomStats[roomKey]
+            };
+          })
+        : [{ x: 0, z: 0, prefab: 'Empty', size: { w: 1, h: 1 }, roomKey: '0,0', stats: { entities: 0, kills: 0 } }];
       
       let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
       effectiveRooms.forEach(r => {
@@ -243,13 +277,16 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
         maxZ = Math.max(maxZ, r.z + (s.h - 1));
       });
 
+      const maxRoomOrder = Math.max(0, ...effectiveRooms.map((room) => room.stats?.order || 0));
+
       return {
         ...inst,
         rooms: effectiveRooms,
         minX, minZ,
         gridW: maxX - minX + 1,
         gridH: maxZ - minZ + 1,
-        isVexDungeon: inst.name.toLowerCase().includes('vex_the_lich')
+        isVexDungeon: inst.name.toLowerCase().includes('vex_the_lich'),
+        maxRoomOrder
       };
     });
 
@@ -292,6 +329,11 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
     };
 
   }, [worldState.activeInstances, worldState.archivedInstances, getRoomSizeForRoom, selectedWorldId]);
+
+  const selectedInstance = useMemo(() => {
+    if (!selectedWorldId || !layoutData) return null;
+    return layoutData.instances.find((inst) => inst.name === selectedWorldId) || null;
+  }, [layoutData, selectedWorldId]);
 
   // 5. D3 Zoom Integration
   useEffect(() => {
@@ -342,6 +384,10 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
           <div className="text-gray-400">{inst.name}</div>
           <div className="text-gray-500">[{room.x}, {room.z}]</div>
           {room.size && <div className="text-gray-600">{room.size.w}x{room.size.h}</div>}
+          {room.stats?.order && <div className="text-indigo-300">Spawn #{room.stats.order}</div>}
+          {(room.stats?.entities || room.stats?.kills) && (
+            <div className="text-gray-500">Entities: {room.stats?.entities ?? 0} · Kills: {room.stats?.kills ?? 0}</div>
+          )}
         </div>
       )
     });
@@ -391,6 +437,18 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
             />
           </div>
         </div>
+
+        {selectedInstance && (
+          <div className="mx-3 mb-3 rounded-md border border-white/10 bg-black/30 p-3 text-[10px] font-mono text-gray-400">
+            <div className="text-gray-500 uppercase tracking-widest mb-2">Instance Pulse</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>Rooms: {selectedInstance.stats?.roomCount ?? selectedInstance.rooms.length}</div>
+              <div>Entities: {selectedInstance.stats?.entityCount ?? 0}</div>
+              <div>Kills: {selectedInstance.stats?.killCount ?? 0}</div>
+              <div>Players: {selectedInstance.players?.size ?? 0}</div>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           <button
@@ -491,6 +549,8 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
           <div className="flex gap-4 bg-black/60 backdrop-blur border border-white/10 p-2 rounded-lg">
              <LegendItem color="border-amber-400" label="Start Room" />
              <LegendItem color="border-indigo-500" label="Generated Room" />
+             <LegendItem color="border-emerald-400" label="Progression" />
+             <LegendItem color="border-slate-500" label="Cleared" />
              <LegendItem color="bg-rose-500" label="Entity" type="dot" />
           </div>
         </div>
@@ -512,15 +572,18 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
               <rect width="100%" height="100%" fill="url(#grid)" />
               
               <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
-                {layoutData.instances.map(inst => (
-                  <InstanceGroup 
-                    key={inst.name} 
-                    inst={inst} 
-                    getRoomSize={getRoomSizeForRoom}
-                    onRoomHover={handleRoomHover}
-                    onRoomLeave={() => setHoveredData(null)}
-                  />
-                ))}
+                {layoutData.instances.map(inst => {
+                  return (
+                    <InstanceGroup 
+                      key={inst.name} 
+                      inst={inst} 
+                      getRoomSize={getRoomSizeForRoom}
+                      getRoomStyle={(room: Room, instance: Instance, defaults: any) => getStyledRoom(room, instance, defaults)}
+                      onRoomHover={handleRoomHover}
+                      onRoomLeave={() => setHoveredData(null)}
+                    />
+                  );
+                })}
                 
                 {Object.values(worldState.players || {}).map(player => {
                    const inst = layoutData.instances.find(i => i.name === player.world);
@@ -534,12 +597,20 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
                    const px = (inst.renderX + (room.x - inst.minX) + (size.w/2)) * TILE_SIZE;
                    const py = (inst.renderY + (room.z - inst.minZ) + (size.h/2)) * TILE_SIZE;
 
+                   const playerId = player.uuid || player.playerId || player.id || player.name;
+                   const playerStats = playerId ? inst.playerStats?.[playerId] : null;
+                   const health = player.health ?? player.stats?.health;
+                   const stamina = player.stamina ?? player.stats?.stamina;
+
                    return (
                      <PlayerDot 
                        key={player.uuid} 
                        x={px} 
                        y={py} 
                        player={player}
+                       kills={playerStats?.kills ?? 0}
+                       health={health}
+                       stamina={stamina}
                        scale={1 / transform.k} 
                      />
                    );
@@ -573,7 +644,7 @@ export default function MapView({ worldState, getRoomSizeForRoom }: MapViewProps
 
 // --- Sub Components ---
 
-const InstanceGroup = React.memo(({ inst, getRoomSize, onRoomHover, onRoomLeave }: any) => {
+const InstanceGroup = React.memo(({ inst, getRoomSize, onRoomHover, onRoomLeave, getRoomStyle }: any) => {
   const instanceW = inst.gridW * TILE_SIZE;
   const instanceH = inst.gridH * TILE_SIZE;
   const pixelX = inst.renderX * TILE_SIZE;
@@ -613,16 +684,22 @@ const InstanceGroup = React.memo(({ inst, getRoomSize, onRoomHover, onRoomLeave 
         const isStart = room.x === 0 && room.z === 0;
         const fillColor = inst.isVexDungeon ? "#3f1a26" : "#1e1b2e";
         const strokeColor = isStart ? "#fbbf24" : (inst.isVexDungeon ? "#f43f5e" : "#6366f1");
+        const baseStyle = {
+          fillColor,
+          strokeColor,
+          strokeOpacity: isStart ? 1 : (inst.isVexDungeon ? 0.6 : 0.4)
+        };
+        const styled = typeof getRoomStyle === 'function' ? getRoomStyle(room, inst, baseStyle) : baseStyle;
 
         return (
           <g key={`${room.x},${room.z}`} transform={`translate(${rx}, ${rz})`}>
             <rect
               width={rw - 2}
               height={rh - 2}
-              fill={fillColor}
-              stroke={strokeColor}
+              fill={styled.fillColor}
+              stroke={styled.strokeColor}
               strokeWidth={isStart ? 2 : 1}
-              strokeOpacity={isStart ? 1 : (inst.isVexDungeon ? 0.6 : 0.4)}
+              strokeOpacity={styled.strokeOpacity}
               rx={2}
               className="transition-all duration-200 hover:brightness-150"
               onMouseEnter={(e) => onRoomHover(e, inst, room)}
@@ -635,7 +712,7 @@ const InstanceGroup = React.memo(({ inst, getRoomSize, onRoomHover, onRoomLeave 
   );
 });
 
-const PlayerDot = ({ x, y, player, scale }: { x: number, y: number, player: Player, scale: number }) => {
+const PlayerDot = ({ x, y, player, scale, kills, health, stamina }: { x: number, y: number, player: Player, scale: number, kills: number, health?: number, stamina?: number }) => {
   return (
     <motion.g
       initial={{ x, y }}
@@ -662,6 +739,24 @@ const PlayerDot = ({ x, y, player, scale }: { x: number, y: number, player: Play
         style={{ textShadow: '0 1px 2px rgba(0,0,0,1)' }}
       >
         {player.name}
+      </text>
+      <text
+        y={2 * scale}
+        textAnchor="middle"
+        fill="#94a3b8"
+        fontSize={8 * Math.max(0.8, scale)}
+        className="select-none pointer-events-none"
+      >
+        Kills: {kills}
+      </text>
+      <text
+        y={14 * scale}
+        textAnchor="middle"
+        fill="#64748b"
+        fontSize={7 * Math.max(0.8, scale)}
+        className="select-none pointer-events-none"
+      >
+        HP: {health ?? '--'} · ST: {stamina ?? '--'}
       </text>
     </motion.g>
   );
