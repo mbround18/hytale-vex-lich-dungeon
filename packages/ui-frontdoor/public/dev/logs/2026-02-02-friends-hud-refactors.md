@@ -5,6 +5,7 @@ title: "Friends UI + Party HUD Refactors"
 tags: [ui, friends, hud, cleanup]
 commit: acacc0d
 ---
+
 ## Friends UI + Party HUD Refactors
 
 We cleaned up the friends UI stack and tightened the party HUD flow.

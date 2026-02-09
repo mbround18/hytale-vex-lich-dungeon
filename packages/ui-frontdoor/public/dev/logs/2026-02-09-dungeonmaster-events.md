@@ -5,6 +5,7 @@ title: "DungeonMaster Plugin & Event System"
 tags: [feature, telemetry, events, debugging]
 commit: ebfd580
 ---
+
 ## DungeonMaster Plugin & Event System
 
 Implemented comprehensive event-driven telemetry system with DungeonMaster plugin providing real-time debugging and monitoring capabilities via HTTP API.

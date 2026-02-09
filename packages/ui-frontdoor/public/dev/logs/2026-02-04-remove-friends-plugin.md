@@ -5,6 +5,7 @@ title: "Remove Friends Plugin"
 tags: [cleanup, plugins, social]
 commit: f79d219
 ---
+
 ## Remove Friends Plugin
 
 We removed the Friends/Party plugin stack to prepare for the upcoming native friends feature.

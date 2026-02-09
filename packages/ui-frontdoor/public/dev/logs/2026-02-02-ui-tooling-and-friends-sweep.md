@@ -5,6 +5,7 @@ title: "UI Tooling + Friends Integration Sweep"
 tags: [ui, friends, tooling, audio, docs]
 commit: 16195bd
 ---
+
 ## UI Tooling + Friends Integration Sweep
 
 We filled in the remaining UI and friends-related commits from the Feb 2 batch, covering UI cleanup, logging utilities, and content additions.

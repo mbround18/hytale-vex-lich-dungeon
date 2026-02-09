@@ -5,6 +5,7 @@ title: "UI Dashboard Telemetry Visualization"
 tags: [ui, dashboard, telemetry, visualization]
 commit: 7f61be9
 ---
+
 ## UI Dashboard Telemetry Visualization
 
 Enhanced the web dashboard with real-time dungeon instance statistics, map visualization, and telemetry event tracking.

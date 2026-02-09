@@ -40,6 +40,7 @@ Label {
 ```
 
 ## Common Gotchas
+
 - **Missing semicolons** after properties or assignments are the #1 crash cause.
 - **Standalone spread statements** like `...@Template;` are not supported. Spread is for tuples only.
 - **Template instantiation** should use `$Alias.@Template { ... }` for element bodies.

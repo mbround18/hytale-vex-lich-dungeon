@@ -26,7 +26,10 @@
     <script src="/js/tailwind.config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="/js/header.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
     <!-- add a wepage icon -->
     <link
       rel="icon"
@@ -104,10 +107,21 @@
           </div>
 
           <!-- Desktop Menu -->
-          <div class="hidden md:flex space-x-8 items-center text-sm font-medium">
+          <div
+            class="hidden md:flex space-x-8 items-center text-sm font-medium"
+          >
             <template x-for="link in links" :key="link.id">
-              <div class="relative" @mouseenter="setHover(link.id)" @mouseleave="scheduleHoverClear()">
-                <a :href="link.href" :class="linkClass(link)" :target="linkTarget(link)" :rel="linkRel(link)">
+              <div
+                class="relative"
+                @mouseenter="setHover(link.id)"
+                @mouseleave="scheduleHoverClear()"
+              >
+                <a
+                  :href="link.href"
+                  :class="linkClass(link)"
+                  :target="linkTarget(link)"
+                  :rel="linkRel(link)"
+                >
                   <span x-text="link.label"></span>
                   <span x-show="link.children" class="ml-1 text-xs">▾</span>
                 </a>
@@ -120,7 +134,10 @@
                     @mouseleave="scheduleHoverClear()"
                   >
                     <div class="space-y-2">
-                      <template x-for="child in link.children" :key="child.href">
+                      <template
+                        x-for="child in link.children"
+                        :key="child.href"
+                      >
                         <a
                           :href="child.href"
                           class="block text-sm text-slate-200 hover:text-necro-green transition"

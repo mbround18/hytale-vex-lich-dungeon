@@ -3,8 +3,32 @@
   <channel>
     <title>Vex Dev Logs</title>
     <link>https://vex.boop.ninja/dev/</link>
-    <lastBuildDate>Wed, 4 Feb 2026 00:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Mon, 9 Feb 2026 00:00:00 GMT</lastBuildDate>
     <atom:link href='https://vex.boop.ninja/feed.xml' rel='self' type='application/rss+xml' />
+    <item>
+      <title>Enemy Scoring &amp; HUD Fixes</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-09-scoring-hud-fixes.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-09-scoring-hud-fixes.md</guid>
+      <pubDate>Mon, 9 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>DungeonMaster Plugin &amp; Event System</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-09-dungeonmaster-events.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-09-dungeonmaster-events.md</guid>
+      <pubDate>Mon, 9 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Prefab Edge Analysis &amp; Stitch Indexing</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-09-prefab-edge-analysis.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-09-prefab-edge-analysis.md</guid>
+      <pubDate>Mon, 9 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>UI Dashboard Telemetry Visualization</title>
+      <link>https://vex.boop.ninja/dev/logs/2026-02-09-ui-dashboard-telemetry.md</link>
+      <guid>https://vex.boop.ninja/dev/logs/2026-02-09-ui-dashboard-telemetry.md</guid>
+      <pubDate>Mon, 9 Feb 2026 00:00:00 GMT</pubDate>
+    </item>
     <item>
       <title>Remove Friends Plugin</title>
       <link>https://vex.boop.ninja/dev/logs/2026-02-04-remove-friends-plugin.md</link>

@@ -31,6 +31,7 @@ Property: Value;
 ```
 
 Common property value shapes:
+
 - **Tuple**: `(Left: 10, Top: 6, Width: 120)`
 - **Style tuple**: `Style: (...@DefaultLabelStyle, FontSize: 18);`
 - **Texture tuple**: `Background: (TexturePath: "Common/Panel.png", Border: 12);`
@@ -44,6 +45,7 @@ ElementType #OptionalId {
 ```
 
 Examples:
+
 ```ui
 Group {
   LayoutMode: Left;

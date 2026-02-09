@@ -5,6 +5,7 @@ title: "Prefab Placement Hooks"
 tags: [prefab, hooks, dungeon]
 commit: 0d3916f
 ---
+
 ## Prefab Placement Hooks
 
 We added hook points and tracking to better observe prefab placement and support future spawn logic.

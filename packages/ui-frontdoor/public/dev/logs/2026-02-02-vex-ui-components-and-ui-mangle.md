@@ -5,6 +5,7 @@ title: "Vex UI Components + UI Mangle"
 tags: [ui, hud, tooling, generator]
 commit: 6b7cded
 ---
+
 ## Vex UI Components + UI Mangle
 
 We shipped a larger Vex UI pass and added UI mangle generation to keep Java bindings in sync.

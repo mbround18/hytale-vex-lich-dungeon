@@ -1,343 +1,461 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vex Developer Ecosystem</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://imagedelivery.net/6QPDh2i4MEi-JY_RW1iPZQ/62e09a2c-0be3-4486-ebe6-4185678d9800/public"
+    />
+    <meta
+      name="description"
+      content="Vex Developer Hub for ImmortalEngine, engineering logs, and API references. Track the dungeon platform roadmap, UI docs, and build tools."
+    />
+    <meta property="og:title" content="Vex Developer Ecosystem" />
+    <meta
+      property="og:description"
+      content="Developer hub for ImmortalEngine with engineering logs, UI grimoire, and build tooling for the Vex dungeon platform."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/img/socials.png" />
+    <meta property="og:image:alt" content="Vex Developer Ecosystem" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vex Developer Ecosystem" />
+    <meta
+      name="twitter:description"
+      content="Developer hub for ImmortalEngine with engineering logs, UI grimoire, and build tooling for the Vex dungeon platform."
+    />
+    <meta name="twitter:image" content="/img/socials.png" />
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vex Developer Ecosystem</title>
-  <link
-    rel="icon"
-    type="image/png"
-    href="https://imagedelivery.net/6QPDh2i4MEi-JY_RW1iPZQ/62e09a2c-0be3-4486-ebe6-4185678d9800/public"
-  />
-  <meta
-    name="description"
-    content="Vex Developer Hub for ImmortalEngine, engineering logs, and API references. Track the dungeon platform roadmap, UI docs, and build tools."
-  />
-  <meta property="og:title" content="Vex Developer Ecosystem" />
-  <meta
-    property="og:description"
-    content="Developer hub for ImmortalEngine with engineering logs, UI grimoire, and build tooling for the Vex dungeon platform."
-  />
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="/img/socials.png" />
-  <meta property="og:image:alt" content="Vex Developer Ecosystem" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Vex Developer Ecosystem" />
-  <meta
-    name="twitter:description"
-    content="Developer hub for ImmortalEngine with engineering logs, UI grimoire, and build tooling for the Vex dungeon platform."
-  />
-  <meta name="twitter:image" content="/img/socials.png" />
+    <!-- Tailwind CSS -->
+    <script src="/js/tailwind.config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="/js/header.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
 
-  <!-- Tailwind CSS -->
-  <script src="/js/tailwind.config.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="/js/header.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Showdown for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
 
-  <!-- Showdown for Markdown Rendering -->
-  <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/dev.css" />
+  </head>
 
-  <!-- Fonts -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="/css/base.css" />
-  <link rel="stylesheet" href="/css/dev.css" />
-</head>
-
-<body class="bg-vex-bg text-text-primary antialiased min-h-screen flex flex-col font-sans">
-
-  <!-- Navbar -->
-  <nav
-    class="sticky top-0 z-50 bg-vex-surface/90 backdrop-blur-md border-b border-vex-border"
-    x-data="vexHeader({ variant: 'dev' })"
+  <body
+    class="bg-vex-bg text-text-primary antialiased min-h-screen flex flex-col font-sans"
   >
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <!-- Brand -->
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">💀</span>
-          <div class="flex flex-col">
-            <span class="font-brand font-bold text-lg text-ancient-gold tracking-widest leading-none">Vex</span>
-            <span class="text-[0.6rem] uppercase tracking-[0.2em] text-vex-purple">Developer Hub</span>
+    <!-- Navbar -->
+    <nav
+      class="sticky top-0 z-50 bg-vex-surface/90 backdrop-blur-md border-b border-vex-border"
+      x-data="vexHeader({ variant: 'dev' })"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <!-- Brand -->
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">💀</span>
+            <div class="flex flex-col">
+              <span
+                class="font-brand font-bold text-lg text-ancient-gold tracking-widest leading-none"
+                >Vex</span
+              >
+              <span
+                class="text-[0.6rem] uppercase tracking-[0.2em] text-vex-purple"
+                >Developer Hub</span
+              >
+            </div>
+          </div>
+
+          <!-- Links -->
+          <div
+            class="hidden md:flex items-center space-x-8 text-sm font-medium"
+          >
+            <template x-for="link in links" :key="link.id">
+              <div
+                class="relative"
+                @mouseenter="setHover(link.id)"
+                @mouseleave="scheduleHoverClear()"
+              >
+                <a
+                  :href="link.href"
+                  :class="linkClass(link)"
+                  :target="linkTarget(link)"
+                  :rel="linkRel(link)"
+                >
+                  <span x-text="link.label"></span>
+                  <span
+                    x-show="link.children"
+                    class="ml-1 text-[10px] text-text-secondary"
+                    >▾</span
+                  >
+                </a>
+                <template x-if="link.children">
+                  <div
+                    x-show="hover === link.id"
+                    x-transition.opacity.duration.200ms
+                    :class="dropdownClass()"
+                    @mouseenter="setHover(link.id)"
+                    @mouseleave="scheduleHoverClear()"
+                  >
+                    <div class="space-y-2">
+                      <template
+                        x-for="child in link.children"
+                        :key="child.href"
+                      >
+                        <a
+                          :href="child.href"
+                          class="block text-sm text-text-secondary hover:text-white transition"
+                          x-text="child.label"
+                          :target="linkTarget(child)"
+                          :rel="linkRel(child)"
+                        ></a>
+                      </template>
+                    </div>
+                    <span
+                      class="absolute left-1/2 -translate-x-1/2 -top-2 w-3 h-3 bg-vex-surface/95 border-l border-t border-vex-border rotate-45"
+                    ></span>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+
+          <div class="md:hidden flex items-center">
+            <button
+              class="text-ancient-gold hover:text-white"
+              aria-controls="mobile-nav"
+              :aria-expanded="navOpen.toString()"
+              @click="navOpen = !navOpen"
+            >
+              <svg
+                class="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
           </div>
         </div>
+      </div>
 
-        <!-- Links -->
-        <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+      <div
+        x-cloak
+        x-show="navOpen"
+        class="md:hidden border-t border-vex-border bg-vex-surface/95"
+        id="mobile-nav"
+        @click="navOpen = false"
+      >
+        <div class="px-6 py-5 space-y-4">
           <template x-for="link in links" :key="link.id">
-            <div class="relative" @mouseenter="setHover(link.id)" @mouseleave="scheduleHoverClear()">
-              <a :href="link.href" :class="linkClass(link)" :target="linkTarget(link)" :rel="linkRel(link)">
-                <span x-text="link.label"></span>
-                <span x-show="link.children" class="ml-1 text-[10px] text-text-secondary">▾</span>
-              </a>
+            <div class="space-y-2">
+              <a
+                :href="link.href"
+                :class="mobileLinkClass(link)"
+                x-text="link.label"
+                :target="linkTarget(link)"
+                :rel="linkRel(link)"
+              ></a>
               <template x-if="link.children">
-                <div
-                  x-show="hover === link.id"
-                  x-transition.opacity.duration.200ms
-                  :class="dropdownClass()"
-                  @mouseenter="setHover(link.id)"
-                  @mouseleave="scheduleHoverClear()"
-                >
-                  <div class="space-y-2">
-                    <template x-for="child in link.children" :key="child.href">
-                      <a
-                        :href="child.href"
-                        class="block text-sm text-text-secondary hover:text-white transition"
-                        x-text="child.label"
-                        :target="linkTarget(child)"
-                        :rel="linkRel(child)"
-                      ></a>
-                    </template>
-                  </div>
-                  <span
-                    class="absolute left-1/2 -translate-x-1/2 -top-2 w-3 h-3 bg-vex-surface/95 border-l border-t border-vex-border rotate-45"
-                  ></span>
+                <div class="pl-4 space-y-2">
+                  <template x-for="child in link.children" :key="child.href">
+                    <a
+                      :href="child.href"
+                      class="block text-sm text-text-secondary hover:text-white transition"
+                      x-text="child.label"
+                      :target="linkTarget(child)"
+                      :rel="linkRel(child)"
+                    ></a>
+                  </template>
                 </div>
               </template>
             </div>
           </template>
         </div>
-
-        <div class="md:hidden flex items-center">
-          <button
-            class="text-ancient-gold hover:text-white"
-            aria-controls="mobile-nav"
-            :aria-expanded="navOpen.toString()"
-            @click="navOpen = !navOpen"
-          >
-            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
       </div>
-    </div>
+    </nav>
 
-    <div
-      x-cloak
-      x-show="navOpen"
-      class="md:hidden border-t border-vex-border bg-vex-surface/95"
-      id="mobile-nav"
-      @click="navOpen = false"
+    <!-- Hero Section -->
+    <header
+      class="relative overflow-hidden bg-vex-bg border-b border-vex-border"
     >
-      <div class="px-6 py-5 space-y-4">
-        <template x-for="link in links" :key="link.id">
-          <div class="space-y-2">
-            <a
-              :href="link.href"
-              :class="mobileLinkClass(link)"
-              x-text="link.label"
-              :target="linkTarget(link)"
-              :rel="linkRel(link)"
-            ></a>
-            <template x-if="link.children">
-              <div class="pl-4 space-y-2">
-                <template x-for="child in link.children" :key="child.href">
-                  <a
-                    :href="child.href"
-                    class="block text-sm text-text-secondary hover:text-white transition"
-                    x-text="child.label"
-                    :target="linkTarget(child)"
-                    :rel="linkRel(child)"
-                  ></a>
-                </template>
-              </div>
-            </template>
-          </div>
-        </template>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Hero Section -->
-  <header class="relative overflow-hidden bg-vex-bg border-b border-vex-border">
-    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-10">
-    </div>
-    <div
-      class="absolute top-0 right-0 w-[500px] h-[500px] bg-vex-purple rounded-full blur-[120px] opacity-10 pointer-events-none">
-    </div>
-
-    <div class="max-w-7xl mx-auto px-4 py-20 relative z-10">
-      <div class="max-w-3xl">
-        <div
-          class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-necro-green/10 border border-necro-green/20 text-necro-green text-xs font-mono mb-6">
-          <span class="w-2 h-2 rounded-full bg-necro-green animate-pulse"></span>
-          v0.9.2 Engine Stable
-        </div>
-        <h1 class="text-5xl md:text-6xl font-brand font-bold text-white mb-6 text-glow">
-          Building the <span class="text-ancient-gold">Immortal</span> Layer.
-        </h1>
-        <p class="text-xl text-text-secondary leading-relaxed mb-8">
-          Vex isn't just a mod; it's a platform. Powered by the <strong>ImmortalEngine</strong>, we provide a robust
-          abstraction layer over the Hytale API for building minigames, worlds, dungeons, stories, and new game modes.
-        </p>
-        <div class="flex gap-4">
-          <a href="#logs"
-            class="px-6 py-3 bg-vex-purple hover:bg-[#9061f9] text-black font-semibold rounded-lg transition shadow-[0_0_20px_rgba(167,139,250,0.4)]">
-            Read Dev Logs
-          </a>
-          <a href="/dev/ui/"
-            class="px-6 py-3 bg-vex-surface hover:bg-vex-surface-hover border border-vex-border text-white font-medium rounded-lg transition">
-            View UI Docs
-          </a>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto px-4 py-12 w-full flex-grow">
-
-    <!-- Core Concepts Grid -->
-    <div class="grid md:grid-cols-3 gap-6 mb-16">
-      <!-- Engine Card -->
       <div
-        class="group bg-vex-surface p-6 rounded-xl border border-vex-border hover:border-vex-purple/50 transition-all duration-300 shadow-material">
-        <div
-          class="w-12 h-12 bg-vex-bg rounded-lg flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-          ⚙️</div>
-        <h3 class="text-lg font-bold text-white mb-2">ImmortalEngine</h3>
-        <p class="text-text-secondary text-sm leading-6">
-          The heartbeat of Vex. Manages roguelike game states, dungeon generation, and persistence layers independently
-          of the core client.
-        </p>
-      </div>
-
-      <!-- Friends Card -->
+        class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-10"
+      ></div>
       <div
-        class="group bg-vex-surface p-6 rounded-xl border border-vex-border hover:border-necro-green/50 transition-all duration-300 shadow-material">
-        <div
-          class="w-12 h-12 bg-vex-bg rounded-lg flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-          🤝</div>
-        <h3 class="text-lg font-bold text-white mb-2">Friends System</h3>
-        <p class="text-text-secondary text-sm leading-6">
-          A plugin driving deeper social integration. Handle party invites and friend lists seamlessly.
-        </p>
-      </div>
+        class="absolute top-0 right-0 w-[500px] h-[500px] bg-vex-purple rounded-full blur-[120px] opacity-10 pointer-events-none"
+      ></div>
 
-      <!-- Abstraction Card -->
-      <div
-        class="group bg-vex-surface p-6 rounded-xl border border-vex-border hover:border-ancient-gold/50 transition-all duration-300 shadow-material">
-        <div
-          class="w-12 h-12 bg-vex-bg rounded-lg flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-          🛡️</div>
-        <h3 class="text-lg font-bold text-white mb-2">API Abstraction</h3>
-        <p class="text-text-secondary text-sm leading-6">
-          Write once, survive updates. Our wrappers isolate your logic from breaking Hytale API changes, making
-          refactors trivial.
-        </p>
-      </div>
-    </div>
-
-    <!-- Layout: Dev Logs + Sidebar -->
-    <div class="grid lg:grid-cols-3 gap-12" id="logs">
-
-      <!-- Left Column: Dev Logs -->
-      <div class="lg:col-span-2">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-2xl font-brand font-bold text-white border-l-4 border-vex-purple pl-4">Engineering Logs</h2>
-          <span
-            class="text-xs font-mono text-text-secondary bg-vex-surface px-2 py-1 rounded border border-vex-border">/dev/logs</span>
-        </div>
-        <p class="text-sm text-text-secondary mb-6">
-          Never miss an update—subscribe to the RSS feed at
-          <a href="/feed.xml" class="text-ancient-gold hover:text-white transition font-mono">/feed.xml</a>.
-        </p>
-
-        <div id="log-container" class="space-y-8">
-          <!-- Logs injected via JS -->
-          <div class="animate-pulse flex space-x-4">
-            <div class="flex-1 space-y-4 py-1">
-              <div class="h-4 bg-vex-surface rounded w-3/4"></div>
-              <div class="space-y-2">
-                <div class="h-4 bg-vex-surface rounded"></div>
-                <div class="h-4 bg-vex-surface rounded w-5/6"></div>
-              </div>
-            </div>
+      <div class="max-w-7xl mx-auto px-4 py-20 relative z-10">
+        <div class="max-w-3xl">
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-necro-green/10 border border-necro-green/20 text-necro-green text-xs font-mono mb-6"
+          >
+            <span
+              class="w-2 h-2 rounded-full bg-necro-green animate-pulse"
+            ></span>
+            v0.9.2 Engine Stable
           </div>
-        </div>
-      </div>
-
-      <!-- Right Column: Sidebar -->
-      <div class="space-y-8">
-
-        <!-- Resources Widget -->
-        <div class="bg-vex-surface rounded-xl border border-vex-border p-6 shadow-material">
-          <h3 class="text-sm font-bold text-ancient-gold uppercase tracking-wider mb-4">Developer Resources</h3>
-          <ul class="space-y-3">
-            <li>
-              <a href="/dev/ui/"
-                class="group flex items-center gap-3 p-2 rounded hover:bg-white/5 transition">
-                <span class="bg-vex-bg p-2 rounded text-vex-purple group-hover:scale-110 transition">🎨</span>
-                <div>
-                  <div class="text-sm font-medium text-white">UI Grimoire</div>
-                  <div class="text-xs text-text-secondary">Syntax & Patterns</div>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a href="/dev/hosting/"
-                class="group flex items-center gap-3 p-2 rounded hover:bg-white/5 transition">
-                <span class="bg-vex-bg p-2 rounded text-ancient-gold group-hover:scale-110 transition">☁️</span>
-                <div>
-                  <div class="text-sm font-medium text-white">Vex Hosting</div>
-                  <div class="text-xs text-text-secondary">Server deployment + permission map</div>
-                </div>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="group flex items-center gap-3 p-2 rounded hover:bg-white/5 transition">
-                <span class="bg-vex-bg p-2 rounded text-necro-green group-hover:scale-110 transition">📚</span>
-                <div>
-                  <div class="text-sm font-medium text-white">Engine Docs</div>
-                  <div class="text-xs text-text-secondary">ImmortalEngine API</div>
-                </div>
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Author Profile -->
-        <div class="bg-vex-surface rounded-xl border border-vex-border p-6 shadow-material relative overflow-hidden">
-          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-vex-purple to-necro-green"></div>
-          <div class="flex items-center gap-4 mb-4">
-            <img src="https://github.com/mbround18.png" alt="mbround18"
-              class="w-14 h-14 rounded-full border-2 border-vex-border shadow-lg">
-            <div>
-              <h3 class="font-bold text-white text-lg">Michael</h3>
-              <a href="https://github.com/mbround18" target="_blank"
-                class="text-sm text-vex-purple hover:text-white transition font-mono">@mbround18</a>
-            </div>
-          </div>
-          <p class="text-sm text-text-secondary mb-4 leading-relaxed">
-            Lead Maintainer of Vex & ImmortalEngine. Obsessed with clean abstractions and procedural dungeons.
+          <h1
+            class="text-5xl md:text-6xl font-brand font-bold text-white mb-6 text-glow"
+          >
+            Building the <span class="text-ancient-gold">Immortal</span> Layer.
+          </h1>
+          <p class="text-xl text-text-secondary leading-relaxed mb-8">
+            Vex isn't just a mod; it's a platform. Powered by the
+            <strong>ImmortalEngine</strong>, we provide a robust abstraction
+            layer over the Hytale API for building minigames, worlds, dungeons,
+            stories, and new game modes.
           </p>
-          <div class="flex gap-2">
-            <a href="https://github.com/mbround18"
-              class="flex-1 text-center py-2 text-xs font-bold text-white bg-vex-bg rounded border border-vex-border hover:border-vex-purple transition">
-              Follow on GitHub
+          <div class="flex gap-4">
+            <a
+              href="#logs"
+              class="px-6 py-3 bg-vex-purple hover:bg-[#9061f9] text-black font-semibold rounded-lg transition shadow-[0_0_20px_rgba(167,139,250,0.4)]"
+            >
+              Read Dev Logs
             </a>
-            <a href="https://ko-fi.com/mbround18"
-              class="flex-1 text-center py-2 text-xs font-bold text-white bg-[#FF5E5B] rounded border border-transparent hover:bg-[#d44542] transition">
-              Support
+            <a
+              href="/dev/ui/"
+              class="px-6 py-3 bg-vex-surface hover:bg-vex-surface-hover border border-vex-border text-white font-medium rounded-lg transition"
+            >
+              View UI Docs
             </a>
           </div>
         </div>
-
       </div>
-    </div>
+    </header>
 
-  </main>
+    <main class="max-w-7xl mx-auto px-4 py-12 w-full flex-grow">
+      <!-- Core Concepts Grid -->
+      <div class="grid md:grid-cols-3 gap-6 mb-16">
+        <!-- Engine Card -->
+        <div
+          class="group bg-vex-surface p-6 rounded-xl border border-vex-border hover:border-vex-purple/50 transition-all duration-300 shadow-material"
+        >
+          <div
+            class="w-12 h-12 bg-vex-bg rounded-lg flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform"
+          >
+            ⚙️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">ImmortalEngine</h3>
+          <p class="text-text-secondary text-sm leading-6">
+            The heartbeat of Vex. Manages roguelike game states, dungeon
+            generation, and persistence layers independently of the core client.
+          </p>
+        </div>
 
-  <footer class="border-t border-vex-border bg-vex-bg py-8 mt-12">
-    <div class="max-w-7xl mx-auto px-4 text-center text-text-secondary text-sm">
-      <p>&copy; 2024 Vex Project. Built on the ImmortalEngine.</p>
-    </div>
-  </footer>
+        <!-- Friends Card -->
+        <div
+          class="group bg-vex-surface p-6 rounded-xl border border-vex-border hover:border-necro-green/50 transition-all duration-300 shadow-material"
+        >
+          <div
+            class="w-12 h-12 bg-vex-bg rounded-lg flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform"
+          >
+            🤝
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">Friends System</h3>
+          <p class="text-text-secondary text-sm leading-6">
+            A plugin driving deeper social integration. Handle party invites and
+            friend lists seamlessly.
+          </p>
+        </div>
 
-  <script src="/js/dev.js"></script>
-</body>
+        <!-- Abstraction Card -->
+        <div
+          class="group bg-vex-surface p-6 rounded-xl border border-vex-border hover:border-ancient-gold/50 transition-all duration-300 shadow-material"
+        >
+          <div
+            class="w-12 h-12 bg-vex-bg rounded-lg flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform"
+          >
+            🛡️
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">API Abstraction</h3>
+          <p class="text-text-secondary text-sm leading-6">
+            Write once, survive updates. Our wrappers isolate your logic from
+            breaking Hytale API changes, making refactors trivial.
+          </p>
+        </div>
+      </div>
 
+      <!-- Layout: Dev Logs + Sidebar -->
+      <div class="grid lg:grid-cols-3 gap-12" id="logs">
+        <!-- Left Column: Dev Logs -->
+        <div class="lg:col-span-2">
+          <div class="flex items-center justify-between mb-8">
+            <h2
+              class="text-2xl font-brand font-bold text-white border-l-4 border-vex-purple pl-4"
+            >
+              Engineering Logs
+            </h2>
+            <span
+              class="text-xs font-mono text-text-secondary bg-vex-surface px-2 py-1 rounded border border-vex-border"
+              >/dev/logs</span
+            >
+          </div>
+          <p class="text-sm text-text-secondary mb-6">
+            Never miss an update—subscribe to the RSS feed at
+            <a
+              href="/feed.xml"
+              class="text-ancient-gold hover:text-white transition font-mono"
+              >/feed.xml</a
+            >.
+          </p>
+
+          <div id="log-container" class="space-y-8">
+            <!-- Logs injected via JS -->
+            <div class="animate-pulse flex space-x-4">
+              <div class="flex-1 space-y-4 py-1">
+                <div class="h-4 bg-vex-surface rounded w-3/4"></div>
+                <div class="space-y-2">
+                  <div class="h-4 bg-vex-surface rounded"></div>
+                  <div class="h-4 bg-vex-surface rounded w-5/6"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Sidebar -->
+        <div class="space-y-8">
+          <!-- Resources Widget -->
+          <div
+            class="bg-vex-surface rounded-xl border border-vex-border p-6 shadow-material"
+          >
+            <h3
+              class="text-sm font-bold text-ancient-gold uppercase tracking-wider mb-4"
+            >
+              Developer Resources
+            </h3>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="/dev/ui/"
+                  class="group flex items-center gap-3 p-2 rounded hover:bg-white/5 transition"
+                >
+                  <span
+                    class="bg-vex-bg p-2 rounded text-vex-purple group-hover:scale-110 transition"
+                    >🎨</span
+                  >
+                  <div>
+                    <div class="text-sm font-medium text-white">
+                      UI Grimoire
+                    </div>
+                    <div class="text-xs text-text-secondary">
+                      Syntax & Patterns
+                    </div>
+                  </div>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/dev/hosting/"
+                  class="group flex items-center gap-3 p-2 rounded hover:bg-white/5 transition"
+                >
+                  <span
+                    class="bg-vex-bg p-2 rounded text-ancient-gold group-hover:scale-110 transition"
+                    >☁️</span
+                  >
+                  <div>
+                    <div class="text-sm font-medium text-white">
+                      Vex Hosting
+                    </div>
+                    <div class="text-xs text-text-secondary">
+                      Server deployment + permission map
+                    </div>
+                  </div>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  class="group flex items-center gap-3 p-2 rounded hover:bg-white/5 transition"
+                >
+                  <span
+                    class="bg-vex-bg p-2 rounded text-necro-green group-hover:scale-110 transition"
+                    >📚</span
+                  >
+                  <div>
+                    <div class="text-sm font-medium text-white">
+                      Engine Docs
+                    </div>
+                    <div class="text-xs text-text-secondary">
+                      ImmortalEngine API
+                    </div>
+                  </div>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Author Profile -->
+          <div
+            class="bg-vex-surface rounded-xl border border-vex-border p-6 shadow-material relative overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-vex-purple to-necro-green"
+            ></div>
+            <div class="flex items-center gap-4 mb-4">
+              <img
+                src="https://github.com/mbround18.png"
+                alt="mbround18"
+                class="w-14 h-14 rounded-full border-2 border-vex-border shadow-lg"
+              />
+              <div>
+                <h3 class="font-bold text-white text-lg">Michael</h3>
+                <a
+                  href="https://github.com/mbround18"
+                  target="_blank"
+                  class="text-sm text-vex-purple hover:text-white transition font-mono"
+                  >@mbround18</a
+                >
+              </div>
+            </div>
+            <p class="text-sm text-text-secondary mb-4 leading-relaxed">
+              Lead Maintainer of Vex & ImmortalEngine. Obsessed with clean
+              abstractions and procedural dungeons.
+            </p>
+            <div class="flex gap-2">
+              <a
+                href="https://github.com/mbround18"
+                class="flex-1 text-center py-2 text-xs font-bold text-white bg-vex-bg rounded border border-vex-border hover:border-vex-purple transition"
+              >
+                Follow on GitHub
+              </a>
+              <a
+                href="https://ko-fi.com/mbround18"
+                class="flex-1 text-center py-2 text-xs font-bold text-white bg-[#FF5E5B] rounded border border-transparent hover:bg-[#d44542] transition"
+              >
+                Support
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="border-t border-vex-border bg-vex-bg py-8 mt-12">
+      <div
+        class="max-w-7xl mx-auto px-4 text-center text-text-secondary text-sm"
+      >
+        <p>&copy; 2024 Vex Project. Built on the ImmortalEngine.</p>
+      </div>
+    </footer>
+
+    <script src="/js/dev.js"></script>
+  </body>
 </html>

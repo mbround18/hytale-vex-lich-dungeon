@@ -1,97 +1,9 @@
-@use "tailwindcss";
-@use "../../../ui-shared/src/styles/app.scss" as app;
+// Frontdoor-specific styles
+// Base styles and tokens are imported via AppProvider from ui-shared
 
-@layer base {
-  body {
-    // @apply app.$font-body antialiased;
-    font-family: app.$font-body;
-  }
+@use "ui-shared/styles/tokens" as tokens;
 
-  h1,
-  h2,
-  h3,
-  .font-fantasy {
-    font-family: 'Cinzel', serif;
-  }
-
-  .font-body {
-    font-family: 'MedievalSharp', cursive;
-  }
-}
-
-a:focus-visible,
-button:focus-visible,
-[role='button']:focus-visible {
-  outline: 2px solid #4ade80;
-  outline-offset: 3px;
-}
-
-.skip-link {
-  position: absolute;
-  left: 12px;
-  top: 12px;
-  padding: 8px 12px;
-  background: #14532d;
-  color: #f8fafc;
-  border-radius: 9999px;
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  transform: translateY(-200%);
-  transition: transform 150ms ease;
-  z-index: 60;
-}
-
-.skip-link:focus-visible {
-  transform: translateY(0);
-}
-
-.text-glow {
-  text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #1a1821;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #4c1d95;
-  border-radius: 5px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #8b5cf6;
-}
-
-@keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-15px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
-}
-
-.float-animation {
-  animation: float 4s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .float-animation,
-  .animate-bounce,
-  .animate-pulse {
-    animation: none !important;
-  }
-}
-
+// Markdown rendering styles
 .markdown-body {
   line-height: 1.7;
 
@@ -105,18 +17,17 @@ button:focus-visible,
   h4 {
     margin-top: 2rem;
     margin-bottom: 0.75rem;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4 {
     scroll-margin-top: 120px;
   }
 
   a {
+    color: tokens.$vex-violet;
     text-decoration: underline;
     text-underline-offset: 4px;
+
+    &:hover {
+      color: #a78bfa;
+    }
   }
 
   code {
@@ -132,12 +43,12 @@ button:focus-visible,
     padding: 1rem 1.25rem;
     border-radius: 0.75rem;
     overflow-x: auto;
-  }
 
-  pre code {
-    background: transparent;
-    border: none;
-    padding: 0;
+    code {
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
   }
 
   blockquote {

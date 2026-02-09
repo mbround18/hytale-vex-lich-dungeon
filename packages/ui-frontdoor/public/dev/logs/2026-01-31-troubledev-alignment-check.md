@@ -5,6 +5,7 @@ title: "TroubleDev Alignment Check"
 tags: [alignment, docs, commands, threading, ui]
 commit: uncommitted
 ---
+
 ## Alignment Check: TroubleDev Articles
 
 We reviewed our implementation against the TroubleDev guidance on commands, ECS access, threading, and Custom UI paths.

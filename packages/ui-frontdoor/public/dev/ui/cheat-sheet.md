@@ -1,31 +1,34 @@
 # UI Cheat Sheet
 
 ## Common Elements
-| Element | Notes |
-| --- | --- |
-| `Group` | Primary container for layout |
-| `Label` | Text display |
-| `TextButton` | Button with label |
-| `Button` | Icon or square button |
-| `ProgressBar` | Status/progress display |
-| `TextField` | Input field |
-| `CheckBox` | Toggle input |
-| `DropdownBox` | Dropdown input |
-| `BackgroundImage` | Full-screen or panel images |
+
+| Element           | Notes                        |
+| ----------------- | ---------------------------- |
+| `Group`           | Primary container for layout |
+| `Label`           | Text display                 |
+| `TextButton`      | Button with label            |
+| `Button`          | Icon or square button        |
+| `ProgressBar`     | Status/progress display      |
+| `TextField`       | Input field                  |
+| `CheckBox`        | Toggle input                 |
+| `DropdownBox`     | Dropdown input               |
+| `BackgroundImage` | Full-screen or panel images  |
 
 ## Common Properties
-| Property | Example |
-| --- | --- |
-| `Anchor` | `Anchor: (Top: 10, Left: 10, Width: 200);` |
-| `LayoutMode` | `LayoutMode: Top;` |
+
+| Property     | Example                                                      |
+| ------------ | ------------------------------------------------------------ |
+| `Anchor`     | `Anchor: (Top: 10, Left: 10, Width: 200);`                   |
+| `LayoutMode` | `LayoutMode: Top;`                                           |
 | `Background` | `Background: (TexturePath: "Common/Panel.png", Border: 12);` |
-| `Padding` | `Padding: (Horizontal: 8, Vertical: 6);` |
-| `Style` | `Style: (...@DefaultLabelStyle, FontSize: 18);` |
-| `Text` | `Text: %client.ui.someLabel;` |
-| `FlexWeight` | `FlexWeight: 1;` |
-| `Visible` | `Visible: false;` |
+| `Padding`    | `Padding: (Horizontal: 8, Vertical: 6);`                     |
+| `Style`      | `Style: (...@DefaultLabelStyle, FontSize: 18);`              |
+| `Text`       | `Text: %client.ui.someLabel;`                                |
+| `FlexWeight` | `FlexWeight: 1;`                                             |
+| `Visible`    | `Visible: false;`                                            |
 
 ## Color Forms
+
 - `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
 - Optional alpha suffix: `#000(0.5)`
 
@@ -46,6 +49,7 @@ $C.@Title {
 ```
 
 ## Runtime Commands
+
 - **Set label text via property:** `#FriendsListBody.Text`.
 - **Run UI commands on the world thread** (not scheduler/ForkJoin).
 - **Normalize client paths** by stripping everything through `Custom/`:
@@ -54,12 +58,14 @@ $C.@Title {
   - `Custom/Friends/Pages/FriendsList.ui` -> `Friends/Pages/FriendsList.ui`
 
 ## Do / Avoid
+
 - **Do** merge styles inside tuples: `Style: (...@DefaultLabelStyle, FontSize: 18);`
 - **Avoid** standalone spread statements: `...@Template;`
 - **Do** use `BackgroundImage` for images, not `Image`
 - **Avoid** `Border` on `Group`; use `Background`/`PatchStyle` tuples
 
 ## Demo Commands (This Repo)
+
 - `/demo <page>` open a demo page
 - `/dlist` list demo pages
 - `/dhud <name>` show a HUD

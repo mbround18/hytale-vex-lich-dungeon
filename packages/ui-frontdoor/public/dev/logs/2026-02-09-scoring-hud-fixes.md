@@ -5,6 +5,7 @@ title: "Enemy Scoring & HUD Fixes"
 tags: [bugfix, scoring, hud, threading]
 commit: f011a2e
 ---
+
 ## Enemy Scoring & HUD Fixes
 
 Fixed critical bugs preventing enemy kills from awarding points and updating the score HUD. Resolved entity lifecycle crashes, killer attribution failures, and thread safety issues.
