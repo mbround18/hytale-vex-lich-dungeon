@@ -4,6 +4,14 @@ import MBRound18.hytale.vexlichdungeon.dungeon.CardinalDirection;
 import MBRound18.hytale.vexlichdungeon.dungeon.DungeonTile;
 import MBRound18.hytale.vexlichdungeon.dungeon.GenerationConfig;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
+import MBRound18.hytale.vexlichdungeon.events.WorldEventQueue;
+import MBRound18.hytale.vexlichdungeon.events.EntitySpawnedEvent;
+import MBRound18.hytale.vexlichdungeon.events.RoomCoordinate;
+import MBRound18.hytale.vexlichdungeon.events.ChestSpawnedEvent;
+import MBRound18.hytale.vexlichdungeon.events.LootableEntitySpawnedEvent;
+import MBRound18.hytale.vexlichdungeon.events.EntityReplacedEvent;
+import MBRound18.hytale.vexlichdungeon.events.PrefabEntitySpawnedEvent;
+import MBRound18.ImmortalEngine.api.prefab.PrefabInspector;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -24,11 +32,9 @@ import com.hypixel.hytale.server.npc.NPCPlugin;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.lang.ref.SoftReference;
 import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -37,10 +43,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
  * Service for spawning prefabs into the world.
@@ -61,29 +66,29 @@ public class PrefabSpawner {
   private static final int MAX_PREFAB_CACHE = 64;
 
   private final LoggingHelper log;
-  private final ZipFile zipFile;
   private final PrefabInspector inspector;
   private final GenerationConfig config;
+  private final @Nullable Path unpackedRoot;
   private final Map<String, SoftReference<BlockSelection>> prefabCache;
   private final Map<String, List<PrefabEntityDefinition>> prefabEntityCache = new ConcurrentHashMap<>();
   private final Map<String, String> prefabJsonCache = new ConcurrentHashMap<>();
+  private final Map<String, Path> sanitizedPrefabCache = new ConcurrentHashMap<>();
 
   /**
    * Creates a new prefab spawner.
    * 
-   * @param log     Logger for spawning events
-   * @param zipFile The asset ZIP file containing prefabs
+   * @param log Logger for spawning events
    */
-  public PrefabSpawner(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, @Nonnull GenerationConfig config) {
-    this(log, zipFile, config, null);
+  public PrefabSpawner(@Nonnull LoggingHelper log, @Nonnull GenerationConfig config) {
+    this(log, config, null);
   }
 
-  public PrefabSpawner(@Nonnull LoggingHelper log, @Nonnull ZipFile zipFile, @Nonnull GenerationConfig config,
+  public PrefabSpawner(@Nonnull LoggingHelper log, @Nonnull GenerationConfig config,
       @Nullable Path unpackedRoot) {
     this.log = log;
-    this.zipFile = zipFile;
     this.config = config;
-    this.inspector = new PrefabInspector(log, zipFile, config.getTileSize(), config.getGateGap(), unpackedRoot);
+    this.unpackedRoot = unpackedRoot;
+    this.inspector = new PrefabInspector(log, unpackedRoot);
     this.prefabCache = Collections.synchronizedMap(new LinkedHashMap<>(MAX_PREFAB_CACHE, 0.75f, true) {
       @Override
       protected boolean removeEldestEntry(Map.Entry<String, SoftReference<BlockSelection>> eldest) {
@@ -93,7 +98,7 @@ public class PrefabSpawner {
   }
 
   /**
-   * Loads a prefab from the mod's asset pack ZIP.
+   * Loads a prefab from the server asset store.
    * 
    * @param modRelativePath Path relative to Server/Prefabs/ (e.g.,
    *                        "Rooms/Vex_Room_S_Lava_B")
@@ -102,7 +107,6 @@ public class PrefabSpawner {
   @Nonnull
   public CompletableFuture<BlockSelection> loadPrefab(@Nonnull String modRelativePath) {
     return Objects.requireNonNull(CompletableFuture.supplyAsync(() -> {
-      Path tempFile = null;
       StringBuilder jsonBuilder = new StringBuilder();
       try {
         SoftReference<BlockSelection> cachedRef = prefabCache.get(modRelativePath);
@@ -115,18 +119,13 @@ public class PrefabSpawner {
 
         log.info("Loading prefab: [%s]", modRelativePath);
 
-        // Load prefab JSON from ZIP file
-        // Path within ZIP: Server/Prefabs/Rooms/Vex_Room_S_Lava_B.prefab.json
-        String zipEntryPath = "Server/Prefabs/" + modRelativePath + ".prefab.json";
-        ZipEntry entry = zipFile.getEntry(zipEntryPath);
-
-        if (entry == null) {
-          throw new PrefabLoadException("Prefab file not found in ZIP at: " + zipEntryPath);
+        String prefabEntryPath = "Server/Prefabs/" + modRelativePath + ".prefab.json";
+        Path prefabPath = resolveAssetPrefab(prefabEntryPath, modRelativePath);
+        if (prefabPath == null || !Files.exists(prefabPath)) {
+          throw new PrefabLoadException("Prefab file not found in assets at: " + prefabEntryPath);
         }
 
-        // Extract ZIP entry into memory
-        try (BufferedReader reader = new BufferedReader(
-            new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = Files.newBufferedReader(prefabPath, StandardCharsets.UTF_8)) {
           String line;
           while ((line = reader.readLine()) != null) {
             jsonBuilder.append(line).append('\n');
@@ -135,21 +134,28 @@ public class PrefabSpawner {
 
         String jsonContent = Objects.requireNonNull(jsonBuilder.toString(), "jsonContent");
         JsonObject root = Objects.requireNonNull(JsonParser.parseString(jsonContent).getAsJsonObject(), "root");
+
+        // Extract entities first so they're removed from the JSON
         List<PrefabEntityDefinition> entities = extractPrefabEntities(root, modRelativePath);
         prefabEntityCache.put(modRelativePath, entities);
-        prefabJsonCache.put(modRelativePath, jsonContent);
+        log.fine("[CACHE] Cached %d entities for prefab %s", entities.size(), modRelativePath);
 
-        // Create a temporary file to store the sanitized JSON
-        tempFile = Files.createTempFile("prefab_", ".json");
-        try (BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(Files.newOutputStream(tempFile), StandardCharsets.UTF_8))) {
-          writer.write(root.toString());
+        // Now sanitize items from the entity-extracted root
+        int sanitizedItems = sanitizeItemContainers(root);
+
+        // Write sanitized JSON (with entities removed and items sanitized) if needed
+        Path resolvedPrefabPath = prefabPath;
+        if (entities.size() > 0 || sanitizedItems > 0) {
+          resolvedPrefabPath = writeSanitizedPrefab(modRelativePath, prefabPath, root,
+              entities.size() + sanitizedItems);
+          log.fine("[SANITIZE] Wrote entity-extracted prefab to %s (removed %d entities, %d item stacks)",
+              resolvedPrefabPath.getFileName(), entities.size(), sanitizedItems);
         }
 
-        log.info("Extracted prefab JSON to temporary file: %s", tempFile);
+        prefabJsonCache.put(modRelativePath, jsonContent);
 
         // Use PrefabStore to deserialize the BlockSelection from the JSON file
-        BlockSelection prefab = PrefabStore.get().getPrefab(Objects.requireNonNull(tempFile, "tempFile"));
+        BlockSelection prefab = PrefabStore.get().getPrefab(Objects.requireNonNull(resolvedPrefabPath, "prefabPath"));
 
         hydrateFluidsFromJson(prefab, jsonContent,
             modRelativePath);
@@ -169,51 +175,97 @@ public class PrefabSpawner {
         log.error("Failed to load prefab %s: %s", modRelativePath, e.getMessage());
         throw new RuntimeException("Failed to load prefab: " + modRelativePath, e);
       } finally {
-        // Clean up temporary file
-        if (tempFile != null) {
-          try {
-            Files.deleteIfExists(tempFile);
-          } catch (Exception e) {
-            log.warn("Failed to delete temporary prefab file: %s", e.getMessage());
-          }
-        }
       }
     }), "prefabFuture");
+  }
+
+  @Nullable
+  private Path resolveAssetPrefab(@Nonnull String entryPath, @Nonnull String modRelativePath) {
+    try {
+      String trimmed = entryPath.startsWith("Server/Prefabs/")
+          ? entryPath.substring("Server/Prefabs/".length())
+          : entryPath;
+      java.util.List<Path> roots = new java.util.ArrayList<>();
+      PrefabStore store = PrefabStore.get();
+      Path baseRoot = store.getAssetPrefabsPath();
+      if (baseRoot != null) {
+        roots.add(baseRoot);
+      }
+      for (PrefabStore.AssetPackPrefabPath packPath : store.getAllAssetPrefabPaths()) {
+        if (packPath == null) {
+          continue;
+        }
+        Path prefabsPath = packPath.prefabsPath();
+        if (prefabsPath != null) {
+          roots.add(prefabsPath);
+        }
+      }
+      for (Path root : roots) {
+        if (root == null) {
+          continue;
+        }
+        Path candidate = root.resolve(trimmed);
+        if (Files.exists(candidate)) {
+          return candidate;
+        }
+      }
+    } catch (Exception e) {
+      log.fine("PrefabStore lookup failed for %s: %s", modRelativePath, e.getMessage());
+    }
+    Path root = unpackedRoot;
+    if (root == null) {
+      return null;
+    }
+    String trimmed = entryPath.startsWith("Server/") ? entryPath.substring("Server/".length()) : entryPath;
+    return root.resolve(trimmed);
   }
 
   private List<PrefabEntityDefinition> extractPrefabEntities(@Nonnull JsonObject root, @Nonnull String prefabPath) {
     try {
       JsonArray entities = root.getAsJsonArray("entities");
-      if (entities == null || entities.isEmpty()) {
+      if (entities == null) {
+        log.fine("[EXTRACT] Prefab %s has no entities array", prefabPath);
         return List.of();
       }
+      if (entities.isEmpty()) {
+        log.fine("[EXTRACT] Prefab %s entities array is empty", prefabPath);
+        return List.of();
+      }
+
       List<PrefabEntityDefinition> definitions = new ArrayList<>();
       JsonArray keptEntities = new JsonArray();
+      int extracted = 0;
+      int kept = 0;
 
       for (JsonElement element : entities) {
         if (!element.isJsonObject()) {
           keptEntities.add(element);
+          kept++;
           continue;
         }
         JsonObject entity = element.getAsJsonObject();
         JsonObject components = entity.getAsJsonObject("Components");
         if (components == null) {
           keptEntities.add(entity);
+          kept++;
           continue;
         }
         if (components.has("BlockEntity")) {
           keptEntities.add(entity);
+          kept++;
           continue;
         }
 
         JsonObject modelWrapper = components.getAsJsonObject("Model");
         if (modelWrapper == null) {
           keptEntities.add(entity);
+          kept++;
           continue;
         }
         JsonObject model = modelWrapper.getAsJsonObject("Model");
         if (model == null || !model.has("Id")) {
           keptEntities.add(entity);
+          kept++;
           continue;
         }
         String modelId = Objects.requireNonNull(model.get("Id").getAsString(), "modelId");
@@ -221,12 +273,14 @@ public class PrefabSpawner {
         JsonObject transform = components.getAsJsonObject("Transform");
         if (transform == null) {
           keptEntities.add(entity);
+          kept++;
           continue;
         }
         JsonObject position = transform.getAsJsonObject("Position");
         JsonObject rotation = transform.getAsJsonObject("Rotation");
         if (position == null || rotation == null) {
           keptEntities.add(entity);
+          kept++;
           continue;
         }
 
@@ -240,6 +294,7 @@ public class PrefabSpawner {
             (float) rotation.get("Roll").getAsDouble());
 
         definitions.add(new PrefabEntityDefinition(modelId, pos, rot));
+        extracted++;
       }
 
       if (keptEntities.size() > 0) {
@@ -248,8 +303,10 @@ public class PrefabSpawner {
         root.remove("entities");
       }
 
+      log.info("[EXTRACT] Prefab %s: %d frozen entities removed, %d other entities kept", prefabPath, extracted, kept);
       if (!definitions.isEmpty()) {
-        log.info("Extracted %d prefab entities from %s", definitions.size(), prefabPath);
+        log.info("[EXTRACT] Extracted enemy entities: %s",
+            definitions.stream().map(PrefabEntityDefinition::getModelId).toList());
       }
       return definitions;
     } catch (Exception e) {
@@ -372,6 +429,99 @@ public class PrefabSpawner {
     };
   }
 
+  private int sanitizeItemContainers(@Nonnull JsonObject root) {
+    return sanitizeItemContainers((JsonElement) root);
+  }
+
+  private int sanitizeItemContainers(@Nonnull JsonElement element) {
+    if (element.isJsonObject()) {
+      JsonObject obj = element.getAsJsonObject();
+      int updated = 0;
+      if (obj.has("ItemContainer") && obj.get("ItemContainer").isJsonObject()) {
+        JsonObject container = obj.getAsJsonObject("ItemContainer");
+        if (container != null) {
+          updated += sanitizeItemContainer(container);
+        }
+      }
+      for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+        JsonElement value = entry.getValue();
+        if (value != null) {
+          updated += sanitizeItemContainers(value);
+        }
+      }
+      return updated;
+    }
+    if (element.isJsonArray()) {
+      int updated = 0;
+      JsonArray array = element.getAsJsonArray();
+      for (JsonElement child : array) {
+        if (child != null) {
+          updated += sanitizeItemContainers(child);
+        }
+      }
+      return updated;
+    }
+    return 0;
+  }
+
+  private int sanitizeItemContainer(@Nonnull JsonObject container) {
+    JsonObject items = container.getAsJsonObject("Items");
+    if (items == null) {
+      return 0;
+    }
+    int updated = 0;
+    for (Map.Entry<String, JsonElement> entry : items.entrySet()) {
+      if (!entry.getValue().isJsonObject()) {
+        continue;
+      }
+      JsonObject item = entry.getValue().getAsJsonObject();
+      if (!item.has("MaxDurability") || !item.get("MaxDurability").isJsonPrimitive()) {
+        continue;
+      }
+      double max = item.get("MaxDurability").getAsDouble();
+      if (max <= 0.0) {
+        item.addProperty("MaxDurability", 1.0);
+        max = 1.0;
+        updated++;
+      }
+      if (item.has("Durability") && item.get("Durability").isJsonPrimitive()) {
+        double durability = item.get("Durability").getAsDouble();
+        double clamped = Math.min(Math.max(0.0, durability), max);
+        if (clamped != durability) {
+          item.addProperty("Durability", clamped);
+          updated++;
+        }
+      }
+    }
+    return updated;
+  }
+
+  private Path writeSanitizedPrefab(
+      @Nonnull String modRelativePath,
+      @Nonnull Path originalPath,
+      @Nonnull JsonObject root,
+      int sanitizedItems) {
+    try {
+      Path cached = sanitizedPrefabCache.get(modRelativePath);
+      if (cached != null && Files.exists(cached)) {
+        return cached;
+      }
+      Path sanitizedRoot = Path.of("build", "prefab-sanitized");
+      Path sanitizedPath = sanitizedRoot.resolve(modRelativePath + ".prefab.json");
+      Path parent = sanitizedPath.getParent();
+      if (parent != null) {
+        Files.createDirectories(parent);
+      }
+      Files.writeString(sanitizedPath, root.toString(), StandardCharsets.UTF_8);
+      sanitizedPrefabCache.put(modRelativePath, sanitizedPath);
+      log.warn("[PREFAB] Sanitized %d item(s) with zero MaxDurability in %s", sanitizedItems, modRelativePath);
+      return sanitizedPath;
+    } catch (IOException e) {
+      log.warn("[PREFAB] Failed to write sanitized prefab for %s: %s", modRelativePath, e.getMessage());
+      return originalPath;
+    }
+  }
+
   /**
    * Spawns a dungeon tile into the world.
    * This includes the main tile prefab only (gates are off by default).
@@ -467,7 +617,8 @@ public class PrefabSpawner {
       for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
         hook.afterPlace(placeContext);
       }
-      spawnPrefabEntities(world, tile.getPrefabPath(), tileOrigin, tile.getRotation());
+      spawnPrefabEntities(world, tile.getPrefabPath(), tileOrigin, tile.getRotation(),
+          new RoomCoordinate(tile.getGridX(), tile.getGridZ()));
 
       if (spawnGates) {
         // Spawn gates: blocked gates always; interior gates only once per edge
@@ -522,7 +673,7 @@ public class PrefabSpawner {
       PrefabInspector.PrefabDimensions gateDims = inspector.getPrefabDimensions(gatePath);
 
       // Calculate optimal placement based on gate dimensions
-      int[] placement = inspector.calculateGatePlacement(direction, gateDims);
+      int[] placement = calculateGatePlacement(direction, gateDims);
       int rotationDegrees = placement[0];
       int offsetX = placement[1];
       int offsetZ = placement[2];
@@ -572,7 +723,7 @@ public class PrefabSpawner {
       for (PrefabHook hook : PrefabHookRegistry.getHooks()) {
         hook.afterPlace(gateContext);
       }
-      spawnPrefabEntities(world, gatePath, gateOrigin, rotationDegrees);
+      spawnPrefabEntities(world, gatePath, gateOrigin, rotationDegrees, null);
 
       log.info("Successfully spawned gate at (%d, %d, %d) facing %s with %d degree rotation (dims: %s)",
           gateX, gateY, gateZ, direction, rotationDegrees, gateDims);
@@ -587,6 +738,62 @@ public class PrefabSpawner {
     return minY >= config.getWorldMinY() && maxY <= config.getWorldMaxY();
   }
 
+  @Nonnull
+  private int[] calculateGatePlacement(@Nonnull CardinalDirection direction,
+      @Nonnull PrefabInspector.PrefabDimensions dims) {
+    int rotationDegrees = 0;
+    int offsetX = 0;
+    int offsetZ = 0;
+    final int halfTile = config.getTileSize() / 2;
+    final int edgeOffset = halfTile + config.getGateGap();
+
+    boolean doorWiderInX = dims.isWiderInX();
+
+    switch (direction) {
+      case EAST -> {
+        if (doorWiderInX) {
+          rotationDegrees = 90;
+        } else {
+          rotationDegrees = 0;
+        }
+        offsetX = edgeOffset;
+        offsetZ = 0;
+      }
+      case WEST -> {
+        if (doorWiderInX) {
+          rotationDegrees = 270;
+        } else {
+          rotationDegrees = 180;
+        }
+        offsetX = -edgeOffset;
+        offsetZ = 0;
+      }
+      case SOUTH -> {
+        if (doorWiderInX) {
+          rotationDegrees = 0;
+        } else {
+          rotationDegrees = 90;
+        }
+        offsetX = 0;
+        offsetZ = edgeOffset;
+      }
+      case NORTH -> {
+        if (doorWiderInX) {
+          rotationDegrees = 180;
+        } else {
+          rotationDegrees = 270;
+        }
+        offsetX = 0;
+        offsetZ = -edgeOffset;
+      }
+    }
+
+    log.info("Gate placement for %s: rotation=%d°, offset=(%d,%d), doorWiderInX=%s",
+        direction, rotationDegrees, offsetX, offsetZ, doorWiderInX);
+
+    return new int[] { rotationDegrees, offsetX, offsetZ };
+  }
+
   public void clearCaches() {
     prefabCache.clear();
     inspector.clearCache();
@@ -595,6 +802,34 @@ public class PrefabSpawner {
   @Nonnull
   public PrefabInspector.PrefabDimensions getPrefabDimensions(@Nonnull String prefabPath) {
     return inspector.getPrefabDimensions(prefabPath);
+  }
+
+  @Nullable
+  public String getPrefabJson(@Nonnull String prefabPath) {
+    String cached = prefabJsonCache.get(prefabPath);
+    if (cached != null) {
+      return cached;
+    }
+    String prefabEntryPath = "Server/Prefabs/" + prefabPath + ".prefab.json";
+    Path prefabPathResolved = resolveAssetPrefab(prefabEntryPath, prefabPath);
+    if (prefabPathResolved == null || !Files.exists(prefabPathResolved)) {
+      return null;
+    }
+    StringBuilder jsonBuilder = new StringBuilder();
+    try (BufferedReader reader = Files.newBufferedReader(prefabPathResolved, StandardCharsets.UTF_8)) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        jsonBuilder.append(line).append('\n');
+      }
+    } catch (IOException e) {
+      log.warn("Failed to read prefab JSON for %s: %s", prefabPath, e.getMessage());
+      return null;
+    }
+    String json = jsonBuilder.toString();
+    if (!json.isBlank()) {
+      prefabJsonCache.put(prefabPath, json);
+    }
+    return json;
   }
 
   private void unfreezeSpawnedEntity(@Nonnull World world, @Nullable Ref<EntityStore> entityRef) {
@@ -613,13 +848,20 @@ public class PrefabSpawner {
   }
 
   private void spawnPrefabEntities(@Nonnull World world, @Nonnull String prefabPath, @Nonnull Vector3i origin,
-      int rotationDegrees) {
+      int rotationDegrees, @Nullable RoomCoordinate room) {
     List<PrefabEntityDefinition> entities = prefabEntityCache.get(prefabPath);
-    if (entities == null || entities.isEmpty()) {
+    if (entities == null) {
+      log.fine("No prefab entities cached for %s", prefabPath);
       return;
     }
+    if (entities.isEmpty()) {
+      log.fine("Prefab %s has no entities to spawn", prefabPath);
+      return;
+    }
+    log.info("[PREFAB-ENTITIES] Spawning %d entities from %s at %s", entities.size(), prefabPath, origin);
     NPCPlugin npcPlugin = NPCPlugin.get();
     if (npcPlugin == null) {
+      log.warn("[PREFAB-ENTITIES] NPCPlugin not available - cannot spawn entities");
       return;
     }
     for (PrefabEntityDefinition def : entities) {
@@ -628,18 +870,94 @@ public class PrefabSpawner {
       }
       String modelId = def.getModelId();
       if (!npcPlugin.hasRoleName(modelId)) {
-        log.warn("Skipping prefab NPC %s (no role registered)", modelId);
+        log.warn("[PREFAB-ENTITIES] Skipping NPC %s (no role registered)", modelId);
         continue;
       }
       Vector3d rotated = rotatePosition(def.getPosition(), rotationDegrees);
       Vector3d worldPos = new Vector3d(origin.x + rotated.x, origin.y + rotated.y, origin.z + rotated.z);
       Vector3f rotation = rotateRotation(def.getRotation(), rotationDegrees);
-      npcPlugin.spawnNPC(
+      log.info("[PREFAB-ENTITIES] Spawning %s at (%.1f, %.1f, %.1f)", modelId, worldPos.x, worldPos.y, worldPos.z);
+      maybeEmitChestSpawned(world, prefabPath, modelId, worldPos);
+      Object spawnResult = npcPlugin.spawnNPC(
           Objects.requireNonNull(world.getEntityStore().getStore(), "store"),
           modelId,
           modelId,
           worldPos,
           Objects.requireNonNull(rotation, "rotation"));
+
+      // spawnNPC returns a Pair<EntityStoreRef, INonPlayerCharacter>
+      if (spawnResult != null) {
+        log.info("[PREFAB-ENTITIES] Successfully spawned %s", modelId);
+        WorldEventQueue.get().dispatch(world,
+            new PrefabEntitySpawnedEvent(world, modelId, worldPos, prefabPath));
+
+        // Extract the NPC from the pair
+        Object npc = null;
+        try {
+          // Try to get the right() value from the Pair
+          if (spawnResult.getClass().getSimpleName().contains("Pair")) {
+            java.lang.reflect.Method rightMethod = spawnResult.getClass().getMethod("right");
+            npc = rightMethod.invoke(spawnResult);
+          }
+        } catch (Exception e) {
+          log.warn("[PREFAB-ENTITIES] Failed to extract NPC from spawn result: %s", e.getMessage());
+        }
+
+        if (room != null && npc != null) {
+          UUID uuid = null;
+          // Try to extract UUID using reflection to avoid deprecation warning
+          try {
+            java.lang.reflect.Method getUuidMethod = npc.getClass().getMethod("getUuid");
+            Object uuidObj = getUuidMethod.invoke(npc);
+            if (uuidObj instanceof UUID) {
+              uuid = (UUID) uuidObj;
+            }
+          } catch (Exception e) {
+            log.warn("[PREFAB-ENTITIES] Failed to get UUID via reflection: %s", e.getMessage());
+          }
+
+          if (uuid != null) {
+            // Assign default points based on entity type (prefab entities don't have spawn
+            // pool entries)
+            int defaultPoints = getDefaultPointsForEntity(modelId);
+            log.info("[PREFAB-ENTITIES] Dispatching EntitySpawnedEvent for %s (%s) in room (%d, %d) with %d points",
+                modelId, uuid, room.getX(), room.getZ(), defaultPoints);
+            WorldEventQueue.get().dispatch(world,
+                new EntitySpawnedEvent(world, uuid, room, modelId, defaultPoints, worldPos));
+          } else {
+            log.warn("[PREFAB-ENTITIES] Spawned %s but could not extract UUID", modelId);
+          }
+        } else {
+          if (room == null) {
+            log.fine("[PREFAB-ENTITIES] Spawned %s but room is null - no EntitySpawnedEvent", modelId);
+          } else {
+            log.warn("[PREFAB-ENTITIES] Spawned %s but could not extract NPC from spawn result", modelId);
+          }
+        }
+      } else {
+        log.warn("[PREFAB-ENTITIES] Failed to spawn %s at (%.1f, %.1f, %.1f)", modelId, worldPos.x, worldPos.y,
+            worldPos.z);
+      }
+    }
+  }
+
+  private void maybeEmitChestSpawned(@Nonnull World world, @Nonnull String prefabPath, @Nonnull String modelId,
+      @Nonnull Vector3d worldPos) {
+    String lower = modelId.toLowerCase();
+    if (!lower.contains("furniture_")) {
+      return;
+    }
+    // Emit LootableEntitySpawned only for chests
+    if (lower.contains("chest")) {
+      WorldEventQueue.get().dispatch(world,
+          new LootableEntitySpawnedEvent(world, worldPos, modelId, prefabPath));
+      // Also emit legacy ChestSpawned for backward compatibility
+      WorldEventQueue.get().dispatch(world,
+          new ChestSpawnedEvent(world, worldPos, modelId, prefabPath));
+    } else {
+      // Emit EntityReplaced for other furniture (torches, doors, etc.)
+      WorldEventQueue.get().dispatch(world,
+          new EntityReplacedEvent(world, worldPos, modelId, prefabPath));
     }
   }
 
@@ -713,6 +1031,30 @@ public class PrefabSpawner {
       case SOUTH -> tileSize; // Back edge (at 19, the 1-block gap)
       case EAST, WEST -> tileSize / 2; // Center for E/W walls
     };
+  }
+
+  /**
+   * Get default points for entity type spawned from prefabs.
+   * TODO: Look up actual points from spawn pool configuration
+   */
+  private int getDefaultPointsForEntity(String entityType) {
+    if (entityType == null) {
+      return 5; // Unknown entity
+    }
+    // Default point values for common enemy types
+    if (entityType.contains("Archer")) {
+      return 8;
+    } else if (entityType.contains("Alchemist")) {
+      return 10;
+    } else if (entityType.contains("Skeleton")) {
+      return 7;
+    } else if (entityType.contains("Ghoul")) {
+      return 12;
+    } else if (entityType.contains("Bunny")) {
+      return 3;
+    } else {
+      return 5; // Default for unrecognized types
+    }
   }
 
   /**
