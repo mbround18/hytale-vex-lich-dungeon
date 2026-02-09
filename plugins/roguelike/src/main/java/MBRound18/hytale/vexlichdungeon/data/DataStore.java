@@ -11,6 +11,8 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.annotation.Nonnull;
 
 /**
@@ -18,6 +20,12 @@ import javax.annotation.Nonnull;
  * Uses JSON files in a dedicated plugin directory.
  */
 public class DataStore {
+
+  private static final ExecutorService IO_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+    Thread t = new Thread(r, "vex-datastore-io");
+    t.setDaemon(true);
+    return t;
+  });
 
   private final LoggingHelper log;
   private final Path dataDirectory;
@@ -27,6 +35,7 @@ public class DataStore {
   private SpawnPool spawnPool;
   private final Map<String, DungeonInstanceData> instances;
   private final Map<UUID, PortalPlacementRecord> portalPlacements;
+  private final Map<String, ArchiveRecord> archives;
 
   public DataStore(@Nonnull LoggingHelper log, @Nonnull Path dataDirectory) {
     this.log = log;
@@ -34,6 +43,7 @@ public class DataStore {
     this.gson = new GsonBuilder().setPrettyPrinting().create();
     this.instances = new ConcurrentHashMap<>();
     this.portalPlacements = new ConcurrentHashMap<>();
+    this.archives = new ConcurrentHashMap<>();
   }
 
   /**
@@ -62,8 +72,11 @@ public class DataStore {
       // Load portal placements
       loadPortalPlacements();
 
-      log.info("Data store initialized with %d tracked instances and %d portal placements",
-          instances.size(), portalPlacements.size());
+      // Load archives
+      loadArchives();
+
+      log.info("Data store initialized with %d tracked instances, %d portal placements, %d archives",
+          instances.size(), portalPlacements.size(), archives.size());
 
     } catch (IOException e) {
       log.error("Failed to initialize data store: %s", e.getMessage());
@@ -98,6 +111,10 @@ public class DataStore {
   }
 
   public void savePortalPlacements() {
+    IO_EXECUTOR.execute(this::savePortalPlacementsSync);
+  }
+
+  private void savePortalPlacementsSync() {
     try {
       Path portalsPath = dataDirectory.resolve("portals.db");
       try (OutputStream outputStream = Files.newOutputStream(portalsPath);
@@ -117,6 +134,71 @@ public class DataStore {
     }
     portalPlacements.put(portalId, record);
     savePortalPlacements();
+  }
+
+  private void loadArchives() throws IOException {
+    Path archivesPath = dataDirectory.resolve("archives.db");
+    if (!Files.exists(archivesPath)) {
+      return;
+    }
+    try (InputStream inputStream = Files.newInputStream(archivesPath);
+        ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)) {
+      Object loaded = objectInputStream.readObject();
+      if (loaded instanceof Collection) {
+        for (Object value : (Collection<?>) loaded) {
+          if (value instanceof ArchiveRecord) {
+            ArchiveRecord record = (ArchiveRecord) value;
+            if (record.getId() != null) {
+              archives.put(record.getId(), record);
+            }
+          }
+        }
+      }
+      log.info("Loaded %d archives from %s", archives.size(), archivesPath);
+    } catch (ClassNotFoundException e) {
+      throw new IOException("Failed to deserialize archives", e);
+    }
+  }
+
+  public synchronized void saveArchives() {
+    IO_EXECUTOR.execute(this::saveArchivesSync);
+  }
+
+  private synchronized void saveArchivesSync() {
+    try {
+      Path archivesPath = dataDirectory.resolve("archives.db");
+      try (OutputStream outputStream = Files.newOutputStream(archivesPath);
+          ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream)) {
+        objectOutputStream.writeObject(new ArrayList<>(archives.values()));
+      }
+      log.info("Saved %d archives to %s", archives.size(), archivesPath);
+    } catch (IOException e) {
+      log.error("Failed to save archives: %s", e.getMessage());
+    }
+  }
+
+  public synchronized List<ArchiveRecord> getArchives() {
+    return new ArrayList<>(archives.values());
+  }
+
+  public synchronized ArchiveRecord getArchive(@Nonnull String id) {
+    return archives.get(id);
+  }
+
+  public synchronized void putArchive(@Nonnull ArchiveRecord record) {
+    archives.put(record.getId(), record);
+    saveArchives();
+  }
+
+  public synchronized void removeArchive(@Nonnull String id) {
+    if (archives.remove(id) != null) {
+      saveArchives();
+    }
+  }
+
+  public synchronized void clearArchives() {
+    archives.clear();
+    saveArchives();
   }
 
   public void removePortalPlacement(@Nonnull UUID portalId) {
@@ -237,6 +319,10 @@ public class DataStore {
    * Saves current configuration to config.json.
    */
   public void saveConfig() {
+    IO_EXECUTOR.execute(this::saveConfigSync);
+  }
+
+  private void saveConfigSync() {
     try {
       Path configPath = dataDirectory.resolve("config.json");
       try (Writer writer = Files.newBufferedWriter(configPath)) {
@@ -252,6 +338,10 @@ public class DataStore {
    * Saves spawn pool configuration to spawn_pool.json.
    */
   public void saveSpawnPool() {
+    IO_EXECUTOR.execute(this::saveSpawnPoolSync);
+  }
+
+  private void saveSpawnPoolSync() {
     try {
       Path spawnPoolPath = dataDirectory.resolve("spawn_pool.json");
       try (Writer writer = Files.newBufferedWriter(spawnPoolPath)) {
@@ -286,6 +376,10 @@ public class DataStore {
    * Saves all dungeon instance data to dungeons.json.
    */
   public void saveInstances() {
+    IO_EXECUTOR.execute(this::saveInstancesSync);
+  }
+
+  private void saveInstancesSync() {
     try {
       Path instancesPath = dataDirectory.resolve("dungeons.json");
       try (Writer writer = Files.newBufferedWriter(instancesPath)) {
@@ -336,10 +430,12 @@ public class DataStore {
   @SuppressWarnings("null")
   public DungeonInstanceData getOrCreateInstance(@Nonnull String worldName) {
     return instances.computeIfAbsent(worldName, name -> {
-      DungeonInstanceData data = DungeonInstanceData.create(
-          Objects.requireNonNull(name, "worldName"), System.currentTimeMillis(), 0);
-      data.setGenerated(true);
-      data.setGeneratedTimestamp(System.currentTimeMillis());
+      DungeonInstanceData data = new DungeonInstanceData();
+      data.setWorldName(Objects.requireNonNull(name, "worldName"));
+      data.setGenerated(false);
+      data.setGeneratedTimestamp(0L);
+      data.setSeed(0L);
+      data.setTileCount(0);
       return Objects.requireNonNull(data, "instance");
     });
   }

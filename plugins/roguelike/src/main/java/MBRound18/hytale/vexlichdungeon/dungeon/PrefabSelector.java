@@ -121,6 +121,14 @@ public class PrefabSelector {
     return random.nextInt(4) * 90; // 0, 90, 180, or 270
   }
 
+  @Nullable
+  public <T> T selectRandom(@Nonnull List<T> items) {
+    if (items == null || items.isEmpty()) {
+      return null;
+    }
+    return items.get(random.nextInt(items.size()));
+  }
+
   /**
    * Generates a random cardinal direction.
    * 

@@ -10,9 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public final class PortalSnapshotUtil {
   private static final LoggingHelper LOG = new LoggingHelper("PortalSnapshotUtil");
+  private static final int PORTAL_MARKER_OFFSET_X = 0;
+  private static final int PORTAL_MARKER_OFFSET_Y = 1;
+  private static final int PORTAL_MARKER_OFFSET_Z = 0;
 
   private PortalSnapshotUtil() {
   }
@@ -24,6 +28,7 @@ public final class PortalSnapshotUtil {
     int[] snapshotBlocks = record.getSnapshotBlocks();
     clearBounds(world, record.getMinX(), record.getMaxX(), record.getMinY(), record.getMaxY(),
         record.getMinZ(), record.getMaxZ());
+    clearPortalMapMarker(world, record, snapshotBlocks, sizeX, sizeY, sizeZ);
     if (snapshotBlocks == null || snapshotBlocks.length == 0 || sizeX <= 0 || sizeY <= 0 || sizeZ <= 0) {
       LOG.warn("[PORTAL] Missing snapshot for portal %s in world %s; clearing bounds only",
           record.getPortalId(), record.getWorldName());
@@ -67,6 +72,8 @@ public final class PortalSnapshotUtil {
     } catch (Exception e) {
       LOG.warn("[PORTAL] Failed to place restore selection: %s", e.getMessage());
     }
+
+    clearPortalMapMarker(world, record, snapshotBlocks, sizeX, sizeY, sizeZ);
   }
 
   public static void clearBounds(@Nonnull World world, int minX, int maxX, int minY, int maxY,
@@ -182,6 +189,57 @@ public final class PortalSnapshotUtil {
 
   private static int index(int x, int y, int z, int sizeX, int sizeY, int sizeZ) {
     return (x * sizeZ * sizeY) + (z * sizeY) + y;
+  }
+
+  private static void clearPortalMapMarker(@Nonnull World world, @Nonnull PortalPlacementRecord record,
+      @Nullable int[] snapshotBlocks, int sizeX, int sizeY, int sizeZ) {
+    int markerX = record.getX() + PORTAL_MARKER_OFFSET_X;
+    int markerY = record.getY() + PORTAL_MARKER_OFFSET_Y;
+    int markerZ = record.getZ() + PORTAL_MARKER_OFFSET_Z;
+
+    if (markerX < record.getMinX() || markerX > record.getMaxX()
+        || markerY < record.getMinY() || markerY > record.getMaxY()
+        || markerZ < record.getMinZ() || markerZ > record.getMaxZ()) {
+      return;
+    }
+
+    int blockId = 0;
+    if (snapshotBlocks != null && snapshotBlocks.length > 0 && sizeX > 0 && sizeY > 0 && sizeZ > 0) {
+      int expected = sizeX * sizeY * sizeZ;
+      if (snapshotBlocks.length == expected) {
+        int idx = index(markerX - record.getMinX(), markerY - record.getMinY(),
+            markerZ - record.getMinZ(), sizeX, sizeY, sizeZ);
+        if (idx >= 0 && idx < snapshotBlocks.length) {
+          blockId = snapshotBlocks[idx];
+        }
+      }
+    }
+
+    resetBlock(world, markerX, markerY, markerZ, blockId);
+  }
+
+  private static void resetBlock(@Nonnull World world, int x, int y, int z, int blockId) {
+    long chunkKey = (((long) (x >> 4)) << 32) | (((long) (z >> 4)) & 0xFFFFFFFFL);
+    BlockAccessor chunk = world.getChunkIfLoaded(chunkKey);
+    if (chunk != null) {
+      chunk.setBlock(x, y, z, 0);
+      if (blockId != 0) {
+        chunk.setBlock(x, y, z, blockId);
+      }
+      return;
+    }
+
+    world.getChunkAsync(chunkKey).thenAccept(loaded -> {
+      if (loaded == null) {
+        return;
+      }
+      world.execute(() -> {
+        loaded.setBlock(x, y, z, 0);
+        if (blockId != 0) {
+          loaded.setBlock(x, y, z, blockId);
+        }
+      });
+    });
   }
 
   public static final class Snapshot {

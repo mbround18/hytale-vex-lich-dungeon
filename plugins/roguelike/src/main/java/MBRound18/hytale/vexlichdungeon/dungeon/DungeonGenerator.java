@@ -2,7 +2,7 @@ package MBRound18.hytale.vexlichdungeon.dungeon;
 
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
-import MBRound18.hytale.vexlichdungeon.prefab.PrefabInspector;
+import MBRound18.ImmortalEngine.api.prefab.PrefabInspector;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.zip.ZipEntry;
+import com.hypixel.hytale.server.core.prefab.PrefabStore;
 
 /**
  * Core dungeon generation logic.
@@ -116,7 +116,12 @@ public class DungeonGenerator {
    * @return int[2] array with {worldX, worldZ}
    */
   public int[] gridToWorld(int gridX, int gridZ) {
-    int gridStep = config.getGridStep(); // tile size + seam gap (usually 0)
+    int gridStep = config.getGridStep(); // tile size + seam gap
+    if (gridStep <= 0) {
+      log.warn("Invalid grid step %d (tileSize=%d, gateGap=%d). Falling back to default tile size %d.",
+          gridStep, config.getTileSize(), config.getGateGap(), GenerationConfig.DEFAULT_TILE_SIZE);
+      gridStep = GenerationConfig.DEFAULT_TILE_SIZE;
+    }
     int worldX = spawnCenterX + (gridX * gridStep);
     int worldZ = spawnCenterZ + (gridZ * gridStep);
     return new int[] { worldX, worldZ };
@@ -129,15 +134,13 @@ public class DungeonGenerator {
 
     String patternPrefab = config.getStitchPatternPrefab();
     String entryPath = "Server/Prefabs/" + patternPrefab + ".prefab.json";
-    ZipEntry entry = discovery.getZipFile().getEntry(entryPath);
-    if (entry == null) {
-      log.warn("Stitch pattern prefab not found in ZIP: %s (using tileSize=%d)",
+    if (PrefabStore.get().findAssetPrefabPath(entryPath) == null) {
+      log.warn("Stitch pattern prefab not found in assets: %s (using tileSize=%d)",
           entryPath, config.getTileSize());
       return;
     }
 
-    PrefabInspector inspector = new PrefabInspector(log, discovery.getZipFile(), config.getTileSize(),
-        config.getGateGap());
+    PrefabInspector inspector = new PrefabInspector(log, discovery.getUnpackedRoot());
     PrefabInspector.PrefabDimensions dims = inspector.getPrefabDimensions(patternPrefab);
     int tileSize = Math.max(dims.width, dims.depth);
     if (tileSize <= 0) {

@@ -28,6 +28,7 @@ public class DungeonConfig {
   private boolean enableScoring = true;
   private int completionReward = 1000;
   private boolean enableLeaderboard = true;
+  private java.util.List<String> prefabPrefixAllowList = new java.util.ArrayList<>();
 
   public int getRadius() {
     return radius;
@@ -153,6 +154,22 @@ public class DungeonConfig {
 
   public void setEnableLeaderboard(boolean enableLeaderboard) {
     this.enableLeaderboard = enableLeaderboard;
+  }
+
+  @Nonnull
+  public java.util.List<String> getPrefabPrefixAllowList() {
+    if (prefabPrefixAllowList == null || prefabPrefixAllowList.isEmpty()) {
+      return new java.util.ArrayList<>();
+    }
+    return new java.util.ArrayList<>(prefabPrefixAllowList);
+  }
+
+  public void setPrefabPrefixAllowList(java.util.List<String> prefabPrefixAllowList) {
+    if (prefabPrefixAllowList == null || prefabPrefixAllowList.isEmpty()) {
+      this.prefabPrefixAllowList = new java.util.ArrayList<>();
+      return;
+    }
+    this.prefabPrefixAllowList = new java.util.ArrayList<>(prefabPrefixAllowList);
   }
 
   /**

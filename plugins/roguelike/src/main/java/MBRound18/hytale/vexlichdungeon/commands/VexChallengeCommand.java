@@ -9,8 +9,14 @@ import MBRound18.hytale.vexlichdungeon.prefab.PrefabSpawner;
 import MBRound18.hytale.vexlichdungeon.ui.VexPortalCountdownHud;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.data.PortalPlacementRecord;
-import MBRound18.hytale.vexlichdungeon.portal.PortalManagerSystem;
 import MBRound18.hytale.vexlichdungeon.portal.PortalSnapshotUtil;
+import MBRound18.hytale.vexlichdungeon.events.CountdownHudClearRequestedEvent;
+import MBRound18.hytale.vexlichdungeon.events.PortalCloseRequestedEvent;
+import MBRound18.hytale.vexlichdungeon.events.PortalCountdownHudUpdateRequestedEvent;
+import MBRound18.hytale.vexlichdungeon.events.PortalOwnerRegisteredEvent;
+import MBRound18.hytale.vexlichdungeon.events.VexChallengeCommandEvent;
+import MBRound18.hytale.vexlichdungeon.events.VexDemoHudRequestedEvent;
+import MBRound18.hytale.vexlichdungeon.events.WorldEventQueue;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
@@ -69,6 +75,24 @@ public class VexChallengeCommand extends AbstractCommand {
     }
 
     int countdownSeconds = parseCountdownSeconds(context.getInputString());
+
+    UUID worldUuid = playerRef.getWorldUuid();
+    World world = worldUuid == null ? null : Universe.get().getWorld(worldUuid);
+    WorldEventQueue.get().dispatch(world, new VexChallengeCommandEvent(
+        playerRef,
+        worldUuid,
+        world == null ? null : world.getName(),
+        countdownSeconds,
+        PREFAB_PATH));
+
+    String input = context.getInputString();
+    if (input != null && input.toLowerCase().contains("demo")) {
+      WorldEventQueue.get().dispatch(world, new VexDemoHudRequestedEvent(
+          playerRef,
+          "Score: 0",
+          "Timer: 00:00",
+          "Debug: demo"));
+    }
 
     prefabSpawner.loadPrefab(PREFAB_PATH).whenComplete((prefab, error) -> {
       if (error != null || prefab == null) {
@@ -289,7 +313,9 @@ public class VexChallengeCommand extends AbstractCommand {
         .thenAccept(snapshot -> world.execute(() -> {
           UUID portalId = recordPortal(playerRef.getUuid(), worldUuid, world.getName(), placement, minX, maxX, minY,
               maxY, minZ, maxZ, expiresAt, dataStore, Objects.requireNonNull(snapshot, "snapshot"));
-          PortalManagerSystem.registerPortalOwner(Objects.requireNonNull(portalId, "portalId"), playerId);
+          WorldEventQueue.get().dispatchGlobal(new PortalOwnerRegisteredEvent(
+              Objects.requireNonNull(portalId, "portalId"),
+              playerId));
           PortalSnapshotUtil.clearBounds(world, minX, maxX, minY, maxY, minZ, maxZ);
           prefab.place(
               ConsoleSender.INSTANCE,
@@ -314,6 +340,10 @@ public class VexChallengeCommand extends AbstractCommand {
   private static void startCountdown(@Nonnull PlayerRef playerRef, int totalSeconds,
       @Nonnull String locationText, @Nonnull UUID portalId) {
     int startValue = Math.max(0, totalSeconds);
+    PlayerPoller existing = ACTIVE_POLLERS.remove(playerRef.getUuid());
+    if (existing != null) {
+      existing.stop();
+    }
     AtomicInteger remaining = new AtomicInteger(startValue);
     VexPortalCountdownHud.update(playerRef,
         Objects.requireNonNull(VexPortalCountdownHud.formatTime(startValue), "time"),
@@ -330,11 +360,13 @@ public class VexChallengeCommand extends AbstractCommand {
         stopPortalCountdown(playerRef.getUuid());
         return;
       }
-      VexPortalCountdownHud.update(playerRef,
+      WorldEventQueue.get().dispatchGlobal(new PortalCountdownHudUpdateRequestedEvent(
+          playerRef,
+          portalId,
           Objects.requireNonNull(VexPortalCountdownHud.formatTime(value), "time"),
-          locationText);
+          locationText));
       if (value == 0) {
-        PortalManagerSystem.requestPortalClose(portalId);
+        WorldEventQueue.get().dispatchGlobal(new PortalCloseRequestedEvent(portalId));
         stopPortalCountdown(playerRef.getUuid());
       }
     });
@@ -345,10 +377,11 @@ public class VexChallengeCommand extends AbstractCommand {
   private static void schedulePortalClose(@Nonnull UUID portalId, int totalSeconds) {
     int delaySeconds = Math.max(0, totalSeconds);
     if (delaySeconds == 0) {
-      PortalManagerSystem.requestPortalClose(portalId);
+      WorldEventQueue.get().dispatchGlobal(new PortalCloseRequestedEvent(portalId));
       return;
     }
-    PORTAL_EXPIRY_SCHEDULER.schedule(() -> PortalManagerSystem.requestPortalClose(portalId),
+    PORTAL_EXPIRY_SCHEDULER.schedule(
+        () -> WorldEventQueue.get().dispatchGlobal(new PortalCloseRequestedEvent(portalId)),
         delaySeconds, TimeUnit.SECONDS);
   }
 
@@ -362,7 +395,7 @@ public class VexChallengeCommand extends AbstractCommand {
       return;
     }
     UiThread.runOnPlayerWorld(playerRef, () -> {
-      VexPortalCountdownHud.clear(playerRef);
+      WorldEventQueue.get().dispatchGlobal(new CountdownHudClearRequestedEvent(playerRef));
     });
   }
 
