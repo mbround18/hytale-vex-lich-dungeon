@@ -108,7 +108,7 @@ public abstract class DebugEvent implements IEvent<Void> {
     return future;
   }
 
-  private static Object invokeAny(Object target, String... methodNames) {
+  protected static Object invokeAny(Object target, String... methodNames) {
     for (String name : methodNames) {
       try {
         return target.getClass().getMethod(name).invoke(target);
@@ -118,7 +118,7 @@ public abstract class DebugEvent implements IEvent<Void> {
     return null;
   }
 
-  private static String invokeString(Object target, String... methodNames) {
+  protected static String invokeString(Object target, String... methodNames) {
     Object value = invokeAny(target, methodNames);
     return value == null ? null : String.valueOf(value);
   }

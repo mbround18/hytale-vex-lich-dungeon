@@ -10,6 +10,7 @@ repositories {
 }
 
 evaluationDependsOn(":shared:utilities")
+evaluationDependsOn(":shared:interfaces")
 
 java {
     toolchain {
@@ -60,6 +61,7 @@ tasks.withType(Test).configureEach {
 jar {
     archiveBaseName.set("VexLichDungeon")
     dependsOn(project(":shared:utilities").tasks.named("jar"))
+    dependsOn(project(":shared:interfaces").tasks.named("jar"))
     from({
         def utilJar = project(":shared:utilities").tasks.named("jar").get().archiveFile.get().asFile
         return zipTree(utilJar)

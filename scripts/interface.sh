@@ -12,6 +12,7 @@ DEBOUNCE_SECONDS=5
 
 last_build_time=0
 compose_pid=""
+pnpm_pid=""
 
 docker compose down 2>/dev/null || true
 rm -rf ./dist/*.jar || true
@@ -24,6 +25,13 @@ build_and_copy() {
 hard_reload() {
   build_and_copy
   # NOTE: UI assets live in shared interfaces resources now. Rebuild + restart to refresh them.
+  if [[ -n "$pnpm_pid" ]]; then
+    kill "$pnpm_pid" 2>/dev/null || true
+    wait "$pnpm_pid" 2>/dev/null || true
+  fi
+  echo "Reinstalling pnpm deps and restarting dev server..."
+  pnpm i && pnpm dev &
+  pnpm_pid=$!
   docker compose restart
   echo "Hard reload complete. UI assets still require a manual reload if changed."
 }
@@ -31,7 +39,10 @@ hard_reload() {
 cleanup() {
   if [[ -n "$compose_pid" ]]; then
     docker compose down
-    kill "$compose_pid" 2>/dev/null
+    kill "$compose_pid" 2>/dev/null || true
+  fi
+  if [[ -n "$pnpm_pid" ]]; then
+    kill "$pnpm_pid" 2>/dev/null || true
   fi
 }
 
@@ -39,6 +50,9 @@ trap cleanup EXIT INT TERM
 
 docker compose up &
 compose_pid=$!
+
+pnpm i && pnpm dev &
+pnpm_pid=$!
 
 echo "Ready. Press 'r' to reload, 'h' for hard reload (UI changes), 'e' to exit (Ctrl+C also exits)."
 while true; do

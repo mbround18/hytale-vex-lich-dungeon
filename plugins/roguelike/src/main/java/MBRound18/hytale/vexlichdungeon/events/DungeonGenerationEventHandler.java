@@ -1,6 +1,8 @@
 package MBRound18.hytale.vexlichdungeon.events;
 
+import MBRound18.ImmortalEngine.api.events.WorldPlayerSpawnedEvent;
 import MBRound18.ImmortalEngine.api.i18n.EngineLang;
+import MBRound18.ImmortalEngine.api.events.EliminationEvent;
 import MBRound18.hytale.vexlichdungeon.data.DataStore;
 import MBRound18.hytale.vexlichdungeon.data.DungeonInstanceData;
 import MBRound18.hytale.vexlichdungeon.data.PlayerSpawnTracker;
@@ -18,6 +20,7 @@ import MBRound18.hytale.vexlichdungeon.events.InstanceEnteredEvent;
 import MBRound18.hytale.vexlichdungeon.events.InstanceExitedEvent;
 import MBRound18.hytale.vexlichdungeon.events.InstanceInitializedEvent;
 import MBRound18.hytale.vexlichdungeon.events.PlayerJoinedServerEvent;
+import MBRound18.hytale.vexlichdungeon.events.VexPlayerAddedEvent;
 import MBRound18.hytale.vexlichdungeon.events.WorldEventQueue;
 
 import com.hypixel.hytale.component.Ref;
@@ -25,7 +28,8 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventBus;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.server.core.event.events.entity.EntityRemoveEvent;
+import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.event.events.player.AddPlayerToWorldEvent;
 import com.hypixel.hytale.server.core.event.events.player.DrainPlayerFromWorldEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -47,6 +51,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Listens for player join events and automatically generates dungeons
@@ -67,6 +72,8 @@ public class DungeonGenerationEventHandler {
   private final Set<String> shuttingDownWorlds = ConcurrentHashMap.newKeySet();
   private final Map<String, Long> lastPlayerSeen = new ConcurrentHashMap<>();
   private final Set<UUID> welcomedPlayers = ConcurrentHashMap.newKeySet();
+  private final Set<UUID> instanceEnteredPlayers = ConcurrentHashMap.newKeySet();
+  private final Set<String> vexPlayerAddedKeys = ConcurrentHashMap.newKeySet();
   private static final long EMPTY_INSTANCE_GRACE_MS = 15_000L;
   private final PlayerPoller playerPoller = new PlayerPoller();
 
@@ -107,27 +114,14 @@ public class DungeonGenerationEventHandler {
         (Class) StartWorldEvent.class,
         (java.util.function.Consumer) (Object e) -> onStartWorld((StartWorldEvent) e));
     eventBus.register(
-        (Class) AddPlayerToWorldEvent.class,
-        (java.util.function.Consumer) (Object e) -> {
-          AddPlayerToWorldEvent event = (AddPlayerToWorldEvent) e;
-          PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-          World world = event.getWorld();
-          if (ref != null && world != null
-              && world.getName().contains("Vex_The_Lich_Dungeon")) {
-            world.execute(() -> PortalManagerSystem.handlePortalEntry(ref, world));
-          }
-        });
+        (Class) EliminationEvent.class,
+        (java.util.function.Consumer) (Object e) -> onElimination((EliminationEvent) e));
     eventBus.register(
-        (Class) DrainPlayerFromWorldEvent.class,
-        (java.util.function.Consumer) (Object e) -> {
-          DrainPlayerFromWorldEvent event = (DrainPlayerFromWorldEvent) e;
-          PlayerRef ref = event.getHolder().getComponent(PlayerRef.getComponentType());
-          World world = event.getWorld();
-          if (ref != null && world != null
-              && world.getName().contains("Vex_The_Lich_Dungeon")) {
-            world.execute(() -> PortalManagerSystem.handlePortalEntry(ref, world));
-          }
-        });
+        (Class) WorldPlayerSpawnedEvent.class,
+        (java.util.function.Consumer) (Object e) -> onWorldPlayerSpawned((WorldPlayerSpawnedEvent) e));
+    eventBus.register(
+        (Class) VexPlayerAddedEvent.class,
+        (java.util.function.Consumer) (Object e) -> onVexPlayerAdded((VexPlayerAddedEvent) e));
     log.info("Successfully registered dungeon generation event handler");
   }
 
@@ -144,10 +138,6 @@ public class DungeonGenerationEventHandler {
     eventRegistry.registerGlobal(
         (Class) PlayerReadyEvent.class,
         (java.util.function.Consumer) (Object e) -> onPlayerReady((PlayerReadyEvent) e));
-
-    eventRegistry.registerGlobal(
-        (Class) EntityRemoveEvent.class,
-        (java.util.function.Consumer) (Object e) -> onEntityRemoved((EntityRemoveEvent) e));
 
     eventRegistry.registerGlobal(
         (Class) DrainPlayerFromWorldEvent.class,
@@ -242,6 +232,53 @@ public class DungeonGenerationEventHandler {
   private void onPlayerArriveInstance(@Nonnull World world, @Nullable PlayerRef eventPlayerRef) {
   }
 
+  private void onWorldPlayerSpawned(@Nonnull WorldPlayerSpawnedEvent event) {
+    try {
+      World world = event.getWorld();
+      PlayerRef playerRef = event.getPlayerRef();
+      if (world == null || playerRef == null) {
+        return;
+      }
+      String worldName = world.getName();
+      if (worldName == null || !worldName.contains("Vex_The_Lich_Dungeon")) {
+        return;
+      }
+      scheduleVexPlayerAdded(world, playerRef);
+    } catch (Exception e) {
+      log.error("Exception in onWorldPlayerSpawned: %s", e.getMessage());
+      if (eventsLogger != null) {
+        eventsLogger.error("onWorldPlayerSpawned failed: " + e.getMessage());
+      }
+    }
+  }
+
+  private void onVexPlayerAdded(@Nonnull VexPlayerAddedEvent event) {
+    try {
+      World world = event.getWorld();
+      PlayerRef playerRef = event.getPlayerRef();
+      if (world == null || playerRef == null) {
+        return;
+      }
+      String worldName = world.getName();
+      if (worldName == null || !worldName.contains("Vex_The_Lich_Dungeon")) {
+        return;
+      }
+      clearCountdownOnInstanceEntry(world, playerRef);
+      playerRef.sendMessage(Message.raw("Vex welcomes a new challenger!"));
+      UUID uuid = playerRef.getUuid();
+      boolean showWelcome = welcomedPlayers.add(uuid);
+      roguelikeController.initializePlayer(world, playerRef, showWelcome);
+      if (instanceEnteredPlayers.add(uuid)) {
+        WorldEventQueue.get().dispatch(world, new InstanceEnteredEvent(world, playerRef));
+      }
+    } catch (Exception e) {
+      log.error("Exception in onVexPlayerAdded: %s", e.getMessage());
+      if (eventsLogger != null) {
+        eventsLogger.error("onVexPlayerAdded failed: " + e.getMessage());
+      }
+    }
+  }
+
   private void onAddPlayerToWorld(AddPlayerToWorldEvent event) {
     try {
       World world = event.getWorld();
@@ -255,7 +292,6 @@ public class DungeonGenerationEventHandler {
           if (worldName.contains("Vex_The_Lich_Dungeon")) {
             PortalManagerSystem.handlePortalEntry(eventPlayerRef, world);
             WorldEventQueue.get().dispatch(world, new PlayerJoinedServerEvent(world, eventPlayerRef));
-            WorldEventQueue.get().dispatch(world, new InstanceEnteredEvent(world, eventPlayerRef));
           }
         } else {
           log.info("[EVENT] AddPlayerToWorldEvent has no PlayerRef component");
@@ -279,9 +315,7 @@ public class DungeonGenerationEventHandler {
           World playerWorld = Universe.get().getWorld(playerWorldId);
           if (playerWorld != null && playerWorld.getName() != null
               && playerWorld.getName().contains("Vex_The_Lich_Dungeon")) {
-            clearCountdownOnInstanceEntry(world, eventPlayerRef);
-            eventPlayerRef.sendMessage(Message.raw("Vex welcomes a new challenger!"));
-            roguelikeController.initializePlayer(world, eventPlayerRef, true);
+            scheduleVexPlayerAdded(world, eventPlayerRef);
             playerPoller.stop();
           }
         });
@@ -304,7 +338,6 @@ public class DungeonGenerationEventHandler {
               return;
             }
             engineAdapter.onPlayerEnter(world, playerRef);
-            roguelikeController.initializePlayer(world, playerRef, true);
             com.hypixel.hytale.server.core.modules.entity.component.TransformComponent transform = player
                 .getTransformComponent();
 
@@ -370,10 +403,8 @@ public class DungeonGenerationEventHandler {
 
         }
 
-        if (eventPlayerRef != null) {
-          UUID uuid = eventPlayerRef.getUuid();
-          boolean showWelcome = welcomedPlayers.add(uuid);
-          roguelikeController.initializePlayer(world, eventPlayerRef, showWelcome);
+        if (eventPlayerRef != null && worldName.contains("Vex_The_Lich_Dungeon")) {
+          scheduleVexPlayerAdded(world, eventPlayerRef);
         }
 
         // Trigger generation if spawn is tracked and not yet generated
@@ -387,6 +418,54 @@ public class DungeonGenerationEventHandler {
     }
   }
 
+  private void scheduleVexPlayerAdded(@Nonnull World world, @Nonnull PlayerRef playerRef) {
+    String worldName = world.getName();
+    if (worldName == null || !worldName.contains("Vex_The_Lich_Dungeon")) {
+      return;
+    }
+    String key = worldName + ":" + playerRef.getUuid();
+    if (!vexPlayerAddedKeys.add(key)) {
+      return;
+    }
+    log.info("[EVENT] Scheduling VexPlayerAddedEvent for %s in %s", playerRef.getUuid(), worldName);
+    final int maxAttempts = 10;
+    final long delayMs = 100L;
+    final int[] attempts = new int[] { 0 };
+    final java.util.concurrent.ScheduledFuture<?>[] handle = new java.util.concurrent.ScheduledFuture<?>[1];
+    Runnable check = () -> {
+      attempts[0]++;
+      try {
+        if (!playerRef.isValid()) {
+          return;
+        }
+        UUID worldId = playerRef.getWorldUuid();
+        if (worldId == null) {
+          return;
+        }
+        World currentWorld = Universe.get().getWorld(worldId);
+        if (currentWorld == null || currentWorld.getName() == null
+            || !currentWorld.getName().contains("Vex_The_Lich_Dungeon")) {
+          return;
+        }
+        log.info("[EVENT] Dispatching VexPlayerAddedEvent for %s in %s", playerRef.getUuid(),
+            currentWorld.getName());
+        WorldEventQueue.get().dispatch(currentWorld, new VexPlayerAddedEvent(currentWorld, playerRef));
+        if (handle[0] != null) {
+          handle[0].cancel(false);
+        }
+        return;
+      } catch (Exception e) {
+        log.error("Exception in scheduleVexPlayerAdded: %s", e.getMessage());
+      }
+      if (attempts[0] >= maxAttempts && handle[0] != null) {
+        log.warn("[EVENT] VexPlayerAddedEvent timed out for %s in %s", playerRef.getUuid(), worldName);
+        vexPlayerAddedKeys.remove(key);
+        handle[0].cancel(false);
+      }
+    };
+    handle[0] = HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(check, delayMs, delayMs, TimeUnit.MILLISECONDS);
+  }
+
   private void onPlayerReady(PlayerReadyEvent event) {
     try {
       log.info("[EVENT] PlayerReadyEvent fired - polling all worlds");
@@ -397,40 +476,90 @@ public class DungeonGenerationEventHandler {
     }
   }
 
-  private void onEntityRemoved(EntityRemoveEvent event) {
+  private void onElimination(@Nonnull EliminationEvent event) {
     try {
-      var entity = java.util.Objects.requireNonNull(event.getEntity(), "entity");
-      if (eventsLogger != null) {
-        eventsLogger.warn("[ENTITY-REMOVE-EVENT] EntityRemoveEvent fired for entity: "
-            + entity.getUuid());
-      }
-      World world = entity.getWorld();
-      if (world != null) {
+      World world = event.getWorld();
+      if (world == null) {
         if (eventsLogger != null) {
-          eventsLogger.info("[ENTITY-REMOVE-EVENT] Executing handleEntityRemoved on world: "
-              + world.getName());
+          eventsLogger.warn("[ELIMINATION-EVENT] EliminationEvent missing world");
         }
-        // IMPORTANT: Pass world directly - entity.getWorld() becomes null after removal
-        world.execute(() -> {
-          if (eventsLogger != null) {
-            eventsLogger.info("[ENTITY-REMOVE-EVENT] Inside world.execute for entity: "
-                + entity.getUuid());
-          }
-          roguelikeController.handleEntityRemoved(entity, world);
-        });
         return;
       }
-      if (eventsLogger != null) {
-        eventsLogger.warn("[ENTITY-REMOVE-EVENT] No world for entity, calling directly");
+
+      UUID victimUuid = resolveEntityUuid(event.getVictimRef());
+      if (victimUuid == null) {
+        if (eventsLogger != null) {
+          eventsLogger.warn("[ELIMINATION-EVENT] Could not resolve victim UUID");
+        }
+        return;
       }
-      roguelikeController.handleEntityRemoved(entity, world);
-    } catch (Exception e) {
-      log.error("Exception in onEntityRemoved: %s", e.getMessage());
+
+      UUID killerUuid = resolveEntityUuid(event.getKillerRef());
+      Vector3d victimPosition = resolveEntityPosition(event.getVictimRef());
+
       if (eventsLogger != null) {
-        eventsLogger.error("[ENTITY-REMOVE-EVENT] onEntityRemoved failed: " + e.getMessage());
+        eventsLogger.info("[ELIMINATION-EVENT] Handling elimination for victim " + victimUuid
+            + " in world " + world.getName()
+            + (killerUuid != null ? " by " + killerUuid : " (no killer)"));
+      }
+
+      world.execute(() -> roguelikeController.handleEntityEliminated(world, victimUuid, killerUuid, victimPosition));
+    } catch (Exception e) {
+      log.error("Exception in onElimination: %s", e.getMessage());
+      if (eventsLogger != null) {
+        eventsLogger.error("[ELIMINATION-EVENT] onElimination failed: " + e.getMessage());
         e.printStackTrace();
       }
     }
+  }
+
+  @Nullable
+  private UUID resolveEntityUuid(@Nullable Ref<EntityStore> ref) {
+    if (ref == null) {
+      return null;
+    }
+    try {
+      Object uuid = invokeAny(ref, "getUuid", "getId");
+      if (uuid instanceof UUID) {
+        return (UUID) uuid;
+      }
+      if (uuid != null) {
+        return UUID.fromString(uuid.toString());
+      }
+    } catch (Exception ignored) {
+    }
+    return null;
+  }
+
+  @Nullable
+  private Vector3d resolveEntityPosition(@Nullable Ref<EntityStore> ref) {
+    if (ref == null) {
+      return null;
+    }
+    try {
+      Store<EntityStore> store = ref.getStore();
+      if (store == null) {
+        return null;
+      }
+      TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
+      if (transform == null) {
+        return null;
+      }
+      return transform.getPosition();
+    } catch (Exception ignored) {
+      return null;
+    }
+  }
+
+  @Nullable
+  private Object invokeAny(@Nonnull Object target, @Nonnull String... names) {
+    for (String name : names) {
+      try {
+        return target.getClass().getMethod(name).invoke(target);
+      } catch (Exception ignored) {
+      }
+    }
+    return null;
   }
 
   private void onDrainPlayerFromWorld(DrainPlayerFromWorldEvent event) {
@@ -700,6 +829,10 @@ public class DungeonGenerationEventHandler {
       try {
         log.info("Starting roguelike initialization for world: %s", world.getName());
         roguelikeController.initializeWorld(world);
+
+        // Register ECS event systems for this world to handle kill events
+        registerWorldEventSystems(world);
+
         WorldEventQueue.get().dispatch(world, new InstanceInitializedEvent(world));
 
         log.info("[GENERATE-COMPLETE] Successfully initialized roguelike dungeon for world: %s", world.getName());
@@ -718,5 +851,31 @@ public class DungeonGenerationEventHandler {
       }
     });
     return future;
+  }
+
+  /**
+   * Registers ECS event systems for a dungeon world to handle game mechanics.
+   * This includes the KillFeedEventSystem which processes eliminations.
+   *
+   * @param world The world to register systems for
+   */
+  private void registerWorldEventSystems(@Nonnull World world) {
+    if (world == null) {
+      return;
+    }
+    try {
+      Store<EntityStore> store = world.getEntityStore().getStore();
+      if (store == null) {
+        log.warn("Could not register event systems: EntityStore is null for world %s", world.getName());
+        return;
+      }
+
+      // Register KillFeedEventSystem to listen for elimination events
+      store.getRegistry().registerSystem(new KillFeedEventSystem(roguelikeController));
+      log.info("[SYSTEMS] Registered KillFeedEventSystem for world: %s", world.getName());
+    } catch (Exception e) {
+      log.error("Failed to register event systems for world %s: %s", world.getName(), e.getMessage());
+      e.printStackTrace();
+    }
   }
 }
