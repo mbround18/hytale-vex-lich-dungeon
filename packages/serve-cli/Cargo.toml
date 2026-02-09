@@ -1,0 +1,19 @@
+[package]
+name = "serve-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.101"
+clap = { version = "4.5.57", features = ["derive"] }
+tokio = { version = "1.49.0", features = ["full"] }
+regex = "1.12.3"
+actix-web = { version = "4", features = ["macros"] }
+actix = "0.13"
+actix-web-actors = "4"
+actix-files = "0.6"
+actix-rt = "2"
+tokio-util = "0.7"
+futures = "0.3"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }

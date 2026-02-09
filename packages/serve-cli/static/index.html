@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hytale Dev Manager</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>"
+    />
+
+    <!-- 1. Load Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap");
+
+      body {
+        background-color: #0d1117;
+        color: #c9d1d9;
+        font-family: "Inter", sans-serif;
+      }
+
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #0d1117;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #30363d;
+        border-radius: 5px;
+        border: 2px solid #0d1117;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #484f58;
+      }
+
+      .log-link {
+        color: #58a6ff;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      .log-link:hover {
+        color: #79c0ff;
+      }
+
+      /* Animations */
+      @keyframes pulse-soft {
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .animate-pulse-soft {
+        animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse-fast {
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .animate-pulse-fast {
+        animation: pulse-fast 1s ease-in-out infinite;
+      }
+    </style>
+
+    <!-- 2. Load React & Babel -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 3. Utilities -->
+    <script src="https://cdn.jsdelivr.net/npm/ansi_up@5.1.0/ansi_up.min.js"></script>
+  </head>
+
+  <body>
+    <div
+      id="root"
+      class="h-screen w-screen flex flex-col overflow-hidden"
+    ></div>
+
+    <!-- 4. Your React Application -->
+    <script type="text/babel">
+      const { useState, useEffect, useRef, useMemo, useCallback } = React;
+      const ansi = new AnsiUp();
+
+      // --- Configuration ---
+      const PROCESSES = [
+        {
+          id: "gradle",
+          name: "Gradle Daemon",
+          icon: "🐘",
+          color: "text-blue-400",
+        },
+        {
+          id: "docker",
+          name: "Docker Engine",
+          icon: "🐳",
+          color: "text-cyan-400",
+        },
+        {
+          id: "pnpm",
+          name: "Vite Client",
+          icon: "📦",
+          color: "text-yellow-400",
+        },
+      ];
+
+      const API_BASE = window.location.origin;
+      const WS_PROTOCOL =
+        window.location.protocol === "https:" ||
+        window.location.href.startsWith("blob:")
+          ? "wss://"
+          : "ws://";
+      const WS_BASE = WS_PROTOCOL + window.location.host;
+
+      // --- Components ---
+
+      const Icon = ({ path, className }) => (
+        <svg
+          className={className}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d={path}
+          />
+        </svg>
+      );
+
+      const StatusDot = ({ status }) => {
+        let color = "bg-gray-500";
+        let animation = "";
+
+        if (status === "CONNECTED") {
+          color = "bg-green-500";
+          animation = "animate-pulse-soft";
+        } else if (status === "RETRYING") {
+          color = "bg-yellow-500";
+          animation = "animate-pulse-fast";
+        } else if (status === "OFFLINE" || status === "DISCONNECTED") {
+          color = "bg-red-500";
+        }
+
+        return <div className={`w-2 h-2 rounded-full ${color} ${animation}`} />;
+      };
+
+      const LogLine = ({ text, time }) => {
+        const htmlContent = useMemo(() => {
+          let html = ansi.ansi_to_html(text);
+          html = html.replace(/(https?:\/\/[^\s<]+)/g, (url) => {
+            const href = url.replace("0.0.0.0", "127.0.0.1");
+            return `<a href="${href}" target="_blank" class="log-link">${url}</a>`;
+          });
+          return { __html: html };
+        }, [text]);
+
+        let borderColor = "border-transparent";
+        const lower = text.toLowerCase();
+        if (
+          lower.includes("error") ||
+          lower.includes("failed") ||
+          lower.includes("fatal")
+        )
+          borderColor = "border-red-500";
+        else if (lower.includes("warn")) borderColor = "border-yellow-500";
+        else if (lower.includes("success") || lower.includes("ready"))
+          borderColor = "border-green-500";
+
+        const isSystem = text.startsWith(">>");
+
+        return (
+          <div
+            className={`flex gap-4 px-2 py-0.5 border-l-[3px] hover:bg-white/5 transition-colors ${borderColor}`}
+          >
+            <span className="text-gray-600 font-mono text-[11px] pt-0.5 opacity-50 select-none shrink-0">
+              {time}
+            </span>
+            <span
+              className={`font-mono text-[13px] break-all whitespace-pre-wrap ${isSystem ? "text-blue-400 font-bold italic" : "text-gray-300"}`}
+              dangerouslySetInnerHTML={htmlContent}
+            />
+          </div>
+        );
+      };
+
+      const Terminal = ({ logs, filter, autoScroll, onScrollStateChange }) => {
+        const bottomRef = useRef(null);
+        const containerRef = useRef(null);
+
+        const visibleLogs = useMemo(() => {
+          if (!filter) return logs;
+          const lowerFilter = filter.toLowerCase();
+          return logs.filter((l) => l.text.toLowerCase().includes(lowerFilter));
+        }, [logs, filter]);
+
+        useEffect(() => {
+          if (autoScroll && bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: "auto" });
+          }
+        }, [visibleLogs, autoScroll]);
+
+        const handleScroll = (e) => {
+          const { scrollTop, scrollHeight, clientHeight } = e.target;
+          const isAtBottom = scrollHeight - clientHeight <= scrollTop + 30;
+          onScrollStateChange(isAtBottom);
+        };
+
+        return (
+          <div
+            ref={containerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-0.5"
+            onScroll={handleScroll}
+          >
+            {visibleLogs.map((log, i) => (
+              <LogLine key={i} text={log.text} time={log.time} />
+            ))}
+            <div ref={bottomRef} />
+          </div>
+        );
+      };
+
+      // --- Main App Component ---
+
+      const App = () => {
+        const [activeProcessId, setActiveProcessId] = useState("gradle");
+
+        // Detailed connection state per process
+        const [connState, setConnState] = useState({
+          gradle: { status: "DISCONNECTED", retryIn: 0 },
+          docker: { status: "DISCONNECTED", retryIn: 0 },
+          pnpm: { status: "DISCONNECTED", retryIn: 0 },
+        });
+
+        const [processData, setProcessData] = useState({
+          gradle: { running: false, log_count: 0 },
+          docker: { running: false, log_count: 0 },
+          pnpm: { running: false, log_count: 0 },
+        });
+
+        const [logs, setLogs] = useState({ gradle: [], docker: [], pnpm: [] });
+        const [autoScroll, setAutoScroll] = useState(true);
+        const [filter, setFilter] = useState("");
+        const [toast, setToast] = useState(null);
+        const [isDemoMode, setIsDemoMode] = useState(false);
+        const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+        // Refs for socket management without re-renders
+        const socketsRef = useRef({});
+        const timeoutsRef = useRef({});
+
+        const activeProcess = PROCESSES.find((p) => p.id === activeProcessId);
+
+        // --- Core Logic ---
+
+        const addLog = useCallback((id, text) => {
+          const time = new Date().toLocaleTimeString("en-GB", {
+            hour12: false,
+          });
+          setLogs((prev) => {
+            const newLogs = [...prev[id], { time, text }];
+            if (newLogs.length > 3000) newLogs.shift();
+            return { ...prev, [id]: newLogs };
+          });
+        }, []);
+
+        const generateMockLogs = (id) => {
+          const msgs = [
+            `[INFO] Starting ${id} service...`,
+            `[INFO] Service listening on 127.0.0.1:${id === "docker" ? "2375" : "8080"}`,
+            `>> System: Ready to accept connections`,
+          ];
+          return msgs.map((text) => ({
+            time: new Date().toLocaleTimeString("en-GB", { hour12: false }),
+            text,
+          }));
+        };
+
+        // Smart Connect Function with Exponential Backoff
+        const connectSocket = useCallback(
+          (id, retryCount = 0) => {
+            // Cleanup existing
+            if (socketsRef.current[id]) {
+              socketsRef.current[id].onclose = null; // Prevent triggers during manual close
+              socketsRef.current[id].close();
+            }
+            if (timeoutsRef.current[id]) clearTimeout(timeoutsRef.current[id]);
+
+            // Don't connect if browser is offline
+            if (!navigator.onLine) {
+              setConnState((prev) => ({
+                ...prev,
+                [id]: { status: "OFFLINE", retryIn: 0 },
+              }));
+              return;
+            }
+
+            const ws = new WebSocket(`${WS_BASE}/ws/${id}`);
+            socketsRef.current[id] = ws;
+
+            // Update UI to connecting state?
+            // Only if it was previously disconnected to avoid flickering on instant reconnects
+
+            ws.onopen = () => {
+              setConnState((prev) => ({
+                ...prev,
+                [id]: { status: "CONNECTED", retryIn: 0 },
+              }));
+              addLog(id, `>> Socket: Connected`);
+            };
+
+            ws.onmessage = (e) => {
+              try {
+                const data = JSON.parse(e.data);
+                if (data.type === "log") addLog(id, data.line);
+              } catch (err) {
+                addLog(id, e.data);
+              }
+            };
+
+            ws.onclose = (e) => {
+              // If clean close (e.g. manual stop), maybe don't reconnect?
+              // But for a dev tool, we usually want persistent connection.
+
+              // Calculate Backoff: 1s, 1.5s, 2.25s ... max 30s
+              const delay = Math.min(1000 * Math.pow(1.5, retryCount), 30000);
+              const retryInSeconds = Math.round(delay / 1000);
+
+              setConnState((prev) => ({
+                ...prev,
+                [id]: { status: "RETRYING", retryIn: retryInSeconds },
+              }));
+
+              // Log only on first fail or significant intervals to avoid spam
+              if (retryCount === 0 || retryCount % 5 === 0) {
+                addLog(
+                  id,
+                  `>> Socket lost. Reconnecting in ${retryInSeconds}s...`,
+                  "warn",
+                );
+              }
+
+              timeoutsRef.current[id] = setTimeout(() => {
+                connectSocket(id, retryCount + 1);
+              }, delay);
+            };
+
+            ws.onerror = () => {
+              // Handled by onclose usually
+            };
+          },
+          [addLog],
+        );
+
+        const reconnectAll = useCallback(() => {
+          PROCESSES.forEach((p) => connectSocket(p.id, 0)); // Reset retry count
+          showToast("Force Reconnecting...", "🔄");
+        }, [connectSocket]);
+
+        const handleControl = async (action) => {
+          try {
+            const response = await fetch(`${API_BASE}/api/control`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                process: activeProcessId,
+                action: action,
+              }),
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || "Control request failed");
+            }
+
+            showToast(`${action.toUpperCase()} sent to ${activeProcess.name}`, "✓");
+            addLog(
+              activeProcessId,
+              `>> Control: ${action.toUpperCase()} signal sent`,
+            );
+          } catch (e) {
+            showToast(`Failed to ${action}: ${e.message}`, "❌");
+            addLog(activeProcessId, `>> Error: ${e.message}`);
+          }
+        };
+
+        const showToast = (msg, icon) => {
+          setToast({ msg, icon });
+          setTimeout(() => setToast(null), 3000);
+        };
+
+        const copyLogs = () => {
+          const text = logs[activeProcessId]
+            .map((l) => `[${l.time}] ${l.text}`)
+            .join("\n");
+          navigator.clipboard.writeText(text);
+          showToast("Logs copied to clipboard", "📋");
+        };
+
+        // --- Effects ---
+
+        // Network Status Listeners
+        useEffect(() => {
+          const handleOnline = () => {
+            setIsOffline(false);
+            addLog(
+              "gradle",
+              ">> Network Online. Reconnecting services...",
+              "success",
+            ); // Log to default
+            reconnectAll();
+          };
+          const handleOffline = () => {
+            setIsOffline(true);
+            // Mark all as offline visually
+            setConnState((prev) => {
+              const next = { ...prev };
+              Object.keys(next).forEach(
+                (k) => (next[k] = { status: "OFFLINE", retryIn: 0 }),
+              );
+              return next;
+            });
+          };
+
+          window.addEventListener("online", handleOnline);
+          window.addEventListener("offline", handleOffline);
+          return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+          };
+        }, [reconnectAll, addLog]);
+
+        // Initial Boot
+        useEffect(() => {
+          // Connect Sockets
+          PROCESSES.forEach((p) => connectSocket(p.id));
+
+          // Poll API Status
+          const fetchStatus = async () => {
+            if (isOffline) return; // Don't fetch if offline
+            try {
+              const res = await fetch(`${API_BASE}/api/status`);
+              const contentType = res.headers.get("content-type");
+
+              if (
+                !res.ok ||
+                !contentType ||
+                !contentType.includes("application/json")
+              ) {
+                throw new Error("Invalid API response");
+              }
+
+              const data = await res.json();
+              setProcessData(data.processes);
+              setIsDemoMode(false);
+            } catch (e) {
+              if (!isDemoMode) {
+                console.warn("Backend unavailable, enabling demo mode");
+                setIsDemoMode(true);
+                setProcessData((prev) => ({
+                  gradle: { ...prev.gradle, running: true, log_count: 5 },
+                  docker: { ...prev.docker, running: true, log_count: 5 },
+                  pnpm: { ...prev.pnpm, running: true, log_count: 5 },
+                }));
+              }
+            }
+          };
+          fetchStatus();
+          const interval = setInterval(fetchStatus, 3000);
+
+          return () => clearInterval(interval);
+        }, [isDemoMode, isOffline, connectSocket]);
+
+        // Fetch logs on tab switch
+        useEffect(() => {
+          const fetchLogs = async () => {
+            if (logs[activeProcessId].length > 0) return;
+            try {
+              const res = await fetch(
+                `${API_BASE}/api/logs/${activeProcessId}`,
+              );
+              const contentType = res.headers.get("content-type");
+              if (
+                !res.ok ||
+                !contentType ||
+                !contentType.includes("application/json")
+              )
+                throw new Error("Invalid API");
+
+              const data = await res.json();
+              const history = data.logs.map((text) => ({
+                time: new Date().toLocaleTimeString(),
+                text,
+              }));
+              setLogs((prev) => ({ ...prev, [activeProcessId]: history }));
+            } catch (e) {
+              if (logs[activeProcessId].length === 0) {
+                setLogs((prev) => ({
+                  ...prev,
+                  [activeProcessId]: generateMockLogs(activeProcessId),
+                }));
+              }
+            }
+          };
+          fetchLogs();
+          setFilter("");
+          setAutoScroll(true);
+        }, [activeProcessId]);
+
+        // --- Render Helpers ---
+
+        const currentConn = connState[activeProcessId] || {
+          status: "DISCONNECTED",
+          retryIn: 0,
+        };
+
+        let footerStatusText = currentConn.status;
+        if (currentConn.status === "RETRYING") {
+          footerStatusText = `RETRYING IN ${currentConn.retryIn}s`;
+        }
+
+        // --- Render ---
+
+        return (
+          <div className="flex flex-col h-full bg-[#0d1117] text-[#c9d1d9]">
+            {/* Header */}
+            <header className="h-14 border-b border-[#30363d] bg-[#161b22] flex items-center justify-between px-4 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold text-white shadow-lg shadow-blue-900/20">
+                  H
+                </div>
+                <h1 className="font-semibold text-sm tracking-tight">
+                  HYTALE <span className="text-gray-500">DEV_MANAGER</span>
+                </h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-medium text-gray-400">
+                  SESSION:
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold border ${isDemoMode ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20"}`}
+                >
+                  {isDemoMode ? "DEMO_MODE" : "CONNECTED"}
+                </span>
+              </div>
+            </header>
+
+            <div className="flex flex-1 overflow-hidden">
+              {/* Sidebar */}
+              <aside className="w-64 border-r border-[#30363d] bg-[#0d1117] flex flex-col shrink-0">
+                <div className="p-4 border-b border-[#30363d]">
+                  <button
+                    onClick={reconnectAll}
+                    className="w-full py-2 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] rounded text-xs font-semibold transition-colors flex items-center justify-center gap-2 text-gray-300"
+                  >
+                    <Icon
+                      path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      className="w-3 h-3"
+                    />
+                    RECONNECT SOCKETS
+                  </button>
+                </div>
+                <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+                  {PROCESSES.map((p) => {
+                    const data = processData[p.id];
+                    const conn = connState[p.id] || { status: "DISCONNECTED" };
+                    const isActive = activeProcessId === p.id;
+
+                    let statusLabel = "STOPPED";
+                    if (data.running) statusLabel = "RUNNING";
+                    if (conn.status === "RETRYING")
+                      statusLabel = "RECONNECTING";
+                    if (conn.status === "OFFLINE") statusLabel = "OFFLINE";
+
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setActiveProcessId(p.id)}
+                        className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-all duration-200 ${isActive ? "bg-[#1f2937] border border-[#30363d]" : "hover:bg-[#161b22] border border-transparent"}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`text-lg ${isActive ? "" : "grayscale opacity-70"}`}
+                          >
+                            {p.icon}
+                          </div>
+                          <div className="flex flex-col">
+                            <span
+                              className={`text-[13px] font-semibold leading-tight ${isActive ? "text-white" : "text-gray-400"}`}
+                            >
+                              {p.name}
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                              {statusLabel}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-end text-[9px] font-mono text-gray-500">
+                            <span>BUFF</span>
+                            <span>{data.log_count}</span>
+                          </div>
+                          <StatusDot status={conn.status} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </aside>
+
+              {/* Main Content */}
+              <main className="flex-1 flex flex-col bg-black overflow-hidden relative">
+                {/* Toolbar */}
+                <div className="h-14 border-b border-[#30363d] bg-[#161b22] flex items-center justify-between px-6 shrink-0 z-10">
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-bold flex items-center gap-2 text-white">
+                      {activeProcess.icon} {activeProcess.name}
+                    </h2>
+                    <div className="flex items-center gap-2 px-2 py-1 rounded bg-black/30 border border-white/5 text-[11px] font-mono">
+                      <span className="text-gray-500">PID:</span>
+                      <span className="text-blue-400">
+                        {processData[activeProcessId]?.running
+                          ? "ACTIVE"
+                          : "---"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-500">
+                        <Icon
+                          path="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          className="w-3.5 h-3.5"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Filter logs..."
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                        className="bg-[#0d1117] border border-[#30363d] text-gray-300 text-xs rounded-md pl-8 pr-3 py-1.5 focus:outline-none focus:border-blue-500 w-48 transition-all"
+                      />
+                    </div>
+                    <div className="w-[1px] h-6 bg-[#30363d]"></div>
+                    <button
+                      onClick={() => handleControl("start")}
+                      className="px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] rounded text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                    >
+                      <Icon
+                        path="M4.516 7.548c0.436-0.446 1.043-0.481 1.576 0L10 11.295l3.908-3.747c0.533-0.481 1.141-0.446 1.574 0 0.436 0.445 0.408 1.197 0 1.615l-4.695 4.502c-0.533 0.481-1.408 0.481-1.94 0l-4.695-4.502c-0.408-0.418-0.436-1.17 0-1.615z"
+                        className="w-3 h-3"
+                      />
+                      START
+                    </button>
+                    <button
+                      onClick={() => handleControl("stop")}
+                      className="px-3 py-1.5 bg-[#da3633] hover:bg-[#f85149] rounded text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                    >
+                      <div className="w-2.5 h-2.5 bg-white rounded-sm"></div>{" "}
+                      STOP
+                    </button>
+                    <button
+                      onClick={() => handleControl("restart")}
+                      className="px-3 py-1.5 bg-[#d29922] hover:bg-[#dbab40] rounded text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+                    >
+                      <Icon
+                        path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        className="w-3 h-3"
+                      />
+                      RESTART
+                    </button>
+                    <div className="w-[1px] h-6 bg-[#30363d]"></div>
+                    <button
+                      onClick={copyLogs}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-[#30363d] rounded transition-colors"
+                      title="Copy"
+                    >
+                      <Icon
+                        path="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                        className="w-4 h-4"
+                      />
+                    </button>
+                    <button
+                      onClick={() =>
+                        setLogs((prev) => ({ ...prev, [activeProcessId]: [] }))
+                      }
+                      className="p-2 text-gray-400 hover:text-white hover:bg-[#30363d] rounded transition-colors"
+                      title="Clear"
+                    >
+                      <Icon
+                        path="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        className="w-4 h-4"
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Terminal */}
+                <Terminal
+                  logs={logs[activeProcessId]}
+                  filter={filter}
+                  autoScroll={autoScroll}
+                  onScrollStateChange={setAutoScroll}
+                />
+
+                {/* Footer */}
+                <footer className="h-8 border-t border-[#30363d] bg-[#0d1117] flex items-center justify-between px-4 shrink-0 text-[10px] font-bold text-gray-500 tracking-wider select-none z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <StatusDot status={currentConn.status} />
+                      SOCKET:{" "}
+                      <span className="text-gray-300">{footerStatusText}</span>
+                    </div>
+                    <div>
+                      BUFFER:{" "}
+                      <span className="text-gray-300">
+                        {logs[activeProcessId].length} LINES
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {!autoScroll && (
+                      <button
+                        onClick={() => setAutoScroll(true)}
+                        className="text-blue-500 hover:underline cursor-pointer flex items-center gap-1"
+                      >
+                        <span>↓</span> AUTO-SCROLL PAUSED
+                      </button>
+                    )}
+                  </div>
+                </footer>
+              </main>
+            </div>
+
+            {/* Toast */}
+            {toast && (
+              <div className="fixed bottom-12 right-6 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-2xl flex items-center gap-3 border border-blue-400/50 animate-[slideUp_0.3s_ease-out]">
+                <div>{toast.icon}</div>
+                <div className="text-sm font-medium">{toast.msg}</div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
