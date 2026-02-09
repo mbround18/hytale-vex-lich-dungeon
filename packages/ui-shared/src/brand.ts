@@ -1,1 +1,1 @@
-export { BrandHeader } from './shared/BrandHeader';
+export { BrandHeader } from "./shared/BrandHeader";

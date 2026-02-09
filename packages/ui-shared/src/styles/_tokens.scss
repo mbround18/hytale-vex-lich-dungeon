@@ -1,9 +1,57 @@
+// Typography
 $font-body: 'IBM Plex Sans', system-ui, sans-serif;
 $font-title: 'Space Grotesk', system-ui, sans-serif;
+$font-mono: 'JetBrains Mono', monospace;
+$font-fantasy: 'Cinzel', serif;
+$font-cursive: 'MedievalSharp', cursive;
 
+// Core Color Palette
+// Vex Darkness
+$vex-void: #08060d;
+$vex-night: #120b1b;
+$vex-panel: #161025;
+$vex-panel-strong: #1f1633;
+$vex-border: #30223f;
+$vex-line: #3a2a50;
+
+// Vex Accents
+$vex-violet: #8b5cf6;
+$vex-purple: #8b5cf6;
+$vex-ember: #fbbf24;
+$vex-green: #4ade80;
+$vex-rose: #f472b6;
+$vex-cyan: #38bdf8;
+
+// Theme Variants
+$vex-dark: #1a1821;
+$vex-deep: #4c1d95;
+$vex-surface: #251f33;
+
+// Necromancer
+$necro-green: #4ade80;
+$necro-dark: #14532d;
+
+// Ancient
+$ancient-gold: #fbbf24;
+
+// Text
+$text-strong: #f5f3ff;
+$text-body: #d7c9ff;
+$text-muted: #9f8cc9;
+$stone-gray: #292524;
+
+// Effects
+$grid-dot: rgba(255, 255, 255, 0.05);
+$shadow-soft: 0 30px 80px rgba(6, 3, 10, 0.65);
+$shadow-glow-purple: 0 0 25px rgba(139, 92, 246, 0.45);
+$shadow-nav: 0 6px 16px rgba(139, 92, 246, 0.35);
+$shadow-card: 0 30px 70px rgba(5, 3, 8, 0.55);
+
+// Gradients
 $vex-bg: radial-gradient(1200px 800px at 20% 10%, rgba(96, 43, 132, 0.25), transparent),
   radial-gradient(900px 700px at 90% 0%, rgba(139, 92, 246, 0.18), transparent),
   linear-gradient(160deg, #08060d 0%, #0e0a16 50%, #06050a 100%);
 
-$vex-text: #d7c9ff;
-$vex-accent: #8b5cf6;
+$vex-gradient-purple: radial-gradient(1100px 700px at 15% -10%, rgba(96, 43, 132, 0.22), transparent 55%),
+  radial-gradient(900px 600px at 85% 5%, rgba(34, 211, 238, 0.08), transparent 55%),
+  linear-gradient(160deg, #07050c 0%, #0b0912 55%, #05040a 100%);

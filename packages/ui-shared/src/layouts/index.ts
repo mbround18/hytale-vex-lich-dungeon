@@ -1,1 +1,1 @@
-export { default as DesignSystemApp } from './DesignSystemApp';
+export { default as DesignSystemApp } from "./DesignSystemApp";

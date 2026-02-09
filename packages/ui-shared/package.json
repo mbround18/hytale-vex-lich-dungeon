@@ -31,6 +31,7 @@
     "./styles/base": "./src/styles/_base.scss",
     "./styles/app": "./src/styles/app.scss",
     "./components": "./src/components/index.ts",
-    "./layouts": "./src/layouts/index.ts"
+    "./layouts": "./src/layouts/index.ts",
+    "./provider": "./src/AppProvider.tsx"
   }
 }

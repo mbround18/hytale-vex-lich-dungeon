@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArchiveCard, Badge, SectionTitle } from 'ui-shared/components';
+import React from "react";
+import { ArchiveCard, Badge, SectionTitle } from "ui-shared/components";
 
 interface ArchivesViewProps {
   archives: any[];
@@ -39,7 +39,7 @@ export default function ArchivesView({
   onStartReplay,
   onToggleReplay,
   onStopReplay,
-  onSeekReplay
+  onSeekReplay,
 }: ArchivesViewProps) {
   return (
     <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
@@ -56,16 +56,27 @@ export default function ArchivesView({
           </div>
         </div>
         <div className="space-y-4">
-          {archives.map(arch => (
+          {archives.map((arch) => (
             <ArchiveCard
               key={arch.id}
               title={arch.id}
               meta={[
-                { label: 'Timestamp', value: new Date(arch.timestamp).toLocaleString() },
-                { label: 'Rooms', value: `${Object.keys(arch.data.rooms || {}).length} Rooms`, tone: 'gold' },
-                { label: 'Players', value: `${(arch.data.players || []).length} Players`, tone: 'green' }
+                {
+                  label: "Timestamp",
+                  value: new Date(arch.timestamp).toLocaleString(),
+                },
+                {
+                  label: "Rooms",
+                  value: `${Object.keys(arch.data.rooms || {}).length} Rooms`,
+                  tone: "gold",
+                },
+                {
+                  label: "Players",
+                  value: `${(arch.data.players || []).length} Players`,
+                  tone: "green",
+                },
               ]}
-              actions={(
+              actions={
                 <>
                   <button
                     onClick={() => onSelectArchive(arch)}
@@ -87,11 +98,13 @@ export default function ArchivesView({
                   </button>
                   <Badge variant="green">Completed</Badge>
                 </>
-              )}
+              }
             />
           ))}
           {archives.length === 0 && (
-            <div className="text-center p-8 text-stone-600 text-xs">No archived runs found in database.</div>
+            <div className="text-center p-8 text-stone-600 text-xs">
+              No archived runs found in database.
+            </div>
           )}
         </div>
 
@@ -112,10 +125,20 @@ export default function ArchivesView({
             <div className="p-4 rounded-xl border border-white/5 bg-black/30 mb-4">
               <div className="flex flex-wrap items-center gap-3 justify-between">
                 <div>
-                  <p className="text-[11px] text-[#cdb6ff] uppercase">Replay Timeline</p>
-                  <p className="text-sm text-white mt-1">Start: <span className="text-[#fbbf24]">{replayStartTime}</span></p>
-                  <p className="text-sm text-white">Now: <span className="text-[#4ade80]">{replayCurrentTime}</span></p>
-                  <p className="text-sm text-white">End: <span className="text-[#f472b6]">{replayEndTime}</span></p>
+                  <p className="text-[11px] text-[#cdb6ff] uppercase">
+                    Replay Timeline
+                  </p>
+                  <p className="text-sm text-white mt-1">
+                    Start:{" "}
+                    <span className="text-[#fbbf24]">{replayStartTime}</span>
+                  </p>
+                  <p className="text-sm text-white">
+                    Now:{" "}
+                    <span className="text-[#4ade80]">{replayCurrentTime}</span>
+                  </p>
+                  <p className="text-sm text-white">
+                    End: <span className="text-[#f472b6]">{replayEndTime}</span>
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -128,7 +151,7 @@ export default function ArchivesView({
                     onClick={onToggleReplay}
                     className="px-3 py-2 text-[9px] font-black text-white bg-[#2b1a42] border border-[#5f2b84] rounded hover:bg-[#8b5cf6] transition-all uppercase tracking-widest"
                   >
-                    {replay.playing ? 'Pause' : 'Play'}
+                    {replay.playing ? "Pause" : "Play"}
                   </button>
                   <button
                     onClick={onStopReplay}
@@ -147,29 +170,43 @@ export default function ArchivesView({
                 onChange={(e) => onSeekReplay(e.target.value)}
               />
               {replay.events.length === 0 && (
-                <p className="text-[10px] text-[#9f8cc9] mt-2">Load Run to build a replay timeline from telemetry.</p>
+                <p className="text-[10px] text-[#9f8cc9] mt-2">
+                  Load Run to build a replay timeline from telemetry.
+                </p>
               )}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl border border-white/5 bg-black/30">
                 <p className="text-[11px] text-[#cdb6ff] uppercase">Rooms</p>
-                <p className="text-2xl font-semibold text-white">{Object.keys(selectedArchive.data?.rooms || {}).length}</p>
+                <p className="text-2xl font-semibold text-white">
+                  {Object.keys(selectedArchive.data?.rooms || {}).length}
+                </p>
               </div>
               <div className="p-4 rounded-xl border border-white/5 bg-black/30">
                 <p className="text-[11px] text-[#cdb6ff] uppercase">Players</p>
-                <p className="text-2xl font-semibold text-white">{(selectedArchive.data?.players || []).length}</p>
+                <p className="text-2xl font-semibold text-white">
+                  {(selectedArchive.data?.players || []).length}
+                </p>
               </div>
               <div className="p-4 rounded-xl border border-white/5 bg-black/30">
                 <p className="text-[11px] text-[#cdb6ff] uppercase">Status</p>
-                <p className="text-sm font-semibold text-white">{selectedArchive.data?.status || 'closed'}</p>
+                <p className="text-sm font-semibold text-white">
+                  {selectedArchive.data?.status || "closed"}
+                </p>
               </div>
               <div className="p-4 rounded-xl border border-white/5 bg-black/30">
-                <p className="text-[11px] text-[#cdb6ff] uppercase">Timestamp</p>
-                <p className="text-sm font-semibold text-white">{new Date(selectedArchive.timestamp || '').toLocaleString()}</p>
+                <p className="text-[11px] text-[#cdb6ff] uppercase">
+                  Timestamp
+                </p>
+                <p className="text-sm font-semibold text-white">
+                  {new Date(selectedArchive.timestamp || "").toLocaleString()}
+                </p>
               </div>
             </div>
             <div className="mt-4 rounded border border-[#5f2b84] bg-black/60 p-4">
-              <pre className="text-[#cdb6ff] text-xs">{JSON.stringify(selectedArchive.data || {}, null, 2)}</pre>
+              <pre className="text-[#cdb6ff] text-xs">
+                {JSON.stringify(selectedArchive.data || {}, null, 2)}
+              </pre>
             </div>
           </div>
         )}

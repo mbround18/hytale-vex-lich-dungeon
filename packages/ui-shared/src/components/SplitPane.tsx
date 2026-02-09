@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export type SplitPaneProps = {
   sidebar: React.ReactNode;
@@ -11,9 +11,9 @@ export type SplitPaneProps = {
 export default function SplitPane({
   sidebar,
   content,
-  className = '',
-  sidebarClassName = '',
-  contentClassName = ''
+  className = "",
+  sidebarClassName = "",
+  contentClassName = "",
 }: SplitPaneProps) {
   return (
     <div className={`flex ${className}`}>

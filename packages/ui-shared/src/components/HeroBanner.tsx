@@ -1,5 +1,5 @@
-import React from 'react';
-import Badge from './Badge';
+import React from "react";
+import Badge from "./Badge";
 
 export type HeroBannerProps = {
   badge?: string;
@@ -9,7 +9,13 @@ export type HeroBannerProps = {
   className?: string;
 };
 
-export default function HeroBanner({ badge, title, subtitle, right, className = '' }: HeroBannerProps) {
+export default function HeroBanner({
+  badge,
+  title,
+  subtitle,
+  right,
+  className = "",
+}: HeroBannerProps) {
   return (
     <section className={`hero-banner ${className}`}>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">

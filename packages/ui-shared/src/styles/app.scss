@@ -1,14 +1,6 @@
+@use './_tokens' as tokens;
 @use './_base' as *;
-@use "./_tokens" as tokens;
-@use "tailwindcss";
+@import "tailwindcss";
 
-html, body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  min-height: 100vh;
-}
-
-$font-body: tokens.$font-body;
+// Google Fonts import
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, ChevronRight, Users } from 'lucide-react';
+import React from "react";
+import { Calendar, ChevronRight, Users } from "lucide-react";
 
 type DevLogCardProps = {
   title: string;
@@ -9,7 +9,13 @@ type DevLogCardProps = {
   excerpt: string;
 };
 
-export default function DevLogCard({ title, date, author, tags, excerpt }: DevLogCardProps) {
+export default function DevLogCard({
+  title,
+  date,
+  author,
+  tags,
+  excerpt,
+}: DevLogCardProps) {
   return (
     <div className="group relative p-6 rounded-2xl bg-[#120b1b] border border-[#30223f] hover:border-violet-500/50 transition-all duration-300 hover:shadow-[0_10px_40px_rgba(139,92,246,0.15)]">
       <div className="absolute top-0 right-0 p-6 opacity-30 group-hover:opacity-100 transition-opacity">
@@ -30,13 +36,14 @@ export default function DevLogCard({ title, date, author, tags, excerpt }: DevLo
         {title}
       </h3>
 
-      <p className="text-sm text-[#d7c9ff] leading-relaxed mb-6">
-        {excerpt}
-      </p>
+      <p className="text-sm text-[#d7c9ff] leading-relaxed mb-6">{excerpt}</p>
 
       <div className="flex flex-wrap gap-2">
         {tags.map((tag, i) => (
-          <span key={i} className="px-2 py-1 rounded bg-white/5 text-[10px] uppercase tracking-wider font-bold text-[#9f8cc9] border border-white/5">
+          <span
+            key={i}
+            className="px-2 py-1 rounded bg-white/5 text-[10px] uppercase tracking-wider font-bold text-[#9f8cc9] border border-white/5"
+          >
             {tag}
           </span>
         ))}

@@ -1,76 +1,18 @@
-@use "ui-shared/styles/base";
-@import "tailwindcss";
+// Dashboard-specific styles
+// Base styles and tokens are imported via AppProvider from ui-shared
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+@use "ui-shared/styles/tokens" as tokens;
 
-:root {
-  --vex-void: #08060d;
-  --vex-night: #120b1b;
-  --vex-panel: #161025;
-  --vex-panel-strong: #1f1633;
-  --vex-border: #30223f;
-  --vex-line: #3a2a50;
-  --vex-violet: #8b5cf6;
-  --vex-ember: #fbbf24;
-  --vex-green: #4ade80;
-  --vex-rose: #f472b6;
-  --vex-cyan: #38bdf8;
-  --text-strong: #f5f3ff;
-  --text-body: #d7c9ff;
-  --text-muted: #9f8cc9;
-  --grid-dot: rgba(255, 255, 255, 0.05);
-  --shadow-soft: 0 30px 80px rgba(6, 3, 10, 0.65);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'IBM Plex Sans', sans-serif;
-  background:
-    radial-gradient(1100px 700px at 15% -10%, rgba(96, 43, 132, 0.22), transparent 55%),
-    radial-gradient(900px 600px at 85% 5%, rgba(34, 211, 238, 0.08), transparent 55%),
-    linear-gradient(160deg, #07050c 0%, #0b0912 55%, #05040a 100%);
-  color: var(--text-body);
-  overflow: hidden;
-}
-
-h1, h2, h3, h4 {
-  font-family: 'Space Grotesk', sans-serif;
-  letter-spacing: -0.01em;
-}
-
-pre, code {
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.vex-grid {
-  background-image: radial-gradient(var(--grid-dot) 0.5px, transparent 0.5px);
-  background-size: 28px 28px;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-}
+// Dashboard Component Styles
 
 .app-header {
-  background: linear-gradient(90deg, rgba(22, 16, 37, 0.98), rgba(20, 13, 31, 0.92));
-  border-bottom: 1px solid var(--vex-border);
-  box-shadow: 0 10px 40px rgba(8, 6, 13, 0.5);
+  background: linear-gradient(90deg, rgba(10, 18, 26, 0.98), rgba(9, 14, 22, 0.92));
+  border-bottom: 1px solid rgba(34, 64, 78, 0.65);
+  box-shadow: 0 10px 40px rgba(4, 8, 12, 0.6);
 }
 
 .brand-badge {
-  box-shadow: 0 0 25px rgba(139, 92, 246, 0.45);
+  box-shadow: tokens.$shadow-glow-purple;
 }
 
 .nav-button {
@@ -78,21 +20,21 @@ pre, code {
 }
 
 .nav-button.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(80, 50, 200, 0.9));
+  background: linear-gradient(135deg, rgba(14, 165, 164, 0.9), rgba(6, 95, 132, 0.9));
   color: #fff;
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 8px 24px rgba(14, 165, 164, 0.28);
 }
 
 .stat-card {
-  background: linear-gradient(160deg, rgba(28, 20, 45, 0.92), rgba(10, 8, 14, 0.98));
-  border: 1px solid rgba(120, 88, 170, 0.35);
+  background: linear-gradient(160deg, rgba(18, 24, 34, 0.94), rgba(8, 10, 16, 0.98));
+  border: 1px solid rgba(64, 96, 112, 0.4);
   border-radius: 18px;
-  box-shadow: 0 30px 70px rgba(5, 3, 8, 0.55);
+  box-shadow: 0 28px 70px rgba(4, 8, 12, 0.55);
 }
 
 .kpi-card {
-  background: linear-gradient(165deg, rgba(27, 19, 44, 0.9), rgba(12, 8, 18, 0.95));
-  border: 1px solid rgba(139, 92, 246, 0.32);
+  background: linear-gradient(165deg, rgba(18, 22, 32, 0.92), rgba(10, 14, 18, 0.96));
+  border: 1px solid rgba(14, 165, 164, 0.22);
   border-radius: 18px;
   position: relative;
   overflow: hidden;
@@ -103,7 +45,7 @@ pre, code {
   content: '';
   position: absolute;
   inset: -1px;
-  background: radial-gradient(circle at top, rgba(139, 92, 246, 0.15), transparent 60%);
+  background: radial-gradient(circle at top, rgba(14, 165, 164, 0.18), transparent 60%);
   opacity: 0.5;
   pointer-events: none;
 }
@@ -113,7 +55,7 @@ pre, code {
   text-transform: uppercase;
   letter-spacing: 0.34em;
   font-weight: 700;
-  color: var(--vex-violet);
+  color: rgba(14, 165, 164, 0.9);
 }
 
 .section-subtitle {
@@ -121,7 +63,7 @@ pre, code {
   text-transform: uppercase;
   letter-spacing: 0.28em;
   font-weight: 700;
-  color: var(--text-muted);
+  color: tokens.$text-muted;
 }
 
 .tracking-pillars {
@@ -133,19 +75,19 @@ pre, code {
 .tracking-card {
   padding: 20px;
   border-radius: 16px;
-  border: 1px solid rgba(120, 88, 170, 0.35);
-  background: linear-gradient(140deg, rgba(23, 16, 37, 0.85), rgba(10, 7, 16, 0.97));
-  box-shadow: 0 20px 45px rgba(4, 2, 7, 0.55);
+  border: 1px solid rgba(64, 96, 112, 0.4);
+  background: linear-gradient(140deg, rgba(16, 22, 30, 0.9), rgba(9, 11, 16, 0.97));
+  box-shadow: 0 22px 60px rgba(4, 8, 12, 0.55);
 }
 
 .tracking-card h4 {
-  color: var(--text-strong);
+  color: tokens.$text-strong;
   font-weight: 600;
   font-size: 15px;
 }
 
 .tracking-card p {
-  color: var(--text-muted);
+  color: tokens.$text-muted;
   font-size: 12px;
 }
 
@@ -158,7 +100,7 @@ pre, code {
   justify-content: center;
   font-size: 16px;
   color: #0f0b18;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 1), rgba(244, 114, 182, 1));
+  background: linear-gradient(135deg, rgba(14, 165, 164, 1), rgba(56, 189, 248, 1));
   margin-bottom: 12px;
 }
 
@@ -176,13 +118,13 @@ pre, code {
   gap: 6px;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(139, 92, 246, 0.4);
-  background: rgba(10, 7, 16, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(8, 12, 16, 0.7);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-weight: 700;
-  color: var(--text-muted);
+  color: tokens.$text-muted;
 }
 
 .status-dot {
@@ -192,7 +134,7 @@ pre, code {
 }
 
 .status-dot.live {
-  background: var(--vex-green);
+  background: tokens.$vex-green;
   box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
 }
 
@@ -210,7 +152,7 @@ pre, code {
 .data-table th {
   text-align: left;
   padding: 12px 14px;
-  color: var(--text-muted);
+  color: tokens.$text-muted;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -233,8 +175,8 @@ pre, code {
 }
 
 .event-card.active {
-  background-color: var(--vex-panel-strong);
-  border-left-color: var(--vex-violet);
+  background-color: rgba(14, 19, 28, 0.95);
+  border-left-color: rgba(56, 189, 248, 0.8);
 }
 
 #map-container svg {
@@ -248,15 +190,15 @@ pre, code {
 @keyframes player-pulse {
   0% {
     r: 3;
-    fill: #4ade80;
+    fill: tokens.$vex-green;
   }
   50% {
     r: 5;
-    fill: #fbbf24;
+    fill: tokens.$vex-ember;
   }
   100% {
     r: 3;
-    fill: #4ade80;
+    fill: tokens.$vex-green;
   }
 }
 
@@ -269,28 +211,28 @@ pre, code {
   position: absolute;
   inset: -1px;
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(139, 92, 246, 0.3), rgba(74, 222, 128, 0.08));
+  background: linear-gradient(145deg, rgba(56, 189, 248, 0.28), rgba(74, 222, 128, 0.08));
   opacity: 0.6;
   pointer-events: none;
 }
 
 .hero-banner {
-  background: radial-gradient(circle at 18% 20%, rgba(139, 92, 246, 0.28), transparent 55%),
-    radial-gradient(circle at 82% 30%, rgba(56, 189, 248, 0.18), transparent 60%),
-    linear-gradient(140deg, rgba(18, 11, 27, 0.95), rgba(9, 7, 14, 0.98));
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: radial-gradient(circle at 18% 20%, rgba(56, 189, 248, 0.22), transparent 55%),
+    radial-gradient(circle at 82% 30%, rgba(14, 165, 164, 0.18), transparent 60%),
+    linear-gradient(140deg, rgba(10, 15, 22, 0.95), rgba(8, 10, 16, 0.98));
+  border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 24px;
   padding: 28px;
 }
 
 .hero-title {
-  color: var(--text-strong);
+  color: tokens.$text-strong;
   font-size: 28px;
   font-weight: 700;
 }
 
 .hero-subtitle {
-  color: var(--text-muted);
+  color: tokens.$text-muted;
   font-size: 13px;
 }
 
@@ -303,7 +245,7 @@ pre, code {
   text-transform: uppercase;
   background: rgba(139, 92, 246, 0.18);
   border: 1px solid rgba(139, 92, 246, 0.4);
-  color: var(--text-body);
+  color: tokens.$text-body;
 }
 
 .badge.green {
@@ -335,13 +277,13 @@ pre, code {
 }
 
 .metric-line span:last-child {
-  color: var(--text-strong);
+  color: tokens.$text-strong;
   font-weight: 600;
 }
 
 .telemetry-pane {
   background: rgba(9, 5, 15, 0.8);
-  border-left: 1px solid var(--vex-border);
+  border-left: 1px solid tokens.$vex-border;
 }
 
 .telemetry-details {
