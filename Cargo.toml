@@ -1,5 +1,3 @@
-
-
 [workspace]
-members = ["packages/ui-mangle"]
+members = ["packages/ui-mangle", "packages/serve-cli"]
 resolver = "3"

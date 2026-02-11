@@ -4,7 +4,7 @@ import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexdemohudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
-import com.hypixel.hytale.server.core.Message;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import javax.annotation.Nonnull;
 
@@ -37,28 +37,19 @@ public final class VexDemoHud extends AbstractCustomUIHud<VexHudVexdemohudUi> {
 
   public void setScore(@Nonnull PlayerRef playerRef, @Nonnull String scoreText) {
     VexHudVexdemohudUi ui = getUiModel();
-    String value = scoreText != null ? scoreText : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.demoScore, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(scoreText);
+    set(playerRef, ui.demoScore, UiMessage.raw(value));
   }
 
   public void setTimer(@Nonnull PlayerRef playerRef, @Nonnull String timerText) {
     VexHudVexdemohudUi ui = getUiModel();
-    String value = timerText != null ? timerText : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.demoTimer, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(timerText);
+    set(playerRef, ui.demoTimer, UiMessage.raw(value));
   }
 
   public void setDebugStat(@Nonnull PlayerRef playerRef, @Nonnull String debugStat) {
     VexHudVexdemohudUi ui = getUiModel();
-    String value = debugStat != null ? debugStat : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexDebugStat, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(debugStat);
+    set(playerRef, ui.vexDebugStat, UiMessage.raw(value));
   }
 }

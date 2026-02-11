@@ -72,6 +72,12 @@ applyTo: "**/assets/Common/UI/Custom/**,**/assets/Server/Languages/en-US/server.
   - Wrong: #FriendsListBody
   - Use UiVars.textId("FriendsListBody") from ImmortalEngine.
 
+1. HUD text safety
+
+- Never send fractions or slash-delimited ratios in HUD/UI updates (e.g., "0/0", "12/100").
+  - Even in plain strings, these can trigger client-side parsing issues.
+  - Prefer whole numbers or words instead (e.g., "0 Members", "HP: 0").
+
 1. HUD lifecycle and cleanup
 
 - Always ensure HUD cleanup only targets active HUD instances; never create new HUDs during cleanup operations.

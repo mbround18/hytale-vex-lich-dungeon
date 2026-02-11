@@ -1,4 +1,5 @@
 packages:
   - "packages/ui-dashboard"
   - "packages/ui-frontdoor"
+  - "packages/ui-manager"
   - "packages/ui-shared"

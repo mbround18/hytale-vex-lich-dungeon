@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 
 public final class VexHudSequenceSupport {
   private static final long HUD_SEQUENCE_DELAY_MS = 150L;
+  private static final long HUD_EVENT_INITIAL_DELAY_MS = 200L;
 
   private VexHudSequenceSupport() {
   }
@@ -23,9 +24,8 @@ public final class VexHudSequenceSupport {
     VexPortalCountdownHud.closeFor(playerRef);
     VexWelcomeHud.closeFor(playerRef);
     VexScoreHud.closeFor(playerRef);
-    dispatch(null, new VexWelcomeHudRequestedEvent(playerRef, "Prepare yourself. The portal opens soon."));
     dispatchDelayed(null, new VexScoreHudRequestedEvent(playerRef, instanceScore, playerScore, delta, partyList),
-        HUD_SEQUENCE_DELAY_MS);
+        HUD_EVENT_INITIAL_DELAY_MS);
   }
 
   public static void showWelcomeThenScore(@Nonnull World world, @Nonnull PlayerRef playerRef, int instanceScore,
@@ -33,9 +33,26 @@ public final class VexHudSequenceSupport {
     VexPortalCountdownHud.closeFor(playerRef);
     VexWelcomeHud.closeFor(playerRef);
     VexScoreHud.closeFor(playerRef);
-    dispatch(world, new VexWelcomeHudRequestedEvent(playerRef, "Prepare yourself. The portal opens soon."));
     dispatchDelayed(world, new VexScoreHudRequestedEvent(playerRef, instanceScore, playerScore, delta, partyList),
-        HUD_SEQUENCE_DELAY_MS);
+        HUD_EVENT_INITIAL_DELAY_MS);
+  }
+
+  public static void showScoreOnly(@Nonnull PlayerRef playerRef, int instanceScore,
+      int playerScore, int delta, @Nonnull String partyList) {
+    VexPortalCountdownHud.closeFor(playerRef);
+    VexWelcomeHud.closeFor(playerRef);
+    VexScoreHud.closeFor(playerRef);
+    dispatchDelayed(null, new VexScoreHudRequestedEvent(playerRef, instanceScore, playerScore, delta, partyList),
+        HUD_EVENT_INITIAL_DELAY_MS);
+  }
+
+  public static void showScoreOnly(@Nonnull World world, @Nonnull PlayerRef playerRef, int instanceScore,
+      int playerScore, int delta, @Nonnull String partyList) {
+    VexPortalCountdownHud.closeFor(playerRef);
+    VexWelcomeHud.closeFor(playerRef);
+    VexScoreHud.closeFor(playerRef);
+    dispatchDelayed(world, new VexScoreHudRequestedEvent(playerRef, instanceScore, playerScore, delta, partyList),
+        HUD_EVENT_INITIAL_DELAY_MS);
   }
 
   public static void showSummarySequence(@Nonnull PlayerRef playerRef, @Nonnull String statsLine,

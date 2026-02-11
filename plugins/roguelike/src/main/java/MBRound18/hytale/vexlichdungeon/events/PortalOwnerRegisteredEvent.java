@@ -33,6 +33,6 @@ public final class PortalOwnerRegisteredEvent extends DebugEvent {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("portalId", portalId);
     data.put("ownerId", ownerId);
-    return data;
+    return withCorrelation(data);
   }
 }

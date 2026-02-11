@@ -17,6 +17,15 @@ import java.util.function.Supplier;
  * game thread.
  */
 public abstract class DebugEvent implements IEvent<Void> {
+  private final String correlationId;
+
+  protected DebugEvent() {
+    this.correlationId = CorrelationContext.getOrCreate();
+  }
+
+  public String getCorrelationId() {
+    return correlationId;
+  }
 
   /**
    * Return a serializable payload or a {@link CompletableFuture} for async
@@ -28,7 +37,36 @@ public abstract class DebugEvent implements IEvent<Void> {
     if (fields == null || fields.isEmpty()) {
       return null;
     }
-    return fields;
+    try {
+      fields.putIfAbsent("correlationId", correlationId);
+      return fields;
+    } catch (UnsupportedOperationException e) {
+      Map<String, Object> copy = new LinkedHashMap<>(fields);
+      copy.putIfAbsent("correlationId", correlationId);
+      return copy;
+    }
+  }
+
+  protected Object withCorrelation(Object payload) {
+    if (payload == null) {
+      return null;
+    }
+    if (payload instanceof CompletableFuture<?> future) {
+      return future.thenApply(this::withCorrelation);
+    }
+    if (payload instanceof Map<?, ?> map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> payloadMap = (Map<String, Object>) map;
+      try {
+        payloadMap.putIfAbsent("correlationId", correlationId);
+        return payloadMap;
+      } catch (UnsupportedOperationException e) {
+        Map<String, Object> copy = new LinkedHashMap<>(payloadMap);
+        copy.putIfAbsent("correlationId", correlationId);
+        return copy;
+      }
+    }
+    return payload;
   }
 
   /**

@@ -24,6 +24,6 @@ public final class PortalCloseRequestedEvent extends DebugEvent {
   public Object toPayload() {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("portalId", portalId);
-    return data;
+    return withCorrelation(data);
   }
 }

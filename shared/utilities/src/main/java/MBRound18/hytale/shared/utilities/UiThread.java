@@ -26,27 +26,76 @@ public final class UiThread {
       return false;
     }
 
-    UUID worldUuid = playerRef.getWorldUuid();
-    if (worldUuid == null) {
-      log.warn("World UUID is null for playerRef: " + playerRef);
-      return false;
+    World world = null;
+    World refWorld = null;
+    try {
+      var ref = playerRef.getReference();
+      if (ref != null && ref.isValid()) {
+        var store = ref.getStore();
+        if (store != null && store.getExternalData() != null) {
+          refWorld = store.getExternalData().getWorld();
+        }
+      }
+    } catch (Exception ignored) {
+      // Fall through to UUID lookup
     }
 
-    // Universe.get() is thread-safe [3, 4]
-    World world = Universe.get().getWorld(worldUuid);
+    UUID worldUuid = playerRef.getWorldUuid();
+    if (worldUuid != null) {
+      // Universe.get() is thread-safe [3, 4]
+      world = Universe.get().getWorld(worldUuid);
+    }
+
+    if (refWorld != null) {
+      if (world != null && !world.equals(refWorld)) {
+        log.warn("World mismatch for player %s. UUID=%s ref=%s; using ref world.",
+            playerRef.getUsername(), world.getName(), refWorld.getName());
+      }
+      world = refWorld;
+    }
+
     if (world == null) {
-      log.warn("World is null for UUID: " + worldUuid);
+      try {
+        PlayerRef refreshed = Universe.get().getPlayer(playerRef.getUuid());
+        if (refreshed != null) {
+          try {
+            var ref = refreshed.getReference();
+            if (ref != null && ref.isValid()) {
+              var store = ref.getStore();
+              if (store != null && store.getExternalData() != null) {
+                world = store.getExternalData().getWorld();
+              }
+            }
+          } catch (Exception ignored) {
+            // Fall back to UUID lookup
+          }
+
+          if (world == null) {
+            UUID refreshedWorld = refreshed.getWorldUuid();
+            if (refreshedWorld != null) {
+              world = Universe.get().getWorld(refreshedWorld);
+            }
+          }
+        }
+      } catch (Exception ignored) {
+        // Fall through to warning
+      }
+    }
+
+    if (world == null) {
+      log.warn("World is null for playerRef: " + playerRef);
       return false;
     }
 
     // The Bridge: Schedule logic to run on the World's next tick [5, 6]
     // This prevents IllegalStateException when accessing ECS/UI.
-    world.execute(() -> {
+    final World targetWorld = world;
+    targetWorld.execute(() -> {
       try {
         action.run();
       } catch (Exception e) {
         String playerName = playerRef.getUsername();
-        String worldName = world.getName();
+        String worldName = targetWorld.getName();
         String actionName = action.getClass().getName();
         log.error("Error executing UI action for player %s in world %s (action=%s): %s",
             playerName, worldName, actionName, e.getMessage());

@@ -4,7 +4,7 @@ import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexportalcountdownhudMinUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
-import com.hypixel.hytale.server.core.Message;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import javax.annotation.Nonnull;
 
@@ -39,11 +39,8 @@ public final class VexPortalCountdownHudMin extends AbstractCustomUIHud<VexHudVe
     if (ui == null) {
       return;
     }
-    String value = locationText != null ? locationText : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexPortalLocation, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(locationText);
+    set(playerRef, ui.vexPortalLocation, UiMessage.raw(value));
   }
 
   public void setTimeLeft(@Nonnull PlayerRef playerRef, @Nonnull String timeLeft) {
@@ -51,10 +48,7 @@ public final class VexPortalCountdownHudMin extends AbstractCustomUIHud<VexHudVe
     if (ui == null) {
       return;
     }
-    String value = timeLeft != null ? timeLeft : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexPortalCountdown, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(timeLeft);
+    set(playerRef, ui.vexPortalCountdown, UiMessage.raw(value));
   }
 }

@@ -1,5 +1,21 @@
-                    GNU AFFERO GENERAL PUBLIC LICENSE
-                       Version 3, 19 November 2007
+AGPLv3 + Commons Clause
+
+This software is licensed under the GNU Affero General Public License version 3 (AGPLv3), with the addition of the Commons Clause.
+
+IMPORTANT: This is a "Source Available" license. It is NOT an Open Source license as defined by the Open Source Initiative, as it restricts commercial resale.
+
+The Commons Clause Condition
+
+Without limiting other conditions in the License, the grant of rights under the License will not include, and the License does not grant to you, the right to Sell the Software.
+
+"Sell" means practicing any or all of the rights granted to you under the License to provide to third parties, for a fee or other consideration (including without limitation fees for hosting or transferring the Software), a product or service whose value derives, entirely or substantially, from the functionality of the Software.
+
+GNU AFFERO GENERAL PUBLIC LICENSE
+
+Version 3, 19 November 2007
+
+Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.
 
  Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
  Everyone is permitted to copy and distribute verbatim copies

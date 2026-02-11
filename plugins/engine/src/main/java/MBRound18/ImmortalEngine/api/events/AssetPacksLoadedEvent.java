@@ -17,6 +17,6 @@ public final class AssetPacksLoadedEvent extends DebugEvent {
   public Object toPayload() {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("event", "AssetPacksLoaded");
-    return data;
+    return withCorrelation(data);
   }
 }

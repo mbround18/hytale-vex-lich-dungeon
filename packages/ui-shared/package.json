@@ -10,7 +10,8 @@
   "dependencies": {
     "lucide-react": "^0.563.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
@@ -32,6 +33,7 @@
     "./styles/app": "./src/styles/app.scss",
     "./components": "./src/components/index.ts",
     "./layouts": "./src/layouts/index.ts",
+    "./streams": "./src/streams/index.ts",
     "./provider": "./src/AppProvider.tsx"
   }
 }

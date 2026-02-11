@@ -30,11 +30,11 @@ public final class PortalClosedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       data.put("portalId", portalId);
       data.put("world", worldMeta(world));
       return data;
-    });
+    }));
   }
 }

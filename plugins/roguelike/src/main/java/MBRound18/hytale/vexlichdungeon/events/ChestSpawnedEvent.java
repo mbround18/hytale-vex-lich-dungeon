@@ -49,13 +49,13 @@ public final class ChestSpawnedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       data.put("world", worldMeta(world));
       data.put("position", position);
       data.put("modelId", modelId);
       data.put("prefabPath", prefabPath);
       return data;
-    });
+    }));
   }
 }

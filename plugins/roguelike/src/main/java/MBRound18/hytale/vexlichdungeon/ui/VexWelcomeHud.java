@@ -4,7 +4,7 @@ import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexwelcomehudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
-import com.hypixel.hytale.server.core.Message;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import javax.annotation.Nonnull;
 
@@ -44,10 +44,7 @@ public final class VexWelcomeHud extends AbstractCustomUIHud<VexHudVexwelcomehud
     if (ui == null) {
       return;
     }
-    String value = bodyText != null ? bodyText : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexContentVexWelcomeBody, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(bodyText);
+    set(playerRef, ui.vexContentVexWelcomeBody, UiMessage.raw(value));
   }
 }

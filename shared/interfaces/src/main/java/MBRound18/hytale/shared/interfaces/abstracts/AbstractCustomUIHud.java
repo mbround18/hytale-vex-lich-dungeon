@@ -3,6 +3,7 @@ package MBRound18.hytale.shared.interfaces.abstracts;
 import MBRound18.hytale.shared.interfaces.ui.UiPath;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.shared.utilities.UiThread;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
@@ -149,7 +150,7 @@ public abstract class AbstractCustomUIHud<T> extends CustomUIHud {
   }
 
   public void set(@Nonnull PlayerRef targetRef, @Nonnull String selector, @Nonnull String value) {
-    set(targetRef, selector, Message.raw(value));
+    set(targetRef, selector, UiMessage.raw(value));
   }
 
   public void set(@Nonnull String selector, @Nonnull Message value) {
@@ -189,8 +190,8 @@ public abstract class AbstractCustomUIHud<T> extends CustomUIHud {
     }
 
     if (!sanitized.contains(".")) {
-      throw new IllegalArgumentException(
-          "Selector must target a specific property using dot notation (e.g. #score.text), got: " + selector);
+      // Default to text property for labels when callers provide only an element id.
+      sanitized = sanitized + ".text";
     }
     return sanitized;
   }

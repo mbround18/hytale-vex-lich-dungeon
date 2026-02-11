@@ -33,6 +33,6 @@ public final class RunFinalizeRequestedEvent extends DebugEvent {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("worldName", worldName);
     data.put("reason", reason);
-    return data;
+    return withCorrelation(data);
   }
 }

@@ -6,22 +6,38 @@ import MBRound18.hytale.shared.utilities.UiThread;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.Message;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public final class VexScoreHud extends AbstractCustomUIHud<VexHudVexscorehudUi> {
+
+  private enum DebugMode {
+    SINGLE_FIELD,
+    ALL
+  }
+
+  private static final DebugMode MODE = DebugMode.ALL;
+
   public VexScoreHud(@Nonnull PlayerRef playerRef) {
     super(VexHudVexscorehudUi.class, playerRef);
   }
 
+  /**
+   * Opens or updates the HUD.
+   * Restored Store and Ref parameters to fix compilation error in
+   * RoguelikeDungeonController.
+   */
   public static void open(
       @Nonnull Store<EntityStore> store,
       @Nonnull Ref<EntityStore> ref,
       @Nonnull PlayerRef playerRef,
-      int instanceScore, int playerScore,
-      int delta, @Nonnull String partyList) {
+      int instanceScore,
+      int playerScore,
+      int delta,
+      @Nullable String partyList) {
     update(playerRef, instanceScore, playerScore, delta, partyList);
   }
 
@@ -30,62 +46,60 @@ public final class VexScoreHud extends AbstractCustomUIHud<VexHudVexscorehudUi> 
   }
 
   public static void update(@Nonnull PlayerRef playerRef, int instanceScore, int playerScore,
-      int delta, @Nonnull String partyList) {
+      int delta, @Nullable String partyList) {
     UiThread.runOnPlayerWorld(playerRef, () -> {
       VexScoreHud hud = VexScoreHud.open(playerRef);
-      if (hud == null) {
+      if (hud == null)
         return;
+
+      if (MODE == DebugMode.ALL) {
+        hud.setInstanceScore(playerRef, instanceScore);
+        hud.setPlayerScore(playerRef, playerScore);
+        hud.setDelta(playerRef, delta);
+        hud.setPartyList(playerRef, partyList);
+      } else {
+        hud.setInstanceScore(playerRef, instanceScore);
       }
-      hud.setInstanceScore(playerRef, instanceScore);
-      hud.setPlayerScore(playerRef, playerScore);
-      hud.setDelta(playerRef, delta);
-      hud.setPartyList(playerRef, partyList);
     });
   }
 
   public void setInstanceScore(@Nonnull PlayerRef playerRef, int instanceScore) {
     VexHudVexscorehudUi ui = getUiModel();
-    if (ui == null) {
+    if (ui == null)
       return;
-    }
-    String value = "Instance: " + instanceScore;
-    set(playerRef, ui.vexHudInstanceScore, Message.raw(value));
+    String total = HudTextSanitizer.formatLabeledValue("Total Score:", instanceScore);
+    set(playerRef, ui.vexHudInstanceScore, UiMessage.raw(total));
   }
 
   public void setPlayerScore(@Nonnull PlayerRef playerRef, int playerScore) {
     VexHudVexscorehudUi ui = getUiModel();
-    if (ui == null) {
+    if (ui == null)
       return;
-    }
-    String value = "Player: " + playerScore;
-    set(playerRef, ui.vexHudPlayerScore, Message.raw(value));
+    String score = HudTextSanitizer.formatLabeledValue("Player Score:", playerScore);
+    set(playerRef, ui.vexHudPlayerScore, UiMessage.raw(score));
   }
 
   public void setDelta(@Nonnull PlayerRef playerRef, int delta) {
     VexHudVexscorehudUi ui = getUiModel();
-    if (ui == null) {
+    if (ui == null)
       return;
-    }
-    String value = (delta >= 0 ? "+" : "") + delta;
-    set(playerRef, ui.vexHudDelta, Message.raw(value));
+    String value = HudTextSanitizer.formatDelta(delta);
+    set(playerRef, ui.vexHudDelta, UiMessage.raw(value));
   }
 
-  public void setPartyList(@Nonnull PlayerRef playerRef, @Nonnull String partyList) {
+  public void setPartyList(@Nonnull PlayerRef playerRef, @Nullable String partyList) {
     VexHudVexscorehudUi ui = getUiModel();
-    if (ui == null) {
+    if (ui == null)
       return;
-    }
-    String value = partyList != null ? partyList : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexHudPartyList, Message.raw(value));
+    String listValue = HudTextSanitizer.sanitize(partyList);
+    String list = HudTextSanitizer.sanitize("Party: %s".formatted(listValue));
+    set(playerRef, ui.vexHudPartyList, UiMessage.raw(list));
   }
 
   public static void closeFor(@Nonnull PlayerRef playerRef) {
     UiThread.runOnPlayerWorld(playerRef, () -> {
       AbstractCustomUIHud.closeHud(playerRef, VexScoreHud.class, hud -> {
-        // Score HUD closed safely
+        // Cleanup logic if needed
       });
     });
   }

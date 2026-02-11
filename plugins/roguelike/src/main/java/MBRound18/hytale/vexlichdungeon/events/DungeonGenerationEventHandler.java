@@ -35,6 +35,7 @@ import com.hypixel.hytale.server.core.event.events.player.DrainPlayerFromWorldEv
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.events.StartWorldEvent;
@@ -517,6 +518,16 @@ public class DungeonGenerationEventHandler {
   private UUID resolveEntityUuid(@Nullable Ref<EntityStore> ref) {
     if (ref == null) {
       return null;
+    }
+    try {
+      Store<EntityStore> store = ref.getStore();
+      if (store != null) {
+        UUIDComponent uuidComponent = store.getComponent(ref, UUIDComponent.getComponentType());
+        if (uuidComponent != null && uuidComponent.getUuid() != null) {
+          return uuidComponent.getUuid();
+        }
+      }
+    } catch (Exception ignored) {
     }
     try {
       Object uuid = invokeAny(ref, "getUuid", "getId");

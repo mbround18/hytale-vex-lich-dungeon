@@ -13,7 +13,7 @@
     "$type": "04"
   },
   "GameplayConfig": "Default",
-  "IsCompassUpdating": true,
+  "IsCompassUpdating": false,
   "IsTicking": true,
   "IsGameTimePaused": false,
   "IsObjectiveMarkersEnabled": true,
@@ -35,6 +35,6 @@
     }
   },
   "IsSpawnMarkersEnabled": true,
-  "DeleteOnRemove": false,
+  "DeleteOnRemove": true,
   "Version": 2
 }

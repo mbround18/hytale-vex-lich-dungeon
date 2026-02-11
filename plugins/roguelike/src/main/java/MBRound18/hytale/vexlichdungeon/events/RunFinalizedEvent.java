@@ -43,6 +43,6 @@ public final class RunFinalizedEvent extends DebugEvent {
     data.put("worldName", worldName);
     data.put("summary", summary);
     data.put("reason", reason);
-    return data;
+    return withCorrelation(data);
   }
 }

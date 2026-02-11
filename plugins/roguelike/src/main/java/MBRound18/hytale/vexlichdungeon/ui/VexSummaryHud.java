@@ -4,7 +4,7 @@ import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexsummaryhudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
-import com.hypixel.hytale.server.core.Message;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import javax.annotation.Nonnull;
 
@@ -36,19 +36,13 @@ public final class VexSummaryHud extends AbstractCustomUIHud<VexHudVexsummaryhud
 
   public void setStatsLine(@Nonnull PlayerRef playerRef, @Nonnull String statsLine) {
     VexHudVexsummaryhudUi ui = getUiModel();
-    String value = statsLine != null ? statsLine : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexContentVexSummaryStats, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(statsLine);
+    set(playerRef, ui.vexContentVexSummaryStats, UiMessage.raw(value));
   }
 
   public void setSummaryLine(@Nonnull PlayerRef playerRef, @Nonnull String summaryLine) {
     VexHudVexsummaryhudUi ui = getUiModel();
-    String value = summaryLine != null ? summaryLine : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexContentVexSummaryBody, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(summaryLine);
+    set(playerRef, ui.vexContentVexSummaryBody, UiMessage.raw(value));
   }
 }

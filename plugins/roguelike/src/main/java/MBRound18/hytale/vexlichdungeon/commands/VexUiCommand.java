@@ -3,7 +3,9 @@ package MBRound18.hytale.vexlichdungeon.commands;
 import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIPage;
 import MBRound18.hytale.shared.interfaces.ui.CustomHudController;
 import MBRound18.hytale.shared.interfaces.ui.DebugUiPage;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import MBRound18.hytale.shared.utilities.UiThread;
+import MBRound18.hytale.vexlichdungeon.ui.HudTextSanitizer;
 import MBRound18.hytale.vexlichdungeon.ui.VexUiCatalog;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -136,7 +138,7 @@ public class VexUiCommand extends AbstractCommand {
           if (key == null || value == null) {
             continue;
           }
-          hud.set(playerRef, key, Message.raw(value));
+          hud.set(playerRef, key, UiMessage.raw(HudTextSanitizer.sanitize(value)));
         }
       }
 

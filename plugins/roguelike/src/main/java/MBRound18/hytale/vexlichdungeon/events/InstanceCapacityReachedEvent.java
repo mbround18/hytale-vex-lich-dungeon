@@ -47,6 +47,6 @@ public final class InstanceCapacityReachedEvent extends DebugEvent {
     data.put("worldName", worldName);
     data.put("maxPlayers", maxPlayers);
     data.put("currentPlayers", currentPlayers);
-    return data;
+    return withCorrelation(data);
   }
 }

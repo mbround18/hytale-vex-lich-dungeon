@@ -69,7 +69,7 @@ public final class EntitySpawnedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       data.put("world", worldMeta(world));
       data.put("entityId", entityId);
@@ -80,6 +80,6 @@ public final class EntitySpawnedEvent extends DebugEvent {
         data.put("position", Map.of("x", position.x, "y", position.y, "z", position.z));
       }
       return data;
-    });
+    }));
   }
 }

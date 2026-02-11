@@ -15,6 +15,9 @@ dist/
 /data
 !/plugins/**/data
 
+.idea
+.ai/
+
 ## Created by https://www.toptal.com/developers/gitignore/api/node,java,rust
 # Edit at https://www.toptal.com/developers/gitignore?templates=node,java,rust
 

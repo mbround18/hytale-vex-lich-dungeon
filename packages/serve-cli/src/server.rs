@@ -1,33 +1,46 @@
 use crate::processes::{ProcessManager, ProcessType};
 use crate::ws::ws_handler;
 use actix_files::Files;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::sync::Arc;
+use tracing::{error, info};
+
+/// Helper to parse process strings into ProcessType
+fn parse_process_type(name: &str) -> Option<ProcessType> {
+    match name.to_lowercase().as_str() {
+        "gradle" => Some(ProcessType::Gradle),
+        "docker" | "docker-compose" => Some(ProcessType::DockerCompose),
+        "pnpm" => Some(ProcessType::Pnpm),
+        _ => None,
+    }
+}
 
 pub async fn run(process_manager: Arc<ProcessManager>, port: u16) -> anyhow::Result<()> {
-    // web::Data wraps the Arc, allowing it to be cloned cheaply into Actix workers
-    let pm_data = web::Data::new(process_manager);
+    // Store the Arc itself so handlers can extract Arc<ProcessManager>
+    let pm_data = web::Data::new(process_manager.clone());
 
-    println!("🚀 Server starting on http://0.0.0.0:{}", port);
+    info!("🚀 Server starting on http://0.0.0.0:{}", port);
 
     HttpServer::new(move || {
         App::new()
             .app_data(pm_data.clone())
+            // Middleware for clean request logging
+            .wrap(middleware::Logger::default())
             // API Endpoints
             .service(
                 web::scope("/api")
-                    .route("/logs/{process}", web::get().to(get_logs))
                     .route("/status", web::get().to(get_status))
+                    .route("/logs/{process}", web::get().to(get_logs))
                     .route("/control", web::post().to(control_process)),
             )
-            // WebSocket Endpoint
+            // WebSocket Stream
             .route("/ws/{process}", web::get().to(ws_handler))
-            // Static/Docs
+            // Static Assets & Docs
             .route("/openapi.json", web::get().to(openapi_spec))
             .route("/", web::get().to(index))
-            .service(Files::new("/static", "./static").show_files_listing())
+            .service(Files::new("/dist", "./dist").show_files_listing())
     })
     .bind(("0.0.0.0", port))?
     .run()
@@ -37,7 +50,7 @@ pub async fn run(process_manager: Arc<ProcessManager>, port: u16) -> anyhow::Res
 }
 
 async fn index() -> impl Responder {
-    // Embeds the HTML in the binary for single-file deployment convenience
+    // Embedded HTML for zero-dependency deployment
     const DASHBOARD_HTML: &str = include_str!("../static/index.html");
 
     HttpResponse::Ok()
@@ -48,25 +61,21 @@ async fn index() -> impl Responder {
 async fn get_logs(path: web::Path<String>, pm: web::Data<Arc<ProcessManager>>) -> impl Responder {
     let process_name = path.into_inner();
 
-    let process_type = match process_name.as_str() {
-        "gradle" => ProcessType::Gradle,
-        "docker" => ProcessType::DockerCompose,
-        "pnpm" => ProcessType::Pnpm,
-        _ => return HttpResponse::BadRequest().json(json!({"error": "Unknown process type"})),
-    };
-
-    // Await the async lock retrieval in ProcessManager
-    let logs = pm.get_logs(process_type).await;
-
-    HttpResponse::Ok().json(json!({
-        "process": process_name,
-        "logs": logs
-    }))
+    match parse_process_type(&process_name) {
+        Some(pt) => {
+            let logs = pm.get_ref().get_logs(pt).await;
+            HttpResponse::Ok().json(json!({
+                "process": process_name,
+                "logs": logs
+            }))
+        }
+        None => HttpResponse::BadRequest()
+            .json(json!({"error": format!("Unknown process: {}", process_name)})),
+    }
 }
 
 async fn get_status(pm: web::Data<Arc<ProcessManager>>) -> impl Responder {
-    // Await the async status generation
-    let status = pm.get_status().await;
+    let status = pm.get_ref().get_status().await;
     HttpResponse::Ok().json(status)
 }
 
@@ -80,22 +89,22 @@ async fn control_process(
     payload: web::Json<ControlRequest>,
     pm: web::Data<Arc<ProcessManager>>,
 ) -> impl Responder {
-    let process_type = match payload.process.as_str() {
-        "gradle" => ProcessType::Gradle,
-        "docker" => ProcessType::DockerCompose,
-        "pnpm" => ProcessType::Pnpm,
-        _ => return HttpResponse::BadRequest().json(json!({"error": "Unknown process type"})),
+    let pt = match parse_process_type(&payload.process) {
+        Some(t) => t,
+        None => return HttpResponse::BadRequest().json(json!({"error": "Unknown process type"})),
     };
 
+    info!("Control request: {} -> {}", payload.process, payload.action);
+
     let result = match payload.action.as_str() {
-        "start" => pm.start_process(process_type).await,
-        "stop" => pm.stop_process(process_type).await,
+        "start" => pm.get_ref().start_process(pt).await,
+        "stop" => pm.get_ref().stop_process(pt).await,
         "restart" => {
-            // Use optimized restart for Docker (parallel stop + rebuild)
-            if process_type == ProcessType::DockerCompose {
-                pm.restart_docker_optimized().await
+            if pt == ProcessType::DockerCompose {
+                // Check if specialized optimized method exists
+                pm.get_ref().restart_process(pt).await
             } else {
-                pm.restart_process(process_type).await
+                pm.get_ref().restart_process(pt).await
             }
         }
         _ => return HttpResponse::BadRequest().json(json!({"error": "Unknown action"})),
@@ -103,76 +112,39 @@ async fn control_process(
 
     match result {
         Ok(_) => HttpResponse::Ok().json(json!({
-            "status": "ok",
+            "status": "success",
             "process": payload.process,
             "action": payload.action
         })),
-        Err(e) => HttpResponse::InternalServerError().json(json!({
-            "error": e.to_string()
-        })),
+        Err(e) => {
+            error!("Failed to {} {}: {}", payload.action, payload.process, e);
+            HttpResponse::InternalServerError().json(json!({
+                "error": e.to_string()
+            }))
+        }
     }
 }
 
 async fn openapi_spec() -> impl Responder {
-    let spec = json!({
+    let spec: Value = json!({
         "openapi": "3.0.0",
         "info": {
             "title": "Hytale Dev Server API",
-            "description": "Real-time process and log management for Hytale development environment",
-            "version": "1.0.0",
-            "contact": { "name": "Hytale Mods" }
+            "description": "Real-time process management for Hytale development",
+            "version": "1.1.0"
         },
-        "servers": [
-            { "url": "http://localhost:8080", "description": "Local development server" }
-        ],
-        "tags": [
-            { "name": "Dashboard", "description": "Web interface endpoints" },
-            { "name": "Status", "description": "Process status and health" },
-            { "name": "Logs", "description": "Log retrieval and streaming" }
-        ],
         "paths": {
-            "/": {
-                "get": {
-                    "summary": "Get the dashboard",
-                    "operationId": "getDashboard",
-                    "responses": {
-                        "200": { "description": "Dashboard HTML", "content": { "text/html": {} } }
-                    }
-                }
-            },
             "/api/status": {
-                "get": {
-                    "summary": "Get process status",
-                    "operationId": "getStatus",
-                    "responses": {
-                        "200": { "description": "Process status info", "content": { "application/json": {} } }
-                    }
-                }
-            },
-            "/api/logs/{process}": {
-                "get": {
-                    "summary": "Get logs for a process",
-                    "operationId": "getLogs",
-                    "parameters": [
-                        { "name": "process", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gradle", "docker", "pnpm"] } }
-                    ],
-                    "responses": {
-                        "200": { "description": "Log lines", "content": { "application/json": {} } },
-                        "400": { "description": "Invalid process name" }
-                    }
-                }
+                "get": { "summary": "Get all process statuses", "responses": { "200": { "description": "OK" } } }
             },
             "/api/control": {
                 "post": {
                     "summary": "Control a process",
-                    "operationId": "controlProcess",
                     "requestBody": {
-                        "required": true,
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
-                                    "required": ["process", "action"],
                                     "properties": {
                                         "process": { "type": "string", "enum": ["gradle", "docker", "pnpm"] },
                                         "action": { "type": "string", "enum": ["start", "stop", "restart"] }
@@ -181,22 +153,7 @@ async fn openapi_spec() -> impl Responder {
                             }
                         }
                     },
-                    "responses": {
-                        "200": { "description": "Action accepted", "content": { "application/json": {} } },
-                        "400": { "description": "Invalid process name or action" }
-                    }
-                }
-            },
-            "/ws/{process}": {
-                "get": {
-                    "summary": "WebSocket stream",
-                    "description": "Upgrade to WebSocket",
-                    "parameters": [
-                        { "name": "process", "in": "path", "required": true, "schema": { "type": "string", "enum": ["gradle", "docker", "pnpm"] } }
-                    ],
-                    "responses": {
-                        "101": { "description": "Switching Protocols" }
-                    }
+                    "responses": { "200": { "description": "OK" } }
                 }
             }
         }

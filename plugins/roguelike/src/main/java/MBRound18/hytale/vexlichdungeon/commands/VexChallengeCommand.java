@@ -52,7 +52,10 @@ public class VexChallengeCommand extends AbstractCommand {
   private static final int MAX_COUNTDOWN_SECONDS = 300;
   private static final int MIN_PORTAL_DISTANCE = 50;
   private static final long POLL_INTERVAL_MS = 1000L;
+  private static final long HUD_EVENT_DELAY_MS = 200L;
+  private static final long HUD_CLEAR_DEDUP_WINDOW_MS = 500L;
   private static final ConcurrentHashMap<UUID, PlayerPoller> ACTIVE_POLLERS = new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<UUID, Long> LAST_CLEAR_MS = new ConcurrentHashMap<>();
   private static final ScheduledExecutorService PORTAL_EXPIRY_SCHEDULER = Executors
       .newSingleThreadScheduledExecutor(Thread.ofVirtual().name("portal-expiry-", 0).factory());
   private static final LoggingHelper LOG = new LoggingHelper("VexChallengeCommand");
@@ -86,7 +89,7 @@ public class VexChallengeCommand extends AbstractCommand {
         PREFAB_PATH));
 
     String input = context.getInputString();
-    if (input != null && input.toLowerCase().contains("demo")) {
+    if (input.toLowerCase().contains("demo")) {
       WorldEventQueue.get().dispatch(world, new VexDemoHudRequestedEvent(
           playerRef,
           "Score: 0",
@@ -112,14 +115,7 @@ public class VexChallengeCommand extends AbstractCommand {
   }
 
   public static void stopPortalCountdown(@Nullable UUID playerId) {
-    if (playerId == null) {
-      return;
-    }
-    PlayerPoller existing = ACTIVE_POLLERS.remove(playerId);
-    if (existing != null) {
-      existing.stop();
-    }
-    clearHud(playerId);
+      forceRemovePortal(playerId);
   }
 
   public static void forceRemovePortal(@Nullable UUID playerId) {
@@ -195,10 +191,7 @@ public class VexChallengeCommand extends AbstractCommand {
     if (value < MIN_COUNTDOWN_SECONDS) {
       return MIN_COUNTDOWN_SECONDS;
     }
-    if (value > MAX_COUNTDOWN_SECONDS) {
-      return MAX_COUNTDOWN_SECONDS;
-    }
-    return value;
+      return Math.min(value, MAX_COUNTDOWN_SECONDS);
   }
 
   private static void spawnPortalAndStartCountdown(
@@ -237,7 +230,6 @@ public class VexChallengeCommand extends AbstractCommand {
     int spawnZ = (int) Math.floor(pos.z + 0.5d);
 
     Vector3f rotation = transform.getRotation();
-    if (rotation != null) {
       double yawRad = Math.toRadians(rotation.y);
       double pitchRad = Math.toRadians(rotation.x);
       double forwardX = -Math.sin(yawRad) * Math.cos(pitchRad);
@@ -246,9 +238,8 @@ public class VexChallengeCommand extends AbstractCommand {
       double targetZ = pos.z + (forwardZ * 5.0d);
       spawnX = (int) Math.floor(targetX + 0.5d);
       spawnZ = (int) Math.floor(targetZ + 0.5d);
-    }
 
-    Vector3i selectionMin;
+      Vector3i selectionMin;
     Vector3i selectionMax;
     int anchorX;
     int anchorY;
@@ -345,9 +336,11 @@ public class VexChallengeCommand extends AbstractCommand {
       existing.stop();
     }
     AtomicInteger remaining = new AtomicInteger(startValue);
-    VexPortalCountdownHud.update(playerRef,
+    WorldEventQueue.get().dispatchGlobal(new PortalCountdownHudUpdateRequestedEvent(
+        playerRef,
+        portalId,
         Objects.requireNonNull(VexPortalCountdownHud.formatTime(startValue), "time"),
-        locationText);
+        locationText));
 
     PlayerPoller poller = new PlayerPoller();
     poller.start(playerRef, POLL_INTERVAL_MS, () -> {
@@ -390,13 +383,44 @@ public class VexChallengeCommand extends AbstractCommand {
   }
 
   private static void clearHud(@Nonnull UUID playerId) {
-    PlayerRef playerRef = Universe.get().getPlayer(playerId);
-    if (playerRef == null || !playerRef.isValid()) {
+    long now = System.currentTimeMillis();
+    Long updated = LAST_CLEAR_MS.compute(playerId, (k, prev) -> {
+      if (prev != null && now - prev < HUD_CLEAR_DEDUP_WINDOW_MS) {
+        return prev;
+      }
+      return now;
+    });
+    if (updated != now) {
       return;
     }
-    UiThread.runOnPlayerWorld(playerRef, () -> {
-      WorldEventQueue.get().dispatchGlobal(new CountdownHudClearRequestedEvent(playerRef));
-    });
+    final int maxAttempts = 25;
+    final long intervalMs = 100L;
+    final int[] attempts = new int[] { 0 };
+    final java.util.concurrent.ScheduledFuture<?>[] handle = new java.util.concurrent.ScheduledFuture<?>[1];
+    Runnable check = () -> {
+      attempts[0]++;
+      PlayerRef refreshed = Universe.get().getPlayer(playerId);
+      if (refreshed == null || !refreshed.isValid()) {
+        if (attempts[0] >= maxAttempts && handle[0] != null) {
+          handle[0].cancel(false);
+        }
+        return;
+      }
+      var ref = refreshed.getReference();
+      if (ref == null || !ref.isValid()) {
+        if (attempts[0] >= maxAttempts && handle[0] != null) {
+          handle[0].cancel(false);
+        }
+        return;
+      }
+      UiThread.runOnPlayerWorld(refreshed,
+          () -> WorldEventQueue.get().dispatchGlobal(new CountdownHudClearRequestedEvent(refreshed)));
+      if (handle[0] != null) {
+        handle[0].cancel(false);
+      }
+    };
+    handle[0] = PORTAL_EXPIRY_SCHEDULER.scheduleAtFixedRate(
+        check, HUD_EVENT_DELAY_MS, intervalMs, TimeUnit.MILLISECONDS);
   }
 
   private static void clearCountdownUi(@Nonnull UUID playerId) {
@@ -446,6 +470,11 @@ public class VexChallengeCommand extends AbstractCommand {
 
   @Nullable
   private static World resolveWorld(@Nonnull PortalPlacementRecord record) {
+    return getWorld(record);
+  }
+
+  @org.jetbrains.annotations.Nullable
+  public static World getWorld(@Nonnull PortalPlacementRecord record) {
     UUID worldUuid = record.getWorldUuid();
     if (worldUuid != null) {
       World world = Universe.get().getWorld(worldUuid);

@@ -39,6 +39,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 /**
@@ -66,6 +67,16 @@ import javax.annotation.Nonnull;
  * - Consider listening to portal-related ECS events or component lifecycle
  */
 public class ImmortalEnginePlugin extends JavaPlugin {
+  private enum KillSystemRegistration {
+    REGISTERED,
+    ALREADY_REGISTERED,
+    DEFERRED
+  }
+
+  private static final class KillSystemRegistrationStats {
+    private int registered;
+    private int deferred;
+  }
   private final AtomicBoolean assetsLoaded = new AtomicBoolean(false);
   private final Set<Integer> registeredEntityStores = ConcurrentHashMap.newKeySet();
   private final Set<String> spawnedPlayers = ConcurrentHashMap.newKeySet();
@@ -97,92 +108,78 @@ public class ImmortalEnginePlugin extends JavaPlugin {
     log.at(Level.INFO).log("[STARTUP] Registering ImmortalEngine event listeners");
 
     // Listen for asset pack registration and fire AssetPacksLoadedEvent
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    Object assetListener = (java.util.function.Consumer) (Object e) -> {
+    Consumer<AssetPackRegisterEvent> assetListener = e -> {
       if (assetsLoaded.compareAndSet(false, true)) {
         log.at(Level.FINE).log("[ASSETS] Asset packs loaded, dispatching AssetPacksLoadedEvent");
         EventDispatcher.dispatch(eventBus, new AssetPacksLoadedEvent());
       }
     };
 
-    eventBus.register((Class) AssetPackRegisterEvent.class, (java.util.function.Consumer) assetListener);
+    eventBus.register(AssetPackRegisterEvent.class, assetListener);
     log.at(Level.INFO).log("[STARTUP] Registered AssetPackRegisterEvent listener");
 
     // Listen for new worlds starting and register kill feed systems for them
     // This is the primary way we register kill event systems, as worlds have fully
     // initialized at this point
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    Object worldStartListener = (java.util.function.Consumer) (Object e) -> {
-      if (e instanceof StartWorldEvent event) {
-        World world = event.getWorld();
-        if (world != null) {
-          log.at(Level.INFO).log("[WORLD] StartWorldEvent fired for world: " + world.getName());
-          registerKillEventSystem(eventBus, world);
-          // Fire WorldCreatedEvent for the engine
-          log.at(Level.INFO).log("[EVENT-PRODUCER] Dispatching WorldCreatedEvent for world: " + world.getName());
-          EventDispatcher.dispatch(eventBus, new WorldCreatedEvent(world));
-        }
+    Consumer<StartWorldEvent> worldStartListener = event -> {
+      World world = event.getWorld();
+      if (world != null) {
+        log.at(Level.INFO).log("[WORLD] StartWorldEvent fired for world: " + world.getName());
+        registerKillEventSystem(eventBus, world);
+        // Fire WorldCreatedEvent for the engine
+        log.at(Level.INFO).log("[EVENT-PRODUCER] Dispatching WorldCreatedEvent for world: " + world.getName());
+        EventDispatcher.dispatch(eventBus, new WorldCreatedEvent(world));
       }
     };
-    eventBus.register((Class) StartWorldEvent.class, (java.util.function.Consumer) worldStartListener);
+    eventBus.registerGlobal(StartWorldEvent.class, worldStartListener);
     log.at(Level.INFO).log("[STARTUP] Registered StartWorldEvent listener");
 
     // Listen for player additions to worlds and fire WorldEnteredEvent
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    Object playerAddListener = (java.util.function.Consumer) (Object e) -> {
-      if (e instanceof AddPlayerToWorldEvent event) {
-        World world = event.getWorld();
-        Holder<EntityStore> holder = event.getHolder();
-        PlayerRef playerRef = holder != null ? holder.getComponent(PlayerRef.getComponentType()) : null;
-        if (world != null && playerRef != null) {
-          log.at(Level.INFO).log("[EVENT-PRODUCER] Dispatching WorldEnteredEvent for player " + playerRef.getUuid()
-              + " in world: " + world.getName());
-          EventDispatcher.dispatch(eventBus, new WorldEnteredEvent(world, playerRef));
-        } else if (world != null && holder != null) {
-          log.at(Level.INFO).log("[EVENT-PRODUCER] Deferring WorldEnteredEvent until PlayerRef is available for holder "
-              + System.identityHashCode(holder) + " in world: " + world.getName());
-        }
-        if (world != null && holder != null) {
-          scheduleWorldPlayerSpawned(eventBus, world, holder);
-        }
+    Consumer<AddPlayerToWorldEvent> playerAddListener = event -> {
+      World world = event.getWorld();
+      Holder<EntityStore> holder = event.getHolder();
+      PlayerRef playerRef = holder != null ? holder.getComponent(PlayerRef.getComponentType()) : null;
+      if (world != null && playerRef != null) {
+        log.at(Level.INFO).log("[EVENT-PRODUCER] Dispatching WorldEnteredEvent for player " + playerRef.getUuid()
+            + " in world: " + world.getName());
+        EventDispatcher.dispatch(eventBus, new WorldEnteredEvent(world, playerRef));
+      } else if (world != null && holder != null) {
+        log.at(Level.INFO).log("[EVENT-PRODUCER] Deferring WorldEnteredEvent until PlayerRef is available for holder "
+            + System.identityHashCode(holder) + " in world: " + world.getName());
+      }
+      if (world != null && holder != null) {
+        scheduleWorldPlayerSpawned(eventBus, world, holder);
       }
     };
     if (eventRegistry != null) {
-      eventRegistry.registerGlobal((Class) AddPlayerToWorldEvent.class, (java.util.function.Consumer) playerAddListener);
+      eventRegistry.registerGlobal(AddPlayerToWorldEvent.class, playerAddListener);
       log.at(Level.INFO).log("[STARTUP] Registered AddPlayerToWorldEvent listener (EventRegistry)");
     }
 
     // Listen for player removal from worlds and fire WorldExitedEvent
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    Object playerDrainListener = (java.util.function.Consumer) (Object e) -> {
-      if (e instanceof DrainPlayerFromWorldEvent event) {
-        World world = event.getWorld();
-        PlayerRef playerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
-        if (world != null && playerRef != null) {
-          log.at(Level.INFO).log("[EVENT-PRODUCER] Dispatching WorldExitedEvent for player " + playerRef.getUuid()
-              + " from world: " + world.getName());
-          EventDispatcher.dispatch(eventBus, new WorldExitedEvent(world, playerRef));
-        }
+    Consumer<DrainPlayerFromWorldEvent> playerDrainListener = event -> {
+      World world = event.getWorld();
+      PlayerRef playerRef = event.getHolder().getComponent(PlayerRef.getComponentType());
+      if (world != null && playerRef != null) {
+        log.at(Level.INFO).log("[EVENT-PRODUCER] Dispatching WorldExitedEvent for player " + playerRef.getUuid()
+            + " from world: " + world.getName());
+        EventDispatcher.dispatch(eventBus, new WorldExitedEvent(world, playerRef));
       }
     };
     if (eventRegistry != null) {
-      eventRegistry.registerGlobal((Class) DrainPlayerFromWorldEvent.class,
-          (java.util.function.Consumer) playerDrainListener);
+      eventRegistry.registerGlobal(DrainPlayerFromWorldEvent.class, playerDrainListener);
       log.at(Level.INFO).log("[STARTUP] Registered DrainPlayerFromWorldEvent listener (EventRegistry)");
     }
 
     // Listen for PlayerReadyEvent to register kill systems per-world when universe
     // is authenticated
     // This fires after universe is fully ready and players begin joining
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    Object playerReadyListener = (java.util.function.Consumer) (Object e) -> {
-      if (e instanceof PlayerReadyEvent) {
-        log.at(Level.INFO).log("[UNIVERSE] PlayerReadyEvent fired - registering kill systems for all ready worlds");
-        registerKillEventSystemsForAllWorlds(eventBus);
-      }
+    Consumer<PlayerReadyEvent> playerReadyListener = event -> {
+      log.at(Level.INFO).log("[UNIVERSE] PlayerReadyEvent fired - registering kill systems for all ready worlds");
+      registerKillEventSystemsForAllWorlds(eventBus);
     };
     if (eventRegistry != null) {
-      eventRegistry.registerGlobal((Class) PlayerReadyEvent.class, (java.util.function.Consumer) playerReadyListener);
+      eventRegistry.registerGlobal(PlayerReadyEvent.class, playerReadyListener);
       log.at(Level.INFO).log("[STARTUP] Registered PlayerReadyEvent listener (EventRegistry)");
     }
 
@@ -195,27 +192,30 @@ public class ImmortalEnginePlugin extends JavaPlugin {
    * Register ECS event systems for KillFeedEvent to capture elimination data.
    * Called when all worlds are ready (via PlayerReadyEvent).
    */
-  private int registerKillEventSystemsForAllWorlds(EventBus eventBus) {
+  private KillSystemRegistrationStats registerKillEventSystemsForAllWorlds(EventBus eventBus) {
     Universe universe = Universe.get();
     if (universe == null) {
       log.at(Level.WARNING).log("[KILL-SYSTEM] Universe not available for kill event system registration");
-      return 0;
+      return new KillSystemRegistrationStats();
     }
     int worldCount = universe.getWorlds().size();
     log.at(Level.INFO).log("[KILL-SYSTEM] Registering kill systems for " + worldCount + " world(s)");
-    int registered = 0;
+    KillSystemRegistrationStats stats = new KillSystemRegistrationStats();
     for (World world : universe.getWorlds().values()) {
-      if (registerKillEventSystem(eventBus, world)) {
-        registered++;
+      KillSystemRegistration status = registerKillEventSystem(eventBus, world);
+      if (status == KillSystemRegistration.REGISTERED) {
+        stats.registered++;
+      } else if (status == KillSystemRegistration.DEFERRED) {
+        stats.deferred++;
       }
     }
-    return registered;
+    return stats;
   }
 
-  private boolean registerKillEventSystem(EventBus eventBus, World world) {
+  private KillSystemRegistration registerKillEventSystem(EventBus eventBus, World world) {
     if (world == null) {
       log.at(Level.WARNING).log("[KILL-SYSTEM] Attempted to register kill system for null world");
-      return false;
+      return KillSystemRegistration.DEFERRED;
     }
 
     try {
@@ -223,27 +223,27 @@ public class ImmortalEnginePlugin extends JavaPlugin {
       if (store == null) {
         log.at(Level.INFO).log(
             "[KILL-SYSTEM] EntityStore.Store not available for world: " + world.getName() + ", deferring registration");
-        return false;
+        return KillSystemRegistration.DEFERRED;
       }
       int key = System.identityHashCode(store);
       if (!registeredEntityStores.add(key)) {
         log.at(Level.INFO).log("[KILL-SYSTEM] Kill system already registered for world: " + world.getName());
-        return false;
+        return KillSystemRegistration.ALREADY_REGISTERED;
       }
 
       try {
         store.getRegistry().registerSystem(new KillFeedKillerEventSystem(eventBus, this));
         log.at(Level.INFO)
             .log("[KILL-SYSTEM] Registered KillFeedEvent.KillerMessage ECS system for world: " + world.getName());
-        return true;
+        return KillSystemRegistration.REGISTERED;
       } catch (IllegalArgumentException e) {
         log.at(Level.INFO).log("[KILL-SYSTEM] KillFeedEvent system already registered for world: " + world.getName());
-        return false;
+        return KillSystemRegistration.ALREADY_REGISTERED;
       }
     } catch (NullPointerException e) {
       log.at(Level.INFO).log("[KILL-SYSTEM] EntityStore initialization incomplete for world: " + world.getName()
           + ", deferring registration");
-      return false;
+      return KillSystemRegistration.DEFERRED;
     }
   }
 
@@ -252,9 +252,13 @@ public class ImmortalEnginePlugin extends JavaPlugin {
       final int maxAttempts = 30;
       final long sleepMillis = 2000;
       for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-        int registered = registerKillEventSystemsForAllWorlds(eventBus);
-        if (registered > 0) {
-          log.at(Level.INFO).log("[KILL-SYSTEM] Registered kill system(s) after " + attempt + " attempt(s)");
+        KillSystemRegistrationStats stats = registerKillEventSystemsForAllWorlds(eventBus);
+        if (stats.deferred == 0) {
+          if (stats.registered > 0) {
+            log.at(Level.INFO).log("[KILL-SYSTEM] Registered kill system(s) after " + attempt + " attempt(s)");
+          } else {
+            log.at(Level.INFO).log("[KILL-SYSTEM] Kill systems already registered; stopping retry loop");
+          }
           return;
         }
         try {
@@ -405,7 +409,7 @@ public class ImmortalEnginePlugin extends JavaPlugin {
       // Extract damage cause
       String damageCauseName = null;
       try {
-        DamageCause cause = damage.getCause();
+        DamageCause cause = DamageCause.getAssetMap().getAsset(damage.getDamageCauseIndex());
         if (cause != null) {
           damageCauseName = cause.getId();
         }

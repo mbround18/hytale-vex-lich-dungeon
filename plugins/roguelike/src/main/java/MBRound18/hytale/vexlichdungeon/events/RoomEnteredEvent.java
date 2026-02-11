@@ -49,7 +49,7 @@ public final class RoomEnteredEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       data.put("world", worldMeta(world));
       data.put("player", playerMeta(playerRef));
@@ -63,7 +63,7 @@ public final class RoomEnteredEvent extends DebugEvent {
       }
       data.put("isFirstRoom", previousRoom == null);
       return data;
-    });
+    }));
   }
 
   private Map<String, Object> roomMeta(@Nullable RoomCoordinate coordinate) {

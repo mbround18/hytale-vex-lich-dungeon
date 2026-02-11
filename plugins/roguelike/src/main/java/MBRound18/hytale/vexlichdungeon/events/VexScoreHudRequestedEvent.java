@@ -61,6 +61,6 @@ public final class VexScoreHudRequestedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return buildPayload(playerRef.getUuid(), playerRef.getUsername(), instanceScore, playerScore, delta, partyList);
+    return withCorrelation(buildPayload(playerRef.getUuid(), playerRef.getUsername(), instanceScore, playerScore, delta, partyList));
   }
 }

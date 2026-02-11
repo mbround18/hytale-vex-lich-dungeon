@@ -38,6 +38,6 @@ public final class VexLeaderboardHudRequestedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return buildPayload(playerRef.getUuid(), playerRef.getUsername(), leaderboardText);
+    return withCorrelation(buildPayload(playerRef.getUuid(), playerRef.getUsername(), leaderboardText));
   }
 }

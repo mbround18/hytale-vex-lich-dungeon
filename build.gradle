@@ -514,6 +514,34 @@ tasks.register("copyEngineJarToDist") {
 }
 
 // ============================================================================
+// Post-Build Docker Compose Restart
+// ============================================================================
+gradle.buildFinished { result ->
+    if (System.getenv("CI")) {
+        logger.lifecycle("CI detected; skipping docker compose restart.")
+        return
+    }
+    if (!composeFile.exists()) {
+        logger.lifecycle("compose.yml not found; skipping docker compose restart.")
+        return
+    }
+
+    def psResult = runCommand(
+        ["docker", "compose", "-f", composeFile.absolutePath, "ps", "-q"],
+        true,
+        null,
+        true
+    )
+    def running = psResult.output?.trim()
+    if (running) {
+        logger.lifecycle("Docker compose is running; restarting services...")
+        runCommand(["docker", "compose", "-f", composeFile.absolutePath, "restart"], true)
+    } else {
+        logger.lifecycle("Docker compose is not running; no restart needed.")
+    }
+}
+
+// ============================================================================
 // Distribution Tasks
 // Tasks for installing built artifacts to server mods directory
 // ============================================================================

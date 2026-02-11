@@ -23,6 +23,7 @@ public class VexHudEventHandlerTest {
   public static void configureLogging() {
     System.setProperty("java.util.logging.manager",
         "com.hypixel.hytale.logger.backend.HytaleLogManager");
+    System.setProperty("vex.welcomeHud.enabled", "true");
   }
 
   private PlayerRef buildPlayerRef(String name) {

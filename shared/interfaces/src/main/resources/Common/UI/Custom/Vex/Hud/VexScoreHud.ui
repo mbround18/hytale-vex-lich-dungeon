@@ -34,9 +34,15 @@ Group {
             $V.@HudCard {
                 Anchor: (Width: 108, Height: 60);
 
-                Label #VexHudInstanceScore {
+                Label #InstanceScoreLabel {
                     Anchor: (Top: 2, Height: 20);
-                    Text: "Instance: 0";
+                    Text: "Instance Score:";
+                    Style: (FontSize: 13, RenderBold: true, TextColor: $V.@MutedColor);
+                }
+
+                Label #VexHudInstanceScore {
+                    Anchor: (Top: 10, Height: 20);
+                    Text: "---";
                     Style: (FontSize: 13, RenderBold: true, TextColor: $V.@MutedColor);
                 }
             }
@@ -44,9 +50,15 @@ Group {
             $V.@HudCard {
                 Anchor: (Width: 108, Height: 60);
 
-                Label #VexHudPlayerScore {
+                Label #PlayerScoreLabel {
                     Anchor: (Top: 2, Height: 20);
-                    Text: "Player: 0";
+                    Text: "Player Score:";
+                    Style: (FontSize: 13, RenderBold: true, TextColor: $V.@MutedColor);
+                }
+
+                Label #VexHudPlayerScore {
+                    Anchor: (Top: 10, Height: 20);
+                    Text: "---";
                     Style: (FontSize: 13, RenderBold: true, TextColor: $V.@BodyColor);
                 }
             }

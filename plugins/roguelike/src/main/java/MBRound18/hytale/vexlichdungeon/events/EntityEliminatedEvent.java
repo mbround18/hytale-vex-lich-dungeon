@@ -86,7 +86,7 @@ public final class EntityEliminatedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       data.put("world", worldMeta(world));
       Map<String, Object> entity = new LinkedHashMap<>();
@@ -103,6 +103,6 @@ public final class EntityEliminatedEvent extends DebugEvent {
       data.put("points", points);
       data.put("room", room);
       return data;
-    });
+    }));
   }
 }

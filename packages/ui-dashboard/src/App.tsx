@@ -8,6 +8,7 @@ import React, {
 import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
 import { VexGlobalStyles } from "ui-shared/components";
+import { createEventSourceStream } from "ui-shared/streams";
 import StatsView from "./components/StatsView";
 import MapView from "./components/MapView";
 import ArchivesView from "./components/ArchivesView";
@@ -15,7 +16,7 @@ import TelemetryView from "./components/TelemetryView";
 import type { Metrics, ServerStats, TelemetryEvent } from "./types";
 import api, { apiBaseUrl } from "./api";
 import {
-  events$,
+  eventStream$,
   publishEvent,
   setStreamStatus,
   streamStatus$,
@@ -33,6 +34,20 @@ import {
 const isPreviewMode = () =>
   window.location.protocol === "file:" || window.location.protocol === "blob:";
 const VEX_WORLD_FRAGMENT = "vex_the_lich_dungeon";
+const TELEMETRY_SINCE_KEY = "vexTelemetrySince";
+
+const readTelemetrySince = () => {
+  if (typeof window === "undefined") return 0;
+  const raw = window.localStorage.getItem(TELEMETRY_SINCE_KEY);
+  const parsed = raw ? Number.parseInt(raw, 10) : 0;
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+};
+
+const writeTelemetrySince = (value: number) => {
+  if (typeof window === "undefined") return;
+  const safe = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  window.localStorage.setItem(TELEMETRY_SINCE_KEY, String(safe));
+};
 
 type VexEvent = {
   internalId?: string;
@@ -84,12 +99,9 @@ function DashboardApp() {
   const prefabMetadataRef = useRef<Record<string, { w: number; h: number }>>(
     {},
   );
-  const sseRef = useRef<EventSource | null>(null);
-  const sseReconnectTimerRef = useRef<number | null>(null);
-  const sseHealthTimerRef = useRef<number | null>(null);
-  const sseAttemptRef = useRef(0);
   const sseLastEventAtRef = useRef<number>(0);
   const sawLiveEventRef = useRef(false);
+  const lastServerEventIdRef = useRef(0);
   const recentEventFingerprintsRef = useRef<Map<string, number>>(new Map());
   const knownEventIdsRef = useRef<Set<string>>(new Set());
 
@@ -837,6 +849,10 @@ function DashboardApp() {
     [ingestEvent],
   );
 
+  const handleClearTelemetry = useCallback(() => {
+    writeTelemetrySince(lastServerEventIdRef.current);
+  }, []);
+
   const tryLoadJsonFiles = useCallback(
     async (files: string[]) => {
       if (isPreviewMode()) return false;
@@ -949,74 +965,57 @@ function DashboardApp() {
       return () => undefined;
     }
 
-    const clearReconnectTimer = () => {
-      if (sseReconnectTimerRef.current != null) {
-        window.clearTimeout(sseReconnectTimerRef.current);
-        sseReconnectTimerRef.current = null;
+    type SsePayload =
+      | { type: "message"; data: string }
+      | { type: "prefab"; data: string };
+
+    sawLiveEventRef.current = false;
+    const demoTimer = window.setTimeout(() => {
+      if (!sawLiveEventRef.current) {
+        injectDemoData(true);
       }
-    };
+    }, 1500);
 
-    const clearHealthTimer = () => {
-      if (sseHealthTimerRef.current != null) {
-        window.clearInterval(sseHealthTimerRef.current);
-        sseHealthTimerRef.current = null;
-      }
-    };
-
-    const closeSource = () => {
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
-      }
-    };
-
-    const scheduleReconnect = () => {
-      clearReconnectTimer();
-      const attempt = sseAttemptRef.current + 1;
-      sseAttemptRef.current = attempt;
-      const baseDelay = Math.min(
-        30000,
-        1000 * Math.pow(2, Math.min(attempt, 5)),
-      );
-      const jitter = Math.floor(Math.random() * 500);
-      sseReconnectTimerRef.current = window.setTimeout(() => {
-        connect();
-      }, baseDelay + jitter);
-    };
-
-    const ensureHealth = async () => {
-      const healthy = await checkHealth();
-      if (healthy) {
-        connect();
-        return true;
-      }
-      return false;
-    };
-
-    const connect = () => {
-      clearReconnectTimer();
-      closeSource();
-      sawLiveEventRef.current = false;
-      const source = new EventSource(`${apiBaseUrl.replace(/\/$/, "")}/events`);
-      sseRef.current = source;
-
-      source.onopen = () => {
-        sseAttemptRef.current = 0;
+    const stream$ = createEventSourceStream<SsePayload>({
+      url: () => {
+        const baseUrl = `${apiBaseUrl.replace(/\/$/, "")}/events`;
+        const since = Math.max(readTelemetrySince(), lastServerEventIdRef.current);
+        return since > 0 ? `${baseUrl}?since=${since}` : baseUrl;
+      },
+      eventTypes: ["message", "prefab"],
+      parse: (event, type) => ({
+        type: type as "message" | "prefab",
+        data: event.data,
+      }),
+      onOpen: () => {
         sseLastEventAtRef.current = Date.now();
         setStreamStatus(true);
-      };
-
-      source.addEventListener("message", (e) => {
+      },
+      onEvent: () => {
         sseLastEventAtRef.current = Date.now();
         sawLiveEventRef.current = true;
-        addEvent(JSON.parse((e as MessageEvent).data));
-      });
+      },
+      onStatus: (status) => {
+        setStreamStatus(status.connected);
+      },
+      heartbeatMs: 5000,
+      staleMs: 15000,
+      healthCheck: checkHealth,
+    });
 
-      source.addEventListener("prefab", (e) => {
-        sseLastEventAtRef.current = Date.now();
-        sawLiveEventRef.current = true;
+    const subscription = stream$.subscribe((payload) => {
+      if (payload.type === "message") {
+        const parsed = JSON.parse(payload.data);
+        const id = typeof parsed?.id === "number" ? parsed.id : Number(parsed?.id);
+        if (Number.isFinite(id)) {
+          lastServerEventIdRef.current = Math.max(lastServerEventIdRef.current, id);
+        }
+        addEvent(parsed);
+        return;
+      }
+      if (payload.type === "prefab") {
         try {
-          const data = JSON.parse((e as MessageEvent).data);
+          const data = JSON.parse(payload.data);
           if (data?.prefabPath && data?.roomSize) {
             const w = data.roomSize?.w ?? data.roomSize?.width;
             const h = data.roomSize?.h ?? data.roomSize?.height;
@@ -1030,51 +1029,12 @@ function DashboardApp() {
         } catch {
           // ignore malformed prefab payloads
         }
-      });
-
-      source.onerror = async () => {
-        setStreamStatus(false);
-        closeSource();
-        const healthy = await ensureHealth();
-        if (!healthy) {
-          scheduleReconnect();
-        }
-      };
-
-      window.setTimeout(() => {
-        if (!sawLiveEventRef.current) {
-          injectDemoData(true);
-        }
-      }, 1500);
-    };
-
-    const livenessTimer = window.setInterval(async () => {
-      if (!sseRef.current) {
-        return;
       }
-      const last = sseLastEventAtRef.current;
-      if (last > 0 && Date.now() - last > 15000) {
-        setStreamStatus(false);
-        closeSource();
-        const healthy = await ensureHealth();
-        if (!healthy) {
-          scheduleReconnect();
-        }
-      }
-    }, 5000);
-
-    connect();
-    clearHealthTimer();
-    sseHealthTimerRef.current = window.setInterval(() => {
-      if (sseRef.current) return;
-      void ensureHealth();
-    }, 5000);
+    });
 
     return () => {
-      window.clearInterval(livenessTimer);
-      clearHealthTimer();
-      clearReconnectTimer();
-      closeSource();
+      window.clearTimeout(demoTimer);
+      subscription.unsubscribe();
     };
   }, [addEvent, checkHealth, injectDemoData]);
 
@@ -1122,10 +1082,6 @@ function DashboardApp() {
       window.clearInterval(playerTimer);
       if (typeof disconnect === "function") {
         disconnect();
-      }
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
       }
     };
   }, [connectSSE, loadArchives, pollPlayerMetadata]);
@@ -1187,17 +1143,15 @@ function DashboardApp() {
   }, []);
 
   useEffect(() => {
-    const sub = events$.subscribe((busEvents) => {
-      if (!Array.isArray(busEvents) || busEvents.length === 0) return;
-      busEvents.forEach((ev) => {
-        const normalized =
-          ev && (ev as any).internalId ? ev : { data: (ev as any)?.data || ev };
-        const fields = getEventFields(normalized as VexEvent);
-        const worldName = getEventWorld(fields);
-        if (!worldName) return;
-        if (!worldName.toLowerCase().includes(VEX_WORLD_FRAGMENT)) return;
-        ingestEvent(ev, { broadcast: false });
-      });
+    const sub = eventStream$.subscribe((ev) => {
+      if (!ev) return;
+      const normalized =
+        (ev as any).internalId ? ev : { data: (ev as any)?.data || ev };
+      const fields = getEventFields(normalized as VexEvent);
+      const worldName = getEventWorld(fields);
+      if (!worldName) return;
+      if (!worldName.toLowerCase().includes(VEX_WORLD_FRAGMENT)) return;
+      ingestEvent(ev, { broadcast: false });
     });
     return () => sub.unsubscribe();
   }, [getEventFields, getEventWorld, ingestEvent]);
@@ -1507,6 +1461,7 @@ function DashboardApp() {
                 onReplayToEvent={replayToEvent}
                 onReplayFromEvent={replayFromEvent}
                 onExitReplay={stopReplay}
+                onClearLog={handleClearTelemetry}
               />
             }
           />

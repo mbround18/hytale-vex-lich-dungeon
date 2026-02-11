@@ -23,6 +23,6 @@ public final class InstanceTeardownStartedEvent extends DebugEvent {
   public Object toPayload() {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("worldName", worldName);
-    return data;
+    return withCorrelation(data);
   }
 }

@@ -19,6 +19,8 @@ import javax.annotation.Nullable;
 
 public final class VexHudEventHandler {
   private static final LoggingHelper logger = new LoggingHelper(VexHudEventHandler.class);
+  private static final boolean WELCOME_HUD_ENABLED =
+      Boolean.parseBoolean(System.getProperty("vex.welcomeHud.enabled", "false"));
   private final UiExecutor uiExecutor;
   private final HudUpdateSink hudSink;
 
@@ -174,6 +176,9 @@ public final class VexHudEventHandler {
   }
 
   private void handleWelcome(@Nonnull VexWelcomeHudRequestedEvent event) {
+    if (!WELCOME_HUD_ENABLED) {
+      return;
+    }
     PlayerRef playerRef = resolvePlayerRef(event.getPlayerRef());
     if (playerRef == null) {
       return;
@@ -188,6 +193,8 @@ public final class VexHudEventHandler {
     if (playerRef == null) {
       return;
     }
+    logger.debug("Score HUD update for %s: instance=%d player=%d delta=%d",
+        playerRef.getUsername(), event.getInstanceScore(), event.getPlayerScore(), event.getDelta());
     handleUiInteraction(playerRef, () -> {
       hudSink.updateScore(playerRef, event.getInstanceScore(), event.getPlayerScore(), event.getDelta(),
           event.getPartyList());

@@ -24,6 +24,6 @@ public final class CountdownHudClearRequestedEvent extends DebugEvent {
   public Object toPayload() {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("player", playerMeta(playerRef.getUuid(), playerRef.getUsername()));
-    return data;
+    return withCorrelation(data);
   }
 }

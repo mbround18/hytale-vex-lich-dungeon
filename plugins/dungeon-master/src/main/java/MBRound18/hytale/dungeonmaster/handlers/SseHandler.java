@@ -37,6 +37,9 @@ public final class SseHandler {
 
     WebContext ctx = new WebContext(exchange, gson);
     String typesParam = ctx.queryParam("types");
+    long since = ctx.queryLong("since", 0L);
+    String skipSnapshotParam = ctx.queryParam("skipSnapshot");
+    boolean skipSnapshot = "1".equals(skipSnapshotParam) || "true".equalsIgnoreCase(skipSnapshotParam);
     Set<String> allowedTypes = null;
     if (typesParam != null && !typesParam.isBlank()) {
       allowedTypes = new HashSet<>();
@@ -47,13 +50,18 @@ public final class SseHandler {
     SseClient client = new SseClient(exchange, out, allowedTypes);
     clients.add(client);
     client.send(java.util.Objects.requireNonNull(": connected\n\n".getBytes(StandardCharsets.UTF_8), "payload"));
-    sendSnapshot(client);
+    if (!skipSnapshot) {
+      sendSnapshot(client, since);
+    }
   }
 
-  private void sendSnapshot(@Nonnull SseClient client) {
+  private void sendSnapshot(@Nonnull SseClient client, long since) {
     byte[] payload;
     synchronized (events) {
       for (EventEnvelope envelope : events) {
+        if (envelope.id() <= since) {
+          continue;
+        }
         if (!client.accepts(envelope.type())) {
           continue;
         }

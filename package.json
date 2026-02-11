@@ -1,13 +1,14 @@
 {
   "name": "vex-lich-dungeon",
   "private": true,
-  "packageManager": "pnpm@9.12.1",
+  "packageManager": "pnpm@10.29.1",
   "devDependencies": {
     "concurrently": "9.2.1"
   },
   "workspaces": [
     "packages/ui-dashboard",
     "packages/ui-frontdoor",
+    "packages/ui-manager",
     "packages/ui-shared"
   ],
   "scripts": {
@@ -15,8 +16,9 @@
     "build:dashboard": "pnpm --filter ui-dashboard build",
     "dev:frontdoor": "pnpm --filter ui-frontdoor dev",
     "build:frontdoor": "pnpm --filter ui-frontdoor build",
+    "dev:manager": "pnpm --filter ui-manager dev",
+    "build:manager": "pnpm --filter ui-manager build",
     "dev:shared": "pnpm --filter ui-shared dev",
-    "build:ui": "pnpm -r --filter ui-dashboard --filter ui-frontdoor build",
-    "dev": "concurrently -n DASH,FRONT,SHARED -c green,cyan,magenta \"pnpm run dev:dashboard\" \"pnpm run dev:frontdoor\" \"pnpm run dev:shared\""
+    "dev": "concurrently -n DASH,FRONT,MANAGER,SHARED -c green,cyan,magenta,blue \"pnpm run dev:dashboard\" \"pnpm run dev:frontdoor\" \"pnpm run dev:manager\" \"pnpm run dev:shared\""
   }
 }

@@ -10,6 +10,8 @@ import MBRound18.hytale.vexlichdungeon.events.RoomCoordinate;
 import MBRound18.hytale.vexlichdungeon.events.ChestSpawnedEvent;
 import MBRound18.hytale.vexlichdungeon.events.LootableEntitySpawnedEvent;
 import MBRound18.hytale.vexlichdungeon.events.EntityReplacedEvent;
+import MBRound18.hytale.vexlichdungeon.events.NpcSpawnRequestedEvent;
+import MBRound18.hytale.vexlichdungeon.events.NpcSpawnResult;
 import MBRound18.hytale.vexlichdungeon.events.PrefabEntitySpawnedEvent;
 import MBRound18.ImmortalEngine.api.prefab.PrefabInspector;
 import com.google.gson.JsonArray;
@@ -859,16 +861,16 @@ public class PrefabSpawner {
       return;
     }
     log.info("[PREFAB-ENTITIES] Spawning %d entities from %s at %s", entities.size(), prefabPath, origin);
-    NPCPlugin npcPlugin = NPCPlugin.get();
-    if (npcPlugin == null) {
-      log.warn("[PREFAB-ENTITIES] NPCPlugin not available - cannot spawn entities");
-      return;
-    }
-    for (PrefabEntityDefinition def : entities) {
-      if (def == null) {
-        continue;
+      NPCPlugin npcPlugin = NPCPlugin.get();
+      if (npcPlugin == null) {
+        log.warn("[PREFAB-ENTITIES] NPCPlugin not available - cannot spawn entities");
+        return;
       }
-      String modelId = def.getModelId();
+      for (PrefabEntityDefinition def : entities) {
+        if (def == null) {
+          continue;
+        }
+        String modelId = def.getModelId();
       if (!npcPlugin.hasRoleName(modelId)) {
         log.warn("[PREFAB-ENTITIES] Skipping NPC %s (no role registered)", modelId);
         continue;
@@ -878,61 +880,30 @@ public class PrefabSpawner {
       Vector3f rotation = rotateRotation(def.getRotation(), rotationDegrees);
       log.info("[PREFAB-ENTITIES] Spawning %s at (%.1f, %.1f, %.1f)", modelId, worldPos.x, worldPos.y, worldPos.z);
       maybeEmitChestSpawned(world, prefabPath, modelId, worldPos);
-      Object spawnResult = npcPlugin.spawnNPC(
-          Objects.requireNonNull(world.getEntityStore().getStore(), "store"),
+      NpcSpawnRequestedEvent request = new NpcSpawnRequestedEvent(
+          world,
+          room,
           modelId,
           modelId,
           worldPos,
-          Objects.requireNonNull(rotation, "rotation"));
-
-      // spawnNPC returns a Pair<EntityStoreRef, INonPlayerCharacter>
-      if (spawnResult != null) {
+          Objects.requireNonNull(rotation, "rotation"),
+          prefabPath);
+      WorldEventQueue.get().dispatch(world, request);
+      NpcSpawnResult result = request.getResult().getNow(null);
+      if (result != null && result.isSuccess() && result.getEntityId() != null) {
+        UUID uuid = result.getEntityId();
         log.info("[PREFAB-ENTITIES] Successfully spawned %s", modelId);
         WorldEventQueue.get().dispatch(world,
             new PrefabEntitySpawnedEvent(world, modelId, worldPos, prefabPath));
 
-        // Extract the NPC from the pair
-        Object npc = null;
-        try {
-          // Try to get the right() value from the Pair
-          if (spawnResult.getClass().getSimpleName().contains("Pair")) {
-            java.lang.reflect.Method rightMethod = spawnResult.getClass().getMethod("right");
-            npc = rightMethod.invoke(spawnResult);
-          }
-        } catch (Exception e) {
-          log.warn("[PREFAB-ENTITIES] Failed to extract NPC from spawn result: %s", e.getMessage());
-        }
-
-        if (room != null && npc != null) {
-          UUID uuid = null;
-          // Try to extract UUID using reflection to avoid deprecation warning
-          try {
-            java.lang.reflect.Method getUuidMethod = npc.getClass().getMethod("getUuid");
-            Object uuidObj = getUuidMethod.invoke(npc);
-            if (uuidObj instanceof UUID) {
-              uuid = (UUID) uuidObj;
-            }
-          } catch (Exception e) {
-            log.warn("[PREFAB-ENTITIES] Failed to get UUID via reflection: %s", e.getMessage());
-          }
-
-          if (uuid != null) {
-            // Assign default points based on entity type (prefab entities don't have spawn
-            // pool entries)
-            int defaultPoints = getDefaultPointsForEntity(modelId);
-            log.info("[PREFAB-ENTITIES] Dispatching EntitySpawnedEvent for %s (%s) in room (%d, %d) with %d points",
-                modelId, uuid, room.getX(), room.getZ(), defaultPoints);
-            WorldEventQueue.get().dispatch(world,
-                new EntitySpawnedEvent(world, uuid, room, modelId, defaultPoints, worldPos));
-          } else {
-            log.warn("[PREFAB-ENTITIES] Spawned %s but could not extract UUID", modelId);
-          }
+        if (room != null) {
+          int defaultPoints = getDefaultPointsForEntity(modelId);
+          log.info("[PREFAB-ENTITIES] Dispatching EntitySpawnedEvent for %s (%s) in room (%d, %d) with %d points",
+              modelId, uuid, room.getX(), room.getZ(), defaultPoints);
+          WorldEventQueue.get().dispatch(world,
+              new EntitySpawnedEvent(world, uuid, room, modelId, defaultPoints, worldPos));
         } else {
-          if (room == null) {
-            log.fine("[PREFAB-ENTITIES] Spawned %s but room is null - no EntitySpawnedEvent", modelId);
-          } else {
-            log.warn("[PREFAB-ENTITIES] Spawned %s but could not extract NPC from spawn result", modelId);
-          }
+          log.fine("[PREFAB-ENTITIES] Spawned %s but room is null - no EntitySpawnedEvent", modelId);
         }
       } else {
         log.warn("[PREFAB-ENTITIES] Failed to spawn %s at (%.1f, %.1f, %.1f)", modelId, worldPos.x, worldPos.y,

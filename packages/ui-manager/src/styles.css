@@ -1,0 +1,259 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+:root {
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-title: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --vex-void: #08060d;
+  --vex-night: #120b1b;
+  --vex-panel: #161025;
+  --vex-panel-strong: #1f1633;
+  --vex-border: #30223f;
+  --vex-line: #3a2a50;
+  --vex-surface: #251f33;
+
+  --vex-violet: #8b5cf6;
+  --vex-ember: #fbbf24;
+  --vex-green: #4ade80;
+  --vex-rose: #f472b6;
+  --vex-cyan: #38bdf8;
+
+  --necro-green: #4ade80;
+  --ancient-gold: #fbbf24;
+
+  --text-strong: #f5f3ff;
+  --text-body: #d7c9ff;
+  --text-muted: #9f8cc9;
+
+  --grid-dot: rgba(255, 255, 255, 0.05);
+  --shadow-soft: 0 30px 80px rgba(6, 3, 10, 0.65);
+  --shadow-glow-purple: 0 0 25px rgba(139, 92, 246, 0.45);
+  --shadow-card: 0 30px 70px rgba(5, 3, 8, 0.55);
+
+  --vex-bg: radial-gradient(1200px 800px at 20% 10%, rgba(96, 43, 132, 0.25), transparent),
+    radial-gradient(900px 700px at 90% 0%, rgba(139, 92, 246, 0.18), transparent),
+    linear-gradient(160deg, #08060d 0%, #0e0a16 50%, #06050a 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--vex-bg);
+  color: var(--text-body);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+.font-title {
+  font-family: var(--font-title);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.bg-vex-void {
+  background-color: var(--vex-void);
+}
+
+.bg-vex-night {
+  background-color: var(--vex-night);
+}
+
+.bg-vex-panel {
+  background-color: var(--vex-panel);
+}
+
+.bg-vex-panel-strong {
+  background-color: var(--vex-panel-strong);
+}
+
+.bg-vex-surface {
+  background-color: var(--vex-surface);
+}
+
+.bg-vex-violet {
+  background-color: var(--vex-violet);
+}
+
+.bg-necro-green {
+  background-color: var(--necro-green);
+}
+
+.bg-ancient-gold {
+  background-color: var(--ancient-gold);
+}
+
+.border-vex-border {
+  border-color: var(--vex-border);
+}
+
+.border-vex-line {
+  border-color: var(--vex-line);
+}
+
+.text-text-strong {
+  color: var(--text-strong);
+}
+
+.text-text-body {
+  color: var(--text-body);
+}
+
+.text-text-muted {
+  color: var(--text-muted);
+}
+
+.text-vex-violet {
+  color: var(--vex-violet);
+}
+
+.text-vex-cyan {
+  color: var(--vex-cyan);
+}
+
+.text-necro-green {
+  color: var(--necro-green);
+}
+
+.text-ancient-gold {
+  color: var(--ancient-gold);
+}
+
+.shadow-vex-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.shadow-vex-glow {
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.shadow-vex-card {
+  box-shadow: var(--shadow-card);
+}
+
+.hover-bg-vex-panel:hover {
+  background-color: var(--vex-panel);
+}
+
+.hover-bg-vex-panel-strong:hover {
+  background-color: var(--vex-panel-strong);
+}
+
+.hover-bg-vex-glass:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.hover-text-strong:hover {
+  color: var(--text-strong);
+}
+
+.btn-accent {
+  color: #0a0a0f;
+  font-weight: 700;
+  box-shadow: 0 12px 26px rgba(10, 7, 16, 0.45);
+}
+
+.btn-accent:hover {
+  filter: brightness(1.08);
+}
+
+.btn-accent:active {
+  transform: scale(0.97);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vex-void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 5px;
+  border: 2px solid var(--vex-void);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+.log-link {
+  color: var(--vex-cyan);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.log-link:hover {
+  color: var(--vex-violet);
+}
+
+/* Animations */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-fast {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-pulse-fast {
+  animation: pulse-fast 1s ease-in-out infinite;
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

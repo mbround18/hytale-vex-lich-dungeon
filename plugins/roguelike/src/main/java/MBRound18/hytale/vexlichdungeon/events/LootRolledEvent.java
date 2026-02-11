@@ -44,13 +44,13 @@ public final class LootRolledEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       data.put("world", worldMeta(world));
       data.put("room", room);
       data.put("itemId", itemId);
       data.put("count", count);
       return data;
-    });
+    }));
   }
 }

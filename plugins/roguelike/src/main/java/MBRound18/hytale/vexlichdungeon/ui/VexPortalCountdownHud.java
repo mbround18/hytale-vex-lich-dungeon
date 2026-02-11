@@ -6,7 +6,7 @@ import MBRound18.hytale.shared.utilities.UiThread;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.Message;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -85,11 +85,8 @@ public final class VexPortalCountdownHud extends AbstractCustomUIHud<VexHudVexpo
     if (ui == null) {
       return;
     }
-    locationText = locationText != null ? locationText : "---";
-    if (locationText.isEmpty()) {
-      locationText = "---";
-    }
-    set(playerRef, ui.vexPortalLocation, Message.raw(locationText));
+    String value = HudTextSanitizer.sanitize(locationText);
+    set(playerRef, ui.vexPortalLocation, UiMessage.raw(value));
   }
 
   // Internal method to set time left text
@@ -98,10 +95,7 @@ public final class VexPortalCountdownHud extends AbstractCustomUIHud<VexHudVexpo
     if (ui == null) {
       return;
     }
-    timeLeft = timeLeft != null ? timeLeft : "---";
-    if (timeLeft.isEmpty()) {
-      timeLeft = "---";
-    }
-    set(playerRef, ui.vexPortalCountdown, Message.raw(timeLeft));
+    String value = HudTextSanitizer.sanitize(timeLeft);
+    set(playerRef, ui.vexPortalCountdown, UiMessage.raw(value));
   }
 }

@@ -1,0 +1,14 @@
+{
+  "Conditions": {
+    "EnvironmentIds": [
+      "Env_Vex_Dungeon"
+    ]
+  },
+  "Music": {
+    "Tracks": [
+      "Music/Custom/Vex/8_phat_phrog_studio_infernal_blight_arcane_cataclysm.ogg"
+    ]
+  },
+  "AudioCategory": "AudioCat_Music",
+  "Priority": 90
+}

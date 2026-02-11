@@ -38,6 +38,6 @@ public final class VexWelcomeHudRequestedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return buildPayload(playerRef.getUuid(), playerRef.getUsername(), bodyText);
+    return withCorrelation(buildPayload(playerRef.getUuid(), playerRef.getUsername(), bodyText));
   }
 }

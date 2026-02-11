@@ -36,6 +36,6 @@ public final class WorldPlayerSpawnedEvent extends DebugEvent {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("world", worldMeta(world));
     data.put("player", playerMeta(playerRef));
-    return data;
+    return withCorrelation(data);
   }
 }

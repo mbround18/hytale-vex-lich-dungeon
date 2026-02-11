@@ -4,7 +4,7 @@ import MBRound18.hytale.shared.interfaces.abstracts.AbstractCustomUIHud;
 import MBRound18.hytale.shared.interfaces.ui.generated.VexHudVexleaderboardhudUi;
 import MBRound18.hytale.shared.utilities.UiThread;
 
-import com.hypixel.hytale.server.core.Message;
+import MBRound18.hytale.shared.interfaces.util.UiMessage;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import javax.annotation.Nonnull;
 
@@ -33,10 +33,7 @@ public final class VexLeaderboardHud extends AbstractCustomUIHud<VexHudVexleader
 
   public void setLeaderboardText(@Nonnull PlayerRef playerRef, @Nonnull String leaderboardText) {
     VexHudVexleaderboardhudUi ui = getUiModel();
-    String value = leaderboardText != null ? leaderboardText : "---";
-    if (value.isBlank()) {
-      value = "---";
-    }
-    set(playerRef, ui.vexContentVexLeaderboardBody, Message.raw(value));
+    String value = HudTextSanitizer.sanitize(leaderboardText);
+    set(playerRef, ui.vexContentVexLeaderboardBody, UiMessage.raw(value));
   }
 }

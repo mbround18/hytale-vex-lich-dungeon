@@ -61,6 +61,6 @@ public final class VexChallengeCommandEvent extends DebugEvent {
     data.put("worldName", worldName);
     data.put("countdownSeconds", countdownSeconds);
     data.put("prefabPath", prefabPath);
-    return data;
+    return withCorrelation(data);
   }
 }

@@ -13,6 +13,7 @@ import MBRound18.hytale.vexlichdungeon.events.DungeonGenerationEventHandler;
 import MBRound18.hytale.vexlichdungeon.events.EngineAdapterEventHandler;
 import MBRound18.hytale.vexlichdungeon.events.EntitySpawnTrackingHandler;
 import MBRound18.hytale.vexlichdungeon.events.InstanceTeardownHandler;
+import MBRound18.hytale.vexlichdungeon.events.NpcSpawnRequestHandler;
 import MBRound18.hytale.vexlichdungeon.events.UniversalEventLogger;
 import MBRound18.hytale.shared.utilities.LoggingHelper;
 import MBRound18.hytale.vexlichdungeon.prefab.PrefabDiscovery;
@@ -77,6 +78,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
   private PortalCloseRequestHandler portalCloseRequestHandler;
   private RoomTileSpawnRequestHandler roomTileSpawnRequestHandler;
   private RoomEnemiesSpawnRequestHandler roomEnemiesSpawnRequestHandler;
+  private NpcSpawnRequestHandler npcSpawnRequestHandler;
 
   public VexLichDungeonPlugin(@Nonnull JavaPluginInit init) {
     super(init);
@@ -200,6 +202,7 @@ public class VexLichDungeonPlugin extends JavaPlugin {
         Objects.requireNonNull(prefabSpawner, "prefabSpawner"));
     roomEnemiesSpawnRequestHandler = new RoomEnemiesSpawnRequestHandler(
         roguelikeController);
+    npcSpawnRequestHandler = new NpcSpawnRequestHandler();
 
     // Create and register event handler with data store for concurrency control
     dungeonEventHandler = new DungeonGenerationEventHandler(
@@ -295,6 +298,11 @@ public class VexLichDungeonPlugin extends JavaPlugin {
         if (roomEnemiesSpawnRequestHandler != null) {
           roomEnemiesSpawnRequestHandler.register(eventBus);
           log.info("Room enemies spawn request handler registered with event bus");
+        }
+
+        if (npcSpawnRequestHandler != null) {
+          npcSpawnRequestHandler.register(eventBus);
+          log.info("NPC spawn request handler registered with event bus");
         }
 
         if (assetPackBootstrapHandler != null) {

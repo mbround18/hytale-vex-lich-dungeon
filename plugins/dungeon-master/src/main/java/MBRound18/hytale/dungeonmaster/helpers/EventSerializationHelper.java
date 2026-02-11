@@ -7,10 +7,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializer;
+import MBRound18.ImmortalEngine.api.events.DebugEvent;
 import com.hypixel.hytale.server.core.entity.Entity;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.world.World;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +38,13 @@ public final class EventSerializationHelper {
       if (src != null && src.getClass().getName().equals("MBRound18.ImmortalEngine.api.events.WorldEnteredEvent")) {
         return serializeWorldEnteredEvent(src);
       }
-      return GSON.toJsonTree(src);
+      JsonElement fallback = GSON.toJsonTree(src);
+      if (src instanceof DebugEvent debugEvent && fallback instanceof JsonObject obj) {
+        if (!obj.has("correlationId")) {
+          obj.addProperty("correlationId", debugEvent.getCorrelationId());
+        }
+      }
+      return fallback;
     } catch (Throwable e) {
       try {
         return SafeJsonSerializer.serialize(src);
@@ -173,6 +181,24 @@ public final class EventSerializationHelper {
     Object resolved = resolvePayloadFuture(payload);
     if (resolved == null) {
       return null;
+    }
+    if (src instanceof DebugEvent debugEvent) {
+      String correlationId = debugEvent.getCorrelationId();
+      if (resolved instanceof Map<?, ?> map) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> payloadMap = (Map<String, Object>) map;
+        try {
+          payloadMap.putIfAbsent("correlationId", correlationId);
+        } catch (UnsupportedOperationException e) {
+          Map<String, Object> copy = new java.util.LinkedHashMap<>(payloadMap);
+          copy.putIfAbsent("correlationId", correlationId);
+          resolved = copy;
+        }
+      } else if (resolved instanceof JsonObject obj) {
+        if (!obj.has("correlationId")) {
+          obj.addProperty("correlationId", correlationId);
+        }
+      }
     }
     return SafeJsonSerializer.serialize(resolved);
   }

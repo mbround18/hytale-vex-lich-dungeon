@@ -29,6 +29,7 @@ type TelemetryViewProps = {
   onReplayToEvent?: (events: TelemetryEvent[], event: TelemetryEvent) => void;
   onReplayFromEvent?: (events: TelemetryEvent[], event: TelemetryEvent) => void;
   onExitReplay?: () => void;
+  onClearLog?: () => void;
 };
 
 export default function TelemetryView({
@@ -37,6 +38,7 @@ export default function TelemetryView({
   onReplayToEvent,
   onReplayFromEvent,
   onExitReplay,
+  onClearLog,
 }: TelemetryViewProps) {
   // --- State ---
   const [events, setEvents] = useState<TelemetryEvent[]>([]);
@@ -50,9 +52,13 @@ export default function TelemetryView({
   const [isConnected, setIsConnected] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [autoPaused, setAutoPaused] = useState(false);
+  const [bufferedCount, setBufferedCount] = useState(0);
 
   const pausedRef = useRef<boolean>(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const latestEventsRef = useRef<TelemetryEvent[]>([]);
+  const hasBufferedRef = useRef(false);
+  const pausedSnapshotRef = useRef(0);
 
   useEffect(() => {
     pausedRef.current = isPaused;
@@ -72,8 +78,16 @@ export default function TelemetryView({
     };
 
     const eventsSub = events$.subscribe((next) => {
-      if (pausedRef.current) return;
       const mapped = next.map((ev) => normalize(ev)).slice(0, 500);
+      latestEventsRef.current = mapped;
+      if (pausedRef.current) {
+        hasBufferedRef.current = true;
+        const pending = Math.max(0, mapped.length - pausedSnapshotRef.current);
+        setBufferedCount(pending);
+        return;
+      }
+      hasBufferedRef.current = false;
+      setBufferedCount(0);
       setEvents(mapped);
     });
 
@@ -87,11 +101,27 @@ export default function TelemetryView({
     };
   }, []);
 
+  useEffect(() => {
+    if (isPaused) {
+      pausedSnapshotRef.current = latestEventsRef.current.length;
+      setBufferedCount(0);
+      return;
+    }
+    if (!hasBufferedRef.current) {
+      setBufferedCount(0);
+      return;
+    }
+    setEvents(latestEventsRef.current);
+    hasBufferedRef.current = false;
+    setBufferedCount(0);
+  }, [isPaused]);
+
   // --- Handlers ---
 
   const handleSelectEvent = (ev: TelemetryEvent) => {
     setSelectedEvent(ev);
     if (!isPaused) {
+      pausedSnapshotRef.current = latestEventsRef.current.length;
       setIsPaused(true);
       setAutoPaused(true);
     }
@@ -100,6 +130,11 @@ export default function TelemetryView({
   const handlePurge = () => {
     setEvents([]);
     setSelectedEvent(null);
+    latestEventsRef.current = [];
+    hasBufferedRef.current = false;
+    pausedSnapshotRef.current = 0;
+    setBufferedCount(0);
+    onClearLog?.();
     clearEventBuffer();
   };
 
@@ -131,6 +166,7 @@ export default function TelemetryView({
   const handleFollow = () => {
     setIsPaused(false);
     setAutoPaused(false);
+    setBufferedCount(0);
     if (listRef.current) {
       listRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -181,17 +217,25 @@ export default function TelemetryView({
               <Activity size={16} />
               Event Stream
             </h2>
-            <div
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${
-                isConnected
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-              }`}
-            >
+            <div className="flex items-center gap-2">
               <div
-                className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`}
-              />
-              {isConnected ? "LIVE" : "OFFLINE"}
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${
+                  isConnected
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                }`}
+              >
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"}`}
+                />
+                {isConnected ? "LIVE" : "OFFLINE"}
+              </div>
+              {isPaused && bufferedCount > 0 && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold uppercase border bg-amber-500/10 text-amber-300 border-amber-500/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  {bufferedCount} buffered
+                </div>
+              )}
             </div>
           </div>
           <div className="text-[10px] text-gray-600 font-mono">

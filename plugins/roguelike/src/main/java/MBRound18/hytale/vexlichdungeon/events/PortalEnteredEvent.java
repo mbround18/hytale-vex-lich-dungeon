@@ -41,7 +41,7 @@ public final class PortalEnteredEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       String worldName = world.getName();
       boolean isInstance = worldName != null && worldName.startsWith("instance-");
@@ -57,6 +57,6 @@ public final class PortalEnteredEvent extends DebugEvent {
         data.put("portalIdShort", portalString.length() > 8 ? portalString.substring(0, 8) : portalString);
       }
       return data;
-    });
+    }));
   }
 }

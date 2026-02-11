@@ -49,6 +49,6 @@ public final class VexSummaryHudRequestedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return buildPayload(playerRef.getUuid(), playerRef.getUsername(), statsLine, summaryLine);
+    return withCorrelation(buildPayload(playerRef.getUuid(), playerRef.getUsername(), statsLine, summaryLine));
   }
 }

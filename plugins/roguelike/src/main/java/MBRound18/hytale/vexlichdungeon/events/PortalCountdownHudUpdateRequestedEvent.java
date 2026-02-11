@@ -58,6 +58,6 @@ public final class PortalCountdownHudUpdateRequestedEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return buildPayload(playerRef.getUuid(), playerRef.getUsername(), portalId, timeLeft, locationText);
+    return withCorrelation(buildPayload(playerRef.getUuid(), playerRef.getUsername(), portalId, timeLeft, locationText));
   }
 }

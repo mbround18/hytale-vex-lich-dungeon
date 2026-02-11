@@ -26,10 +26,10 @@ import MBRound18.hytale.vexlichdungeon.events.RoomEnemiesSpawnRequestedEvent;
 import MBRound18.hytale.vexlichdungeon.events.RoundClearedEvent;
 import MBRound18.hytale.vexlichdungeon.events.SafeRoomNeededEvent;
 import MBRound18.hytale.vexlichdungeon.events.SafeRoomVisitedEvent;
-import MBRound18.hytale.vexlichdungeon.events.WorldEventQueue;
 import MBRound18.ImmortalEngine.api.i18n.EngineLang;
 import MBRound18.ImmortalEngine.api.portal.PortalPlacementRegistry;
-import MBRound18.hytale.vexlichdungeon.ui.VexScoreHud;
+import MBRound18.hytale.vexlichdungeon.events.VexScoreHudRequestedEvent;
+import MBRound18.hytale.vexlichdungeon.events.WorldEventQueue;
 import MBRound18.hytale.vexlichdungeon.ui.VexHudSequenceSupport;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
@@ -46,10 +46,8 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.accessor.BlockAccessor;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.npc.NPCPlugin;
-import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
-import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import it.unimi.dsi.fastutil.Pair;
+import MBRound18.hytale.vexlichdungeon.events.NpcSpawnRequestedEvent;
+import MBRound18.hytale.vexlichdungeon.events.NpcSpawnResult;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -183,7 +181,7 @@ public class RoguelikeDungeonController {
           state.playerScores.getOrDefault(uuid, 0), 0,
           java.util.Objects.requireNonNull(partyList, "partyList"));
     } else {
-      VexScoreHud.open(store, ref, playerRef, state.totalScore,
+      VexHudSequenceSupport.showScoreOnly(world, playerRef, state.totalScore,
           state.playerScores.getOrDefault(uuid, 0), 0,
           java.util.Objects.requireNonNull(partyList, "partyList"));
     }
@@ -538,51 +536,33 @@ public class RoguelikeDungeonController {
         log.warn("[ROGUELIKE] Enemy role/model missing for spawn entry");
         return false;
       }
-      NPCPlugin npcPlugin = NPCPlugin.get();
-      if (!npcPlugin.hasRoleName(roleName)) {
-        log.warn("[ROGUELIKE] Unknown NPC role: %s", roleName);
+      NpcSpawnRequestedEvent request = new NpcSpawnRequestedEvent(
+          world,
+          new RoomCoordinate(key.x, key.z),
+          roleName,
+          modelId,
+          position,
+          new Vector3f(0.0f, 0.0f, 0.0f),
+          null);
+      dispatchEvent(world, request);
+      NpcSpawnResult result = request.getResult().getNow(null);
+      if (result == null || !result.isSuccess() || result.getEntityId() == null) {
         return false;
       }
-
-      Store<EntityStore> store = world.getEntityStore().getStore();
-      if (store == null) {
-        log.warn("[ROGUELIKE] Missing entity store for NPC spawn");
-        return false;
+      UUID uuid = result.getEntityId();
+      state.enemyPoints.put(uuid, Math.max(1, enemy.getPoints()));
+      state.enemyRooms.put(uuid, key);
+      state.enemyTypes.put(uuid, roleName);
+      state.enemyPositions.put(uuid, position);
+      dispatchEvent(world, new EntitySpawnedEvent(world, uuid, new RoomCoordinate(key.x, key.z), roleName,
+          Math.max(1, enemy.getPoints()), position));
+      log.info("[ROGUELIKE] Spawned NPC %s (%s) at (%.1f, %.1f, %.1f)", roleName, uuid,
+          position.x, position.y, position.z);
+      if (eventsLogger != null) {
+        eventsLogger.info("Spawned NPC " + roleName + " (" + uuid + ") at ("
+            + position.x + ", " + position.y + ", " + position.z + ")");
       }
-
-      Pair<com.hypixel.hytale.component.Ref<com.hypixel.hytale.server.core.universe.world.storage.EntityStore>, INonPlayerCharacter> pair = npcPlugin
-          .spawnNPC(
-              store,
-              roleName,
-              modelId,
-              position,
-              new Vector3f(0.0f, 0.0f, 0.0f));
-
-      if (pair != null && pair.right() != null) {
-        INonPlayerCharacter npc = pair.right();
-        UUID uuid = null;
-        if (npc instanceof NPCEntity) {
-          uuid = ((NPCEntity) npc).getUuid();
-        } else if (npc instanceof com.hypixel.hytale.server.core.entity.Entity) {
-          uuid = ((com.hypixel.hytale.server.core.entity.Entity) npc).getUuid();
-        }
-
-        if (uuid != null) {
-          state.enemyPoints.put(uuid, Math.max(1, enemy.getPoints()));
-          state.enemyRooms.put(uuid, key);
-          state.enemyTypes.put(uuid, roleName);
-          state.enemyPositions.put(uuid, position);
-          dispatchEvent(world, new EntitySpawnedEvent(world, uuid, new RoomCoordinate(key.x, key.z), roleName,
-              Math.max(1, enemy.getPoints()), position));
-          log.info("[ROGUELIKE] Spawned NPC %s (%s) at (%.1f, %.1f, %.1f)", roleName, uuid,
-              position.x, position.y, position.z);
-          if (eventsLogger != null) {
-            eventsLogger.info("Spawned NPC " + roleName + " (" + uuid + ") at ("
-                + position.x + ", " + position.y + ", " + position.z + ")");
-          }
-          return true;
-        }
-      }
+      return true;
     } catch (Exception e) {
       log.warn("[ROGUELIKE] Failed to spawn NPC %s: %s", enemy.getEnemy(), e.getMessage());
       if (eventsLogger != null) {
@@ -612,6 +592,10 @@ public class RoguelikeDungeonController {
     }
     if (killerUuid != null) {
       engineAdapter.onKill(world.getName(), killerUuid.toString(), "Enemy", points);
+    }
+    if (eventsLogger != null) {
+      eventsLogger.info("[SCORE] world=%s points=%d total=%d killer=%s",
+          world.getName(), points, state.totalScore, killerUuid);
     }
     updateScoreHud(world, state, killerUuid, points);
 
@@ -738,7 +722,40 @@ public class RoguelikeDungeonController {
           + key + ", type=" + entityType);
     }
 
-    if (points == null || key == null) {
+    if (points == null) {
+      boolean isPlayerVictim = false;
+      try {
+        for (PlayerRef playerRef : world.getPlayerRefs()) {
+          if (playerRef != null && uuid.equals(playerRef.getUuid())) {
+            isPlayerVictim = true;
+            break;
+          }
+        }
+      } catch (Exception ignored) {
+      }
+      if (isPlayerVictim) {
+        if (eventsLogger != null) {
+          eventsLogger.info("[ELIMINATION] Ignoring player elimination for %s (no points)", uuid);
+        }
+        return;
+      }
+      points = 10;
+      if (eventsLogger != null) {
+        eventsLogger.info("[ELIMINATION] Defaulting points to %d for entity %s", points, uuid);
+      }
+    }
+
+    if (key == null) {
+      Vector3d fallbackPosition = position != null ? position : trackedPosition;
+      if (fallbackPosition != null) {
+        key = toGridKey(fallbackPosition);
+        if (eventsLogger != null) {
+          eventsLogger.info("[ELIMINATION] Derived room key %s for entity %s from position", key, uuid);
+        }
+      }
+    }
+
+    if (key == null) {
       if (eventsLogger != null) {
         eventsLogger.warn("[ELIMINATION] Entity " + uuid
             + " missing critical data (points=" + points + ", key=" + key
@@ -751,8 +768,9 @@ public class RoguelikeDungeonController {
     PlayerRef killerRef = killerUuid == null ? null : Universe.get().getPlayer(killerUuid);
     String killerName = killerRef == null ? null : resolveDisplayName(killerRef);
 
+    String safeEntityType = entityType != null ? entityType : "Enemy";
     if (eventsLogger != null) {
-      eventsLogger.info("[ELIMINATION] Emitting EntityEliminatedEvent for " + entityType + " ("
+      eventsLogger.info("[ELIMINATION] Emitting EntityEliminatedEvent for " + safeEntityType + " ("
           + uuid + ") killed by " + (killerName == null ? "unknown" : killerName) + " at room ("
           + key.x + ", " + key.z + ") for " + points + " points");
     }
@@ -878,10 +896,7 @@ public class RoguelikeDungeonController {
   }
 
   private void updateScoreHud(@Nonnull World world, @Nonnull RoguelikeWorldState state, UUID killerUuid, int delta) {
-    String worldName = world.getName();
-    // Extract instance UUID from world name (e.g.,
-    // "instance-Vex_The_Lich_Dungeon-{UUID}")
-    int instanceNumber = extractInstanceNumber(worldName);
+    int instanceScore = state.totalScore;
     String partyList = buildPartyList(world);
     for (PlayerRef playerRef : world.getPlayerRefs()) {
       if (playerRef == null) {
@@ -892,13 +907,27 @@ public class RoguelikeDungeonController {
       if (ref == null || !ref.isValid()) {
         continue;
       }
-      Store<EntityStore> store = ref.getStore();
       state.playerNames.put(uuid, resolveDisplayName(playerRef));
       int playerScore = state.playerScores.getOrDefault(uuid, 0);
       int playerDelta = (killerUuid != null && killerUuid.equals(uuid)) ? delta : 0;
-      VexScoreHud.open(store, ref, playerRef, instanceNumber, playerScore, playerDelta,
-          java.util.Objects.requireNonNull(partyList, "partyList"));
+      WorldEventQueue.get().dispatch(world,
+          new VexScoreHudRequestedEvent(playerRef, instanceScore, playerScore, playerDelta,
+              java.util.Objects.requireNonNull(partyList, "partyList")));
     }
+  }
+
+  @Nullable
+  public EnemyKillInfo getEnemyKillInfo(@Nonnull World world, @Nonnull UUID victimUuid) {
+    RoguelikeWorldState state = worldStates.get(world.getName());
+    if (state == null) {
+      return null;
+    }
+    Integer points = state.enemyPoints.get(victimUuid);
+    String type = state.enemyTypes.get(victimUuid);
+    if (points == null && type == null) {
+      return null;
+    }
+    return new EnemyKillInfo(points, type);
   }
 
   private int extractInstanceNumber(@Nonnull String worldName) {
@@ -1008,21 +1037,11 @@ public class RoguelikeDungeonController {
   }
 
   private String buildPartyList(@Nonnull World world) {
-    StringBuilder builder = new StringBuilder();
-    for (ParticipantSnapshot snapshot : ParticipantTracker.get().getParticipants(world.getName())) {
-      String name = snapshot.getName();
-      String health = formatStat(snapshot.getHealth(), snapshot.getHealthMax());
-      String stamina = formatStat(snapshot.getStamina(), snapshot.getStaminaMax());
-      if (builder.length() > 0) {
-        builder.append("\n");
-      }
-      builder.append(name)
-          .append(" — HP ")
-          .append(health)
-          .append(" | ST ")
-          .append(stamina);
+    int count = ParticipantTracker.get().getParticipants(world.getName()).size();
+    if (count == 1) {
+      return "1 Member";
     }
-    return builder.toString();
+    return count + " Members";
   }
 
   private String formatStat(float currentValue, float maxValue) {
@@ -1158,6 +1177,26 @@ public class RoguelikeDungeonController {
     @Override
     public int hashCode() {
       return Objects.hash(x, z);
+    }
+  }
+
+  public static final class EnemyKillInfo {
+    private final Integer points;
+    private final String type;
+
+    private EnemyKillInfo(@Nullable Integer points, @Nullable String type) {
+      this.points = points;
+      this.type = type;
+    }
+
+    @Nullable
+    public Integer getPoints() {
+      return points;
+    }
+
+    @Nullable
+    public String getType() {
+      return type;
     }
   }
 }

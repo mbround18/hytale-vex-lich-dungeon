@@ -25,6 +25,7 @@ import com.hypixel.hytale.event.IEvent;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
+import MBRound18.ImmortalEngine.api.events.DebugEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -352,7 +353,11 @@ public final class SseDebugServer {
     payload.put("type", eventClass.getSimpleName());
     payload.put("class", eventClass.getName());
     payload.put("timestamp", Instant.now().toString());
-    payload.put("fields", extractFields(event));
+    Map<String, Object> fields = extractFields(event);
+    if (event instanceof DebugEvent debugEvent) {
+      fields.putIfAbsent("correlationId", debugEvent.getCorrelationId());
+    }
+    payload.put("fields", fields);
     return payload;
   }
 

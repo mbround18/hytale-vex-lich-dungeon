@@ -31,7 +31,7 @@ public final class PlayerJoinedServerEvent extends DebugEvent {
 
   @Override
   public Object toPayload() {
-    return onWorldThread(world, () -> {
+    return withCorrelation(onWorldThread(world, () -> {
       Map<String, Object> data = new LinkedHashMap<>();
       String worldName = world.getName();
       boolean isInstance = worldName != null && worldName.startsWith("instance-");
@@ -40,6 +40,6 @@ public final class PlayerJoinedServerEvent extends DebugEvent {
       data.put("instanceName", isInstance ? worldName : null);
       data.put("player", playerMeta(playerRef));
       return data;
-    });
+    }));
   }
 }

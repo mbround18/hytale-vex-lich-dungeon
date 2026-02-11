@@ -53,9 +53,9 @@ public final class EliminationEvent extends DebugEvent {
   public Object toPayload() {
     try {
       // Prefer immediate payload to avoid serialization timeouts.
-      return buildPayload();
+      return withCorrelation(buildPayload());
     } catch (Throwable ignored) {
-      return onWorldThread(world, this::buildPayload);
+      return withCorrelation(onWorldThread(world, this::buildPayload));
     }
   }
 
