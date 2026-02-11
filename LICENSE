@@ -1,101 +1,169 @@
-# **NON-COMMERCIAL SOFTWARE LICENSE**
+NON-COMMERCIAL SOFTWARE LICENSE
+Version 1.9
 
-**Version 1.9**
+This License Agreement ("Agreement") governs the use of the software, tools,
+assets, and plugins contained within the Hytale Vex Lich Dungeon Project
+repository (https://github.com/mbround18/hytale-vex-lich-dungeon). By
+downloading, installing, copying, or using any part of the Software, you agree
+to be bound by the terms of this Agreement.
 
-This License Agreement ("Agreement") governs the use of the software, tools, assets, and plugins contained within the **Hytale Vex Lich Dungeon Project** repository (<https://github.com/mbround18/hytale-vex-lich-dungeon>). By downloading, installing, copying, or using any part of the Software, you agree to be bound by the terms of this Agreement.
+1. DEFINITIONS
 
-## **1\. DEFINITIONS**
+"Software" refers to all code, scripts, assets, configurations, and tooling
+provided within this repository, including but not limited to .jar files and
+source code.
+"Licensor" refers to mbround18 (Michael Bruno).
+"Derivative Work" means any work, whether in Source or Object form, that is
+based on (or derived from) the Software, including modifications, translations,
+or any other form in which the Software may be recast, transformed, or adapted.
+"Commercial Use" means any use of the Software directed toward commercial
+advantage or monetary compensation, as further defined in Section 4.
+"Public Server" means any server accessible to the general public, regardless
+of whether access requires registration, application, or invitation. Servers
+restricted to a private, pre-existing circle of personal acquaintances (e.g.,
+"whitelist-only" servers not publicly advertised) are excluded from this
+definition.
 
-* **"Software"** refers to all code, scripts, assets, configurations, and tooling provided within this repository, including but not limited to .jar files and source code.  
-* **"Licensor"** refers to **mbround18** (Michael Bruno).  
-* **"Derivative Work"** means any work, whether in Source or Object form, that is based on (or derived from) the Software, including modifications, translations, or any other form in which the Software may be recast, transformed, or adapted.  
-* **"Commercial Use"** means any use of the Software directed toward commercial advantage or monetary compensation, as further defined in Section 4\.  
-* **"Public Server"** means any server accessible to the general public, regardless of whether access requires registration, application, or invitation. Servers restricted to a private, pre-existing circle of personal acquaintances (e.g., "whitelist-only" servers not publicly advertised) are excluded from this definition.
+2. GRANT OF RIGHTS (NON-COMMERCIAL)
 
-## **2\. GRANT OF RIGHTS (NON-COMMERCIAL)**
+Subject to the terms and conditions of this Agreement, the Licensor hereby
+grants you a limited, non-exclusive, non-transferable, and non-sublicensable
+license to:
 
-Subject to the terms and conditions of this Agreement, the Licensor hereby grants you a limited, non-exclusive, non-transferable, and non-sublicensable license to:
+1. Use: Install and execute the Software for personal, private, or educational
+   purposes.
+2. Modify: Modify the source code for personal use or for the purpose of
+   contributing improvements back to the original project.
+3. Host: Host the Software on private or public servers, provided such servers
+   do not engage in "Commercial Use" prohibited by Section 4.
 
-1. **Use:** Install and execute the Software for personal, private, or educational purposes.  
-2. **Modify:** Modify the source code for personal use or for the purpose of contributing improvements back to the original project.  
-3. **Host:** Host the Software on private or public servers, provided such servers do not engage in "Commercial Use" prohibited by Section 4\.
-
-## **3\. OWNERSHIP AND NO IMPLIED RIGHTS**
+3. OWNERSHIP AND NO IMPLIED RIGHTS
 
 The Software is licensed, not sold.
 
-**Ownership:** The Licensor retains all ownership, right, title, and interest in and to the original Software. You retain ownership of your original contributions to any Derivative Work, subject to the non-commercial restrictions and terms of this Agreement.
+Ownership: The Licensor retains all ownership, right, title, and interest in
+and to the original Software. You retain ownership of your original
+contributions to any Derivative Work, subject to the non-commercial
+restrictions and terms of this Agreement.
 
-**No Implied License:** No rights or licenses are granted except as expressly stated in this Agreement. Any rights not expressly granted herein are reserved by the Licensor.
+No Implied License: No rights or licenses are granted except as expressly
+stated in this Agreement. Any rights not expressly granted herein are reserved
+by the Licensor.
 
-## **4\. RESTRICTIONS (COMMERCIAL & AI)**
+4. RESTRICTIONS (COMMERCIAL & AI)
 
-**Commercial Use of the Software is strictly prohibited without a separate, written commercial license signed by the Licensor.**
+Commercial Use of the Software is strictly prohibited without a separate,
+written commercial license signed by the Licensor.
 
-### **4.1 Prohibited Commercial Uses**
+4.1 Prohibited Commercial Uses
 
-* **Direct Sale:** Selling, renting, leasing, or sublicensing the Software or any Derivative Work.  
-* **Monetized Access:** Using the Software on a server that requires a fee to join (e.g., "pay-to-play"), or restricts access to paid subscribers (e.g., Patreon-exclusive servers).  
-* **Pay-for-Advantage:** Using the Software to facilitate the sale of in-game benefits, ranks, currency, or items that provide a gameplay advantage or are otherwise tied to the functionality of the Software.  
-* **Bundling:** Including the Software in a paid modpack, server installer, or hosting service ("Plugin-as-a-Service").
+- Direct Sale: Selling, renting, leasing, or sublicensing the Software or any
+  Derivative Work.
+- Monetized Access: Using the Software on a server that requires a fee to join
+  (e.g., "pay-to-play"), or restricts access to paid subscribers (e.g.,
+  Patreon-exclusive servers).
+- Pay-for-Advantage: Using the Software to facilitate the sale of in-game
+  benefits, ranks, currency, or items that provide a gameplay advantage or are
+  otherwise tied to the functionality of the Software.
+- Bundling: Including the Software in a paid modpack, server installer, or
+  hosting service ("Plugin-as-a-Service").
 
-### **4.2 Donation Exception (Safe Harbor)**
+4.2 Donation Exception (Safe Harbor)
 
-Notwithstanding the above, the acceptance of voluntary donations is **permitted**, provided that:
+Notwithstanding the above, the acceptance of voluntary donations is permitted,
+provided that:
 
-1. The donation is not mandatory for access to the server.  
-2. The donation does not grant the donor any exclusive rights, gameplay advantages, or items related to the functionality of this Software.  
-3. The donation is clearly labeled as a voluntary contribution to the server community.
+1. The donation is not mandatory for access to the server.
+2. The donation does not grant the donor any exclusive rights, gameplay
+   advantages, or items related to the functionality of this Software.
+3. The donation is clearly labeled as a voluntary contribution to the server
+   community.
 
-### **4.3 Artificial Intelligence & Data Mining Restriction**
+4.3 Artificial Intelligence & Data Mining Restriction
 
-You may **not** use the Software, including its source code, assets, documentation, **visual outputs, screenshots, or runtime behavior**, for the purpose of training, calibrating, or developing machine learning models or artificial intelligence systems. This restriction applies to both internal use and public data scraping.
+You may not use the Software, including its source code, assets, documentation,
+visual outputs, screenshots, or runtime behavior, for the purpose of training,
+calibrating, or developing machine learning models or artificial intelligence
+systems. This restriction applies to both internal use and public data
+scraping.
 
-### **4.4 Licensor Reservation**
+4.4 Licensor Reservation
 
-The restrictions defined in this Agreement do not apply to the Licensor. The Licensor reserves the unrestricted, exclusive right to host, monetize, and distribute the Software commercially. Any official server operated or authorized by the Licensor for commercial purposes will be clearly identified as such.
+The restrictions defined in this Agreement do not apply to the Licensor. The
+Licensor reserves the unrestricted, exclusive right to host, monetize, and
+distribute the Software commercially. Any official server operated or
+authorized by the Licensor for commercial purposes will be clearly identified
+as such.
 
-## **5\. REDISTRIBUTION & NETWORK DISCLOSURE**
+5. REDISTRIBUTION & NETWORK DISCLOSURE
 
-You may redistribute the Software or Derivative Works in original or modified form for non-commercial purposes only, provided that:
+You may redistribute the Software or Derivative Works in original or modified
+form for non-commercial purposes only, provided that:
 
-1. **License Copy:** You include a complete copy of this License in all distributions.  
-2. **Copyright Retention:** You retain all copyright, patent, trademark, and attribution notices that are present in the Software.  
-3. **Network Source Availability Requirement:** If you run a **modified** version of this Software on a Public Server, you must provide a prominent way for users of that server to download the Source Code of your modified version (e.g., a link to a GitHub repository or a direct download link).  
-4. **No Fees:** You do not charge any fee for the redistribution.  
-5. **Attribution:** You provide clear attribution and a link to the original repository: <https://github.com/mbround18/hytale-vex-lich-dungeon>.  
-6. **Derivatives:** Any Derivative Work remains subject to the same non-commercial restrictions outlined in this Agreement.
+1. License Copy: You include a complete copy of this License in all
+   distributions.
+2. Copyright Retention: You retain all copyright, patent, trademark, and
+   attribution notices that are present in the Software.
+3. Network Source Availability Requirement: If you run a modified version of
+   this Software on a Public Server, you must provide a prominent way for users
+   of that server to download the Source Code of your modified version (e.g., a
+   link to a GitHub repository or a direct download link).
+4. No Fees: You do not charge any fee for the redistribution.
+5. Attribution: You provide clear attribution and a link to the original
+   repository: https://github.com/mbround18/hytale-vex-lich-dungeon.
+6. Derivatives: Any Derivative Work remains subject to the same non-commercial
+   restrictions outlined in this Agreement.
 
-## **6\. COMMERCIAL LICENSING & NEGOTIATION**
+6. COMMERCIAL LICENSING & NEGOTIATION
 
-Any use of the Software outside the scope of this Non-Commercial License requires a separate commercial agreement.
+Any use of the Software outside the scope of this Non-Commercial License
+requires a separate commercial agreement.
 
-**For commercial licensing inquiries, contact:**
+For commercial licensing inquiries, contact:
 
-**Michael Bruno**
+Michael Bruno
+Email: michael.bruno1337@gmail.com
+GitHub: https://github.com/mbround18
 
-**Email:** <michael.bruno1337@gmail.com>
+7. TERMINATION
 
-**GitHub:** <https://github.com/mbround18>
+This Agreement is effective until terminated. Your rights under this Agreement
+will terminate automatically without notice from the Licensor if you fail to
+comply with any term(s) of this Agreement. Upon termination, you must cease all
+use of the Software and destroy all copies, full or partial, of the Software.
 
-## **7\. TERMINATION**
+8. GOVERNING LAW AND JURISDICTION
 
-This Agreement is effective until terminated. Your rights under this Agreement will terminate automatically without notice from the Licensor if you fail to comply with any term(s) of this Agreement. Upon termination, you must cease all use of the Software and destroy all copies, full or partial, of the Software.
+This Agreement shall be governed by and construed in accordance with the laws
+of the State of Oregon, United States, without regard to its conflict of law
+principles.
 
-## **8\. GOVERNING LAW AND JURISDICTION**
+Jurisdiction: You agree that any legal action or proceeding arising out of or
+related to this Agreement shall be brought exclusively in the state or federal
+courts located in Washington County, Beaverton, Oregon. By downloading or using
+the Software, you explicitly consent to the personal jurisdiction and venue of
+these courts.
 
-This Agreement shall be governed by and construed in accordance with the laws of the **State of Oregon, United States**, without regard to its conflict of law principles.
+9. SEVERABILITY
 
-**Jurisdiction:** You agree that any legal action or proceeding arising out of or related to this Agreement shall be brought exclusively in the state or federal courts located in **Washington County, Beaverton, Oregon**. By downloading or using the Software, you explicitly consent to the personal jurisdiction and venue of these courts.
+If any provision of this Agreement is held to be invalid, illegal, or
+unenforceable by a court of competent jurisdiction, the validity, legality,
+and enforceability of the remaining provisions shall not in any way be affected
+or impaired. The parties agree to replace the invalid provision with a valid
+provision that most closely approximates the intent and economic effect of the
+invalid provision.
 
-## **9\. SEVERABILITY**
+10. DISCLAIMER OF WARRANTY
 
-If any provision of this Agreement is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the validity, legality, and enforceability of the remaining provisions shall not in any way be affected or impaired. The parties agree to replace the invalid provision with a valid provision that most closely approximates the intent and economic effect of the invalid provision.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## **10\. DISCLAIMER OF WARRANTY**
+11. ENTIRE AGREEMENT
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-## **11\. ENTIRE AGREEMENT**
-
-This Agreement constitutes the entire agreement between the parties regarding the use of the Software and supersedes all prior or contemporaneous understandings, whether oral or written.
+This Agreement constitutes the entire agreement between the parties regarding
+the use of the Software and supersedes all prior or contemporaneous
+understandings, whether oral or written.
