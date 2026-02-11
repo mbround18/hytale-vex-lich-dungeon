@@ -43,6 +43,7 @@ A modern web-based dashboard for managing the Hytale development environment. Th
 ## Recent Fixes (Feb 2026)
 
 🔧 **Restart Functionality Now Works**:
+
 - Fixed child process ownership issue preventing restarts
 - Docker logs tailer now properly stops and restarts with container
 - Log buffers automatically clear on restart for clean slate
@@ -50,6 +51,7 @@ A modern web-based dashboard for managing the Hytale development environment. Th
 - Race conditions in restart flow eliminated
 
 🐛 **Resolved Issues**:
+
 - ✅ Restarts now work properly (were broken)
 - ✅ Logs pickup correctly after restart
 - ✅ Docker logs tailer lifecycle properly managed

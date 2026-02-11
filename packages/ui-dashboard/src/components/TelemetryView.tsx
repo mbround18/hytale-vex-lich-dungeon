@@ -500,7 +500,7 @@ function EventLogItem({
         />
         <div className="min-w-0">
           <div
-          className={`text-xs font-mono truncate ${active ? "text-cyan-100 font-bold" : "text-gray-400 group-hover:text-gray-300"}`}
+            className={`text-xs font-mono truncate ${active ? "text-cyan-100 font-bold" : "text-gray-400 group-hover:text-gray-300"}`}
           >
             {type.split(".").pop()} {/* Show only last part of class name */}
           </div>

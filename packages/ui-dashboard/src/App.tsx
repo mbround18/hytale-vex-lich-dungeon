@@ -979,7 +979,10 @@ function DashboardApp() {
     const stream$ = createEventSourceStream<SsePayload>({
       url: () => {
         const baseUrl = `${apiBaseUrl.replace(/\/$/, "")}/events`;
-        const since = Math.max(readTelemetrySince(), lastServerEventIdRef.current);
+        const since = Math.max(
+          readTelemetrySince(),
+          lastServerEventIdRef.current,
+        );
         return since > 0 ? `${baseUrl}?since=${since}` : baseUrl;
       },
       eventTypes: ["message", "prefab"],
@@ -1006,9 +1009,13 @@ function DashboardApp() {
     const subscription = stream$.subscribe((payload) => {
       if (payload.type === "message") {
         const parsed = JSON.parse(payload.data);
-        const id = typeof parsed?.id === "number" ? parsed.id : Number(parsed?.id);
+        const id =
+          typeof parsed?.id === "number" ? parsed.id : Number(parsed?.id);
         if (Number.isFinite(id)) {
-          lastServerEventIdRef.current = Math.max(lastServerEventIdRef.current, id);
+          lastServerEventIdRef.current = Math.max(
+            lastServerEventIdRef.current,
+            id,
+          );
         }
         addEvent(parsed);
         return;
@@ -1145,8 +1152,9 @@ function DashboardApp() {
   useEffect(() => {
     const sub = eventStream$.subscribe((ev) => {
       if (!ev) return;
-      const normalized =
-        (ev as any).internalId ? ev : { data: (ev as any)?.data || ev };
+      const normalized = (ev as any).internalId
+        ? ev
+        : { data: (ev as any)?.data || ev };
       const fields = getEventFields(normalized as VexEvent);
       const worldName = getEventWorld(fields);
       if (!worldName) return;

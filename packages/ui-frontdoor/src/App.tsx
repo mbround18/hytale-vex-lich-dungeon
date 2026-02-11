@@ -11,8 +11,6 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Badge } from "ui-shared/components";
 import { navSections, primaryAction } from "./data/navigation";
 import { homeContent } from "./data/home";
@@ -57,56 +55,6 @@ const isRouteLink = (href: string) => {
 };
 
 type FrontmatterData = Record<string, any>;
-
-const parseFrontmatter = (
-  content: string,
-): { frontmatter: FrontmatterData; markdown: string } => {
-  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
-  const match = content.match(frontmatterRegex);
-
-  if (!match) {
-    return { frontmatter: {}, markdown: content };
-  }
-
-  const [, frontmatterStr, markdown] = match;
-  const frontmatter: FrontmatterData = {};
-
-  // Simple YAML parser for common formats
-  frontmatterStr.split("\n").forEach((line: string) => {
-    const keyValue = line.match(/^(\w+):\s*(.+)$/);
-    if (keyValue) {
-      const [, key, value] = keyValue;
-      // Handle arrays: [item1, item2]
-      if (value.startsWith("[") && value.endsWith("]")) {
-        frontmatter[key] = value
-          .slice(1, -1)
-          .split(",")
-          .map((v) => v.trim().replace(/^["']|["']$/g, ""));
-      }
-      // Handle quoted strings
-      else if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        frontmatter[key] = value.slice(1, -1);
-      }
-      // Handle numbers
-      else if (!isNaN(Number(value))) {
-        frontmatter[key] = Number(value);
-      }
-      // Handle booleans
-      else if (value === "true" || value === "false") {
-        frontmatter[key] = value === "true";
-      }
-      // Plain strings
-      else {
-        frontmatter[key] = value;
-      }
-    }
-  });
-
-  return { frontmatter, markdown };
-};
 
 function Shell() {
   const [navOpen, setNavOpen] = useState(false);
@@ -343,45 +291,43 @@ const toYoutubeThumb = (url: string) => {
 };
 
 type DevLogEntry = {
+  file: string;
   title: string;
   date?: string;
   excerpt?: string;
-  href: string;
+  htmlPath: string;
+  frontmatter?: FrontmatterData;
+};
+type DevLogIndex = {
+  entries: DevLogEntry[];
 };
 
-const parseDevLogEntry = (file: string, content: string): DevLogEntry => {
-  const datePart = file.split("-").slice(0, 3).join("-");
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
-  const lines = content.split(/\r?\n/).map((line) => line.trim());
-  let title = file.replace(/\.md$/i, "").replace(/-/g, " ");
-  for (const line of lines) {
-    if (line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "").trim();
-      break;
-    }
+const resolveMarkdownRoute = (href: string) => {
+  if (!href.startsWith("/")) return href;
+  const hashIndex = href.search(/[?#]/);
+  const pathPart = hashIndex === -1 ? href : href.slice(0, hashIndex);
+  const suffix = hashIndex === -1 ? "" : href.slice(hashIndex);
+  if (pathPart.endsWith(".md")) return `/md${pathPart}${suffix}`;
+  if (pathPart.endsWith(".html")) {
+    return `/md${pathPart.replace(/\.html$/i, ".md")}${suffix}`;
   }
-  let excerpt = "";
-  for (const line of lines) {
-    if (!line) continue;
-    if (line.startsWith("#")) continue;
-    if (line.startsWith(">")) continue;
-    excerpt = line;
-    break;
-  }
-  return {
-    title,
-    date,
-    excerpt,
-    href: `/dev/logs/${file}`,
-  };
+  return href;
 };
 
-const formatLogTitle = (file: string) =>
-  file.replace(/\.md$/i, "").replace(/-/g, " ");
+const handleMarkdownLinkClick = (
+  event: React.MouseEvent<HTMLElement>,
+  navigate: ReturnType<typeof useNavigate>,
+) => {
+  const target = event.target as HTMLElement | null;
+  const anchor = target?.closest("a");
+  if (!anchor) return;
+  const href = anchor.getAttribute("href") ?? "";
+  if (!href || isExternal(href)) return;
+  if (!href.startsWith("/")) return;
+  if (!isMarkdownRoute(href)) return;
 
-const parseLogDate = (file: string) => {
-  const datePart = file.split("-").slice(0, 3).join("-");
-  return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : undefined;
+  event.preventDefault();
+  navigate(resolveMarkdownRoute(href));
 };
 
 function HomePage() {
@@ -778,28 +724,18 @@ function DevHubPage() {
   const [selectedFrontmatter, setSelectedFrontmatter] =
     useState<FrontmatterData>({});
   const [contentLoading, setContentLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch("/dev/logs/index.json");
+        const res = await fetch("/dev/logs/index.meta.json");
         if (!res.ok) {
           throw new Error("Failed to load index");
         }
-        const files = (await res.json()) as string[];
-        const latestFiles = files.slice(0, 6);
-        const entries = await Promise.all(
-          latestFiles.map(async (file) => {
-            try {
-              const contentRes = await fetch(`/dev/logs/${file}`);
-              const content = contentRes.ok ? await contentRes.text() : "";
-              return parseDevLogEntry(file, content);
-            } catch {
-              return parseDevLogEntry(file, "");
-            }
-          }),
-        );
+        const index = (await res.json()) as DevLogIndex;
+        const entries = index.entries.slice(0, 6);
         if (!cancelled) {
           setLogEntries(entries);
         }
@@ -826,12 +762,11 @@ function DevHubPage() {
     setSelectedIndex(index);
     setContentLoading(true);
     try {
-      const res = await fetch(entry.href);
+      const res = await fetch(entry.htmlPath);
       if (res.ok) {
-        const rawContent = await res.text();
-        const { frontmatter: fm, markdown: md } = parseFrontmatter(rawContent);
-        setSelectedFrontmatter(fm);
-        setSelectedContent(md);
+        const html = await res.text();
+        setSelectedFrontmatter(entry.frontmatter ?? {});
+        setSelectedContent(html);
       }
     } catch (error) {
       setSelectedContent("Failed to load content");
@@ -936,47 +871,11 @@ function DevHubPage() {
 
             {!contentLoading && selectedContent && (
               <>
-                <article className="markdown-body prose prose-invert prose-headings:font-fantasy prose-a:text-necro-green max-w-none mb-6">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      a: ({ href = "", children, ...props }) => {
-                        if (!href) {
-                          return <span {...props}>{children}</span>;
-                        }
-                        if (isExternal(href)) {
-                          return (
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              {...props}
-                            >
-                              {children}
-                            </a>
-                          );
-                        }
-                        if (href.startsWith("/")) {
-                          const target = href.endsWith(".md")
-                            ? `/md${href}`
-                            : href;
-                          return (
-                            <Link to={target} {...props}>
-                              {children}
-                            </Link>
-                          );
-                        }
-                        return (
-                          <a href={href} {...props}>
-                            {children}
-                          </a>
-                        );
-                      },
-                    }}
-                  >
-                    {selectedContent}
-                  </ReactMarkdown>
-                </article>
+                <article
+                  className="markdown-body prose prose-invert prose-headings:font-fantasy prose-a:text-necro-green max-w-none mb-6"
+                  onClick={(event) => handleMarkdownLinkClick(event, navigate)}
+                  dangerouslySetInnerHTML={{ __html: selectedContent }}
+                />
 
                 {/* Navigation */}
                 <div className="flex items-center justify-between gap-4 pt-6 border-t border-vex-border">
@@ -1099,16 +998,6 @@ function DevHubPage() {
                       )}
                   </div>
                 )}
-
-                {/* Raw Markdown Link */}
-                <div className="mt-4 text-center">
-                  <a
-                    href={logEntries[selectedIndex]?.href}
-                    className="text-xs text-slate-400 hover:text-necro-green transition"
-                  >
-                    View raw markdown
-                  </a>
-                </div>
               </>
             )}
 
@@ -1498,24 +1387,24 @@ docker compose down`}
 }
 
 function DevLogsPage() {
-  const [files, setFiles] = useState<string[]>([]);
+  const [entries, setEntries] = useState<DevLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch("/dev/logs/index.json");
+        const res = await fetch("/dev/logs/index.meta.json");
         if (!res.ok) {
           throw new Error("Failed to load logs");
         }
-        const list = (await res.json()) as string[];
+        const index = (await res.json()) as DevLogIndex;
         if (!cancelled) {
-          setFiles(list);
+          setEntries(index.entries);
         }
       } catch {
         if (!cancelled) {
-          setFiles([]);
+          setEntries([]);
         }
       } finally {
         if (!cancelled) {
@@ -1545,43 +1434,39 @@ function DevLogsPage() {
         </header>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {(loading ? Array.from({ length: 6 }) : files).map((file, index) => (
-            <div
-              key={file ?? `loading-${index}`}
-              className="rounded-xl border border-vex-border bg-vex-surface/60 p-4"
-            >
-              {file ? (
-                <>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
-                    {parseLogDate(file) ?? "Dev Log"}
-                  </p>
-                  <h3 className="font-fantasy text-lg text-white mt-2">
-                    {formatLogTitle(file)}
-                  </h3>
-                  <div className="mt-3 flex gap-3 text-xs text-slate-400">
-                    <Link
-                      to={`/md/dev/logs/${encodeURIComponent(file)}`}
-                      className="text-necro-green hover:text-ancient-gold transition"
-                    >
-                      Open post →
-                    </Link>
-                    <a
-                      href={`/dev/logs/${file}`}
-                      className="hover:text-necro-green transition"
-                    >
-                      Raw markdown
-                    </a>
+          {(loading ? Array.from({ length: 6 }) : entries).map(
+            (entry, index) => (
+              <div
+                key={entry?.file ?? `loading-${index}`}
+                className="rounded-xl border border-vex-border bg-vex-surface/60 p-4"
+              >
+                {entry ? (
+                  <>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                      {entry.date ?? "Dev Log"}
+                    </p>
+                    <h3 className="font-fantasy text-lg text-white mt-2">
+                      {entry.title}
+                    </h3>
+                    <div className="mt-3 flex gap-3 text-xs text-slate-400">
+                      <Link
+                        to={`/md/dev/logs/${encodeURIComponent(entry.file)}`}
+                        className="text-necro-green hover:text-ancient-gold transition"
+                      >
+                        Open post →
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-3 w-20 bg-vex-border/60 rounded" />
+                    <div className="h-5 w-40 bg-vex-border/60 rounded" />
+                    <div className="h-3 w-5/6 bg-vex-border/40 rounded" />
                   </div>
-                </>
-              ) : (
-                <div className="animate-pulse space-y-3">
-                  <div className="h-3 w-20 bg-vex-border/60 rounded" />
-                  <div className="h-5 w-40 bg-vex-border/60 rounded" />
-                  <div className="h-3 w-5/6 bg-vex-border/40 rounded" />
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ),
+          )}
         </div>
       </div>
     </main>
@@ -1594,36 +1479,54 @@ function MarkdownPage() {
   const [frontmatter, setFrontmatter] = useState<FrontmatterData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const backTarget = pathSlug?.startsWith("dev/ui/")
-    ? "/dev/ui"
-    : pathSlug?.startsWith("dev/logs/")
-      ? "/dev/logs"
-      : "/dev";
+  const navigate = useNavigate();
+  const safeSlug = pathSlug?.replace(/\.\.+/g, "") ?? "";
+  const normalizedSlug = safeSlug.replace(/^\/+/, "");
+  const isLogDoc = normalizedSlug.startsWith("dev/logs/");
+  const isUiDoc = normalizedSlug.startsWith("dev/ui/");
+  const backTarget = isUiDoc ? "/dev/ui" : isLogDoc ? "/dev/logs" : "/dev";
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       if (!pathSlug) {
-        setError("Missing markdown path");
+        setError("Missing document path");
         setLoading(false);
         return;
       }
-      const safePath = pathSlug.replace(/\.\.+/g, "");
+      if (!isLogDoc && !isUiDoc) {
+        setError("Document not found");
+        setLoading(false);
+        return;
+      }
       try {
-        const res = await fetch(`/${safePath}`);
-        if (!res.ok) {
-          throw new Error("Not found");
+        const metaPath = isLogDoc
+          ? "/dev/logs/index.meta.json"
+          : "/dev/ui/index.meta.json";
+        const metaRes = await fetch(metaPath);
+        if (!metaRes.ok) {
+          throw new Error("Metadata not found");
         }
-        const text = await res.text();
+        const index = (await metaRes.json()) as DevLogIndex;
+        const fileName = normalizedSlug.split("/").pop() ?? "";
+        const targetFile = fileName.replace(/\.html$/i, ".md");
+        const entry = index.entries.find((item) => item.file === targetFile);
+        if (!entry) {
+          throw new Error("Document not found");
+        }
+        const htmlRes = await fetch(entry.htmlPath);
+        if (!htmlRes.ok) {
+          throw new Error("Document not found");
+        }
+        const html = await htmlRes.text();
         if (!cancelled) {
-          const { frontmatter: fm, markdown: md } = parseFrontmatter(text);
-          setFrontmatter(fm);
-          setContent(md);
+          setFrontmatter(entry.frontmatter ?? {});
+          setContent(html);
           setError(null);
         }
       } catch {
         if (!cancelled) {
-          setError("Markdown not found");
+          setError("Document not found");
           setContent("");
           setFrontmatter({});
         }
@@ -1649,14 +1552,6 @@ function MarkdownPage() {
           >
             ← Back to hub
           </Link>
-          {pathSlug && (
-            <a
-              href={`/${pathSlug}`}
-              className="text-xs text-slate-400 hover:text-necro-green transition"
-            >
-              View raw markdown
-            </a>
-          )}
         </div>
 
         {loading && (
@@ -1674,45 +1569,11 @@ function MarkdownPage() {
         {!loading && !error && (
           <>
             {/* Content */}
-            <article className="markdown-body rounded-2xl border border-vex-border bg-vex-surface/70 p-6 prose prose-invert prose-headings:font-fantasy prose-a:text-necro-green max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  a: ({ href = "", children, ...props }) => {
-                    if (!href) {
-                      return <span {...props}>{children}</span>;
-                    }
-                    if (isExternal(href)) {
-                      return (
-                        <a
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          {...props}
-                        >
-                          {children}
-                        </a>
-                      );
-                    }
-                    if (href.startsWith("/")) {
-                      const target = href.endsWith(".md") ? `/md${href}` : href;
-                      return (
-                        <Link to={target} {...props}>
-                          {children}
-                        </Link>
-                      );
-                    }
-                    return (
-                      <a href={href} {...props}>
-                        {children}
-                      </a>
-                    );
-                  },
-                }}
-              >
-                {content}
-              </ReactMarkdown>
-            </article>
+            <article
+              className="markdown-body rounded-2xl border border-vex-border bg-vex-surface/70 p-6 prose prose-invert prose-headings:font-fantasy prose-a:text-necro-green max-w-none"
+              onClick={(event) => handleMarkdownLinkClick(event, navigate)}
+              dangerouslySetInnerHTML={{ __html: content }}
+            />
 
             {/* Frontmatter Metadata */}
             {Object.keys(frontmatter).length > 0 && (

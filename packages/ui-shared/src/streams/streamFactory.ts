@@ -1,12 +1,4 @@
-import {
-  Observable,
-  defer,
-  from,
-  interval,
-  merge,
-  of,
-  timer,
-} from "rxjs";
+import { Observable, defer, from, interval, merge, of, timer } from "rxjs";
 import {
   catchError,
   ignoreElements,
@@ -98,7 +90,7 @@ export const createEventSourceStream = <T = { type: string; data: string }>(
   const {
     url,
     eventTypes = ["message"],
-    parse = (event, type) => ({ type, data: event.data } as T),
+    parse = (event, type) => ({ type, data: event.data }) as T,
     onOpen,
     onEvent,
     onStatus,

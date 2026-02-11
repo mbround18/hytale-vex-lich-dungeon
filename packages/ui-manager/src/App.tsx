@@ -80,14 +80,25 @@ const PROCESSES: ProcessMeta[] = [
 
 const API_BASE = window.location.origin;
 const WS_PROTOCOL =
-  window.location.protocol === "https:" || window.location.href.startsWith("blob:")
+  window.location.protocol === "https:" ||
+  window.location.href.startsWith("blob:")
     ? "wss://"
     : "ws://";
 const WS_BASE = WS_PROTOCOL + window.location.host;
 
 const Icon = ({ path, className }: IconProps) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={path} />
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d={path}
+    />
   </svg>
 );
 
@@ -120,7 +131,11 @@ const LogLine = ({ text, time }: LogLineProps) => {
 
   let borderColor = "border-transparent";
   const lower = text.toLowerCase();
-  if (lower.includes("error") || lower.includes("failed") || lower.includes("fatal")) {
+  if (
+    lower.includes("error") ||
+    lower.includes("failed") ||
+    lower.includes("fatal")
+  ) {
     borderColor = "border-red-500";
   } else if (lower.includes("warn")) {
     borderColor = "border-yellow-500";
@@ -147,7 +162,12 @@ const LogLine = ({ text, time }: LogLineProps) => {
   );
 };
 
-const Terminal = ({ logs, filter, autoScroll, onScrollStateChange }: TerminalProps) => {
+const Terminal = ({
+  logs,
+  filter,
+  autoScroll,
+  onScrollStateChange,
+}: TerminalProps) => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -186,13 +206,17 @@ const Terminal = ({ logs, filter, autoScroll, onScrollStateChange }: TerminalPro
 const App = () => {
   const [activeProcessId, setActiveProcessId] = useState<ProcessId>("gradle");
 
-  const [connState, setConnState] = useState<Record<ProcessId, ConnectionState>>({
+  const [connState, setConnState] = useState<
+    Record<ProcessId, ConnectionState>
+  >({
     gradle: { status: "DISCONNECTED", retryIn: 0 },
     docker: { status: "DISCONNECTED", retryIn: 0 },
     pnpm: { status: "DISCONNECTED", retryIn: 0 },
   });
 
-  const [processData, setProcessData] = useState<Record<ProcessId, ProcessState>>({
+  const [processData, setProcessData] = useState<
+    Record<ProcessId, ProcessState>
+  >({
     gradle: { running: false, log_count: 0 },
     docker: { running: false, log_count: 0 },
     pnpm: { running: false, log_count: 0 },
@@ -209,14 +233,15 @@ const App = () => {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  const subscriptionsRef = useRef<Record<ProcessId, { unsubscribe?: () => void }>>(
-    {} as Record<ProcessId, { unsubscribe?: () => void }>,
-  );
+  const subscriptionsRef = useRef<
+    Record<ProcessId, { unsubscribe?: () => void }>
+  >({} as Record<ProcessId, { unsubscribe?: () => void }>);
   const connStatusRef = useRef<Record<ProcessId, ConnectionStatus>>(
     {} as Record<ProcessId, ConnectionStatus>,
   );
 
-  const activeProcess = PROCESSES.find((p) => p.id === activeProcessId) ?? PROCESSES[0];
+  const activeProcess =
+    PROCESSES.find((p) => p.id === activeProcessId) ?? PROCESSES[0];
 
   const addLog = useCallback((id: ProcessId, text: string) => {
     const time = new Date().toLocaleTimeString("en-GB", {
@@ -260,7 +285,9 @@ const App = () => {
   );
 
   const disconnectAll = useCallback(() => {
-    Object.values(subscriptionsRef.current).forEach((sub) => sub?.unsubscribe?.());
+    Object.values(subscriptionsRef.current).forEach((sub) =>
+      sub?.unsubscribe?.(),
+    );
     subscriptionsRef.current = {};
   }, []);
 
@@ -283,7 +310,10 @@ const App = () => {
             return;
           }
           if (status.retryIn) {
-            updateConnState(id, { status: "RETRYING", retryIn: status.retryIn });
+            updateConnState(id, {
+              status: "RETRYING",
+              retryIn: status.retryIn,
+            });
             return;
           }
           updateConnState(id, { status: "DISCONNECTED", retryIn: 0 });
@@ -332,7 +362,10 @@ const App = () => {
       }
 
       showToast(`${action.toUpperCase()} sent to ${activeProcess.name}`, "✓");
-      addLog(activeProcessId, `>> Control: ${action.toUpperCase()} signal sent`);
+      addLog(
+        activeProcessId,
+        `>> Control: ${action.toUpperCase()} signal sent`,
+      );
     } catch (e) {
       showToast(`Failed to ${action}: ${e.message}`, "❌");
       addLog(activeProcessId, `>> Error: ${e.message}`);
@@ -390,11 +423,17 @@ const App = () => {
         const res = await fetch(`${API_BASE}/api/status`);
         const contentType = res.headers.get("content-type");
 
-        if (!res.ok || !contentType || !contentType.includes("application/json")) {
+        if (
+          !res.ok ||
+          !contentType ||
+          !contentType.includes("application/json")
+        ) {
           throw new Error("Invalid API response");
         }
 
-        const data = (await res.json()) as { processes: Record<ProcessId, ProcessState> };
+        const data = (await res.json()) as {
+          processes: Record<ProcessId, ProcessState>;
+        };
         setProcessData(data.processes);
         setIsDemoMode(false);
       } catch (e) {
@@ -421,7 +460,11 @@ const App = () => {
       try {
         const res = await fetch(`${API_BASE}/api/logs/${activeProcessId}`);
         const contentType = res.headers.get("content-type");
-        if (!res.ok || !contentType || !contentType.includes("application/json")) {
+        if (
+          !res.ok ||
+          !contentType ||
+          !contentType.includes("application/json")
+        ) {
           throw new Error("Invalid API");
         }
 
@@ -467,7 +510,9 @@ const App = () => {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[12px] font-medium text-text-muted">SESSION:</span>
+          <span className="text-[12px] font-medium text-text-muted">
+            SESSION:
+          </span>
           <StatusPill
             status={isDemoMode ? "Demo Mode" : "Connected"}
             variant={isDemoMode ? "warning" : "live"}
@@ -520,7 +565,9 @@ const App = () => {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`text-lg ${isActive ? "" : "grayscale opacity-70"}`}>
+                    <div
+                      className={`text-lg ${isActive ? "" : "grayscale opacity-70"}`}
+                    >
                       {p.icon}
                     </div>
                     <div className="flex flex-col">
@@ -618,7 +665,9 @@ const App = () => {
                 />
               </button>
               <button
-                onClick={() => setLogs((prev) => ({ ...prev, [activeProcessId]: [] }))}
+                onClick={() =>
+                  setLogs((prev) => ({ ...prev, [activeProcessId]: [] }))
+                }
                 className="p-2 text-text-muted hover-text-strong hover-bg-vex-panel rounded transition-colors"
                 title="Clear"
               >
@@ -641,10 +690,14 @@ const App = () => {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <StatusDot status={currentConn.status} />
-                SOCKET: <span className="text-text-body">{footerStatusText}</span>
+                SOCKET:{" "}
+                <span className="text-text-body">{footerStatusText}</span>
               </div>
               <div>
-                BUFFER: <span className="text-text-body">{logs[activeProcessId].length} LINES</span>
+                BUFFER:{" "}
+                <span className="text-text-body">
+                  {logs[activeProcessId].length} LINES
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-4">

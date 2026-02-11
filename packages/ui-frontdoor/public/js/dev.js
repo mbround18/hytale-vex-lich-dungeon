@@ -183,14 +183,12 @@ async function loadPermissions() {
       return;
     }
 
-    const sorted = permissions
-      .slice()
-      .sort((a, b) => {
-        const pluginA = (a.plugin || "").toLowerCase();
-        const pluginB = (b.plugin || "").toLowerCase();
-        if (pluginA !== pluginB) return pluginA.localeCompare(pluginB);
-        return (a.permission || "").localeCompare(b.permission || "");
-      });
+    const sorted = permissions.slice().sort((a, b) => {
+      const pluginA = (a.plugin || "").toLowerCase();
+      const pluginB = (b.plugin || "").toLowerCase();
+      if (pluginA !== pluginB) return pluginA.localeCompare(pluginB);
+      return (a.permission || "").localeCompare(b.permission || "");
+    });
 
     const html = sorted
       .map((entry) => {
@@ -232,9 +230,12 @@ async function loadPermissions() {
 }
 
 async function fetchLatestRelease(repo) {
-  const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-    cache: "no-store",
-  });
+  const response = await fetch(
+    `https://api.github.com/repos/${repo}/releases/latest`,
+    {
+      cache: "no-store",
+    },
+  );
   if (response.status === 404) {
     return null;
   }

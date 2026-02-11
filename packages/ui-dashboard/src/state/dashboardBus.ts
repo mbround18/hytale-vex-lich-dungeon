@@ -24,4 +24,11 @@ const {
 
 export type { StreamStatus };
 
-export { eventStream$, events$, streamStatus$, publishEvent, setStreamStatus, clearEventBuffer };
+export {
+  eventStream$,
+  events$,
+  streamStatus$,
+  publishEvent,
+  setStreamStatus,
+  clearEventBuffer,
+};

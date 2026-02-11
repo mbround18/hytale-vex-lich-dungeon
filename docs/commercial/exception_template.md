@@ -18,8 +18,8 @@ The Grantor hereby grants the Licensee a non-exclusive, world-wide, non-transfer
 
 The Licensee is permitted to "Sell the Software" (as defined in the Commons Clause) solely in the context of operating the Hytale server known as **\[Server Name/IP\]**. This includes, but is not limited to:
 
-* Including the software in a modpack required to play on the server.  
-* Charging for access, ranks, or items that interact with the software's functionality.
+- Including the software in a modpack required to play on the server.
+- Charging for access, ranks, or items that interact with the software's functionality.
 
 ### **3\. Term and Fees**
 
